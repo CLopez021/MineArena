@@ -1,4 +1,4 @@
-package com.knkevin.aibuilder;
+package com.knkevin.ai_builder;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
