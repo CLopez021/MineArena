@@ -1,6 +1,6 @@
 package com.knkevin.ai_builder;
 
-import com.knkevin.ai_builder.Item.ModItems;
+import com.knkevin.ai_builder.item.ModItems;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
