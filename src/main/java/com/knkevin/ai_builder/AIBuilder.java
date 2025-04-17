@@ -1,6 +1,9 @@
 package com.knkevin.ai_builder;
 
+import com.knkevin.ai_builder.command.ModelCommand;
+import com.knkevin.ai_builder.command.arguments.ModCommandArguments;
 import com.knkevin.ai_builder.item.ModItems;
+import com.knkevin.ai_builder.models.Model;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
@@ -16,11 +19,17 @@ import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
+
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(AIBuilder.MOD_ID)
 public class AIBuilder {
     // Define mod id in a common place for everything to reference
     public static final String MOD_ID = "ai_builder";
+
+    @Nullable
+    public static Model model;
+
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -34,6 +43,7 @@ public class AIBuilder {
         MinecraftForge.EVENT_BUS.register(this);
 
         ModItems.register(modEventBus);
+        ModCommandArguments.register(modEventBus);
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
