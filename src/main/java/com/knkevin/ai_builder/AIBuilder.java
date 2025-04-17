@@ -1,8 +1,7 @@
 package com.knkevin.ai_builder;
 
-import com.knkevin.ai_builder.command.ModelCommand;
 import com.knkevin.ai_builder.command.arguments.ModCommandArguments;
-import com.knkevin.ai_builder.item.ModItems;
+import com.knkevin.ai_builder.items.ModItems;
 import com.knkevin.ai_builder.models.Model;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;

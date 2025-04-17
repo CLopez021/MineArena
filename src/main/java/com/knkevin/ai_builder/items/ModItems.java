@@ -1,7 +1,7 @@
-package com.knkevin.ai_builder.item;
+package com.knkevin.ai_builder.items;
 
 import com.knkevin.ai_builder.AIBuilder;
-import com.knkevin.ai_builder.item.custom.ModelHammerItem;
+import com.knkevin.ai_builder.items.custom.ModelHammerItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;

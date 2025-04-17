@@ -1,6 +1,6 @@
 package com.knkevin.ai_builder.models;
 
-import com.knkevin.ai_builder.item.custom.HammerModes;
+import com.knkevin.ai_builder.items.custom.HammerModes;
 import com.knkevin.ai_builder.models.util.Point;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;

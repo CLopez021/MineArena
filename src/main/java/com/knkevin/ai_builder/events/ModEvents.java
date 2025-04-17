@@ -1,4 +1,4 @@
-package com.knkevin.ai_builder.event;
+package com.knkevin.ai_builder.events;
 
 import com.knkevin.ai_builder.AIBuilder;
 import com.knkevin.ai_builder.command.ModelCommand;

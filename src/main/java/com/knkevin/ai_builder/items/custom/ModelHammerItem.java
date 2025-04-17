@@ -1,4 +1,4 @@
-package com.knkevin.ai_builder.item.custom;
+package com.knkevin.ai_builder.items.custom;
 
 import com.knkevin.ai_builder.AIBuilder;
 import net.minecraft.core.BlockPos;

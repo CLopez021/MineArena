@@ -1,4 +1,4 @@
-package com.knkevin.ai_builder.item.custom;
+package com.knkevin.ai_builder.items.custom;
 
 /**
  * Keeps track of the currently selected axis, transform mode, and viewing mode.
