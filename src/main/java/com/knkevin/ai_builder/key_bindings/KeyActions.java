@@ -5,6 +5,9 @@ import com.knkevin.ai_builder.items.ModItems;
 //import com.knkevin.ai_builder.packets.PacketHandler;
 //import com.knkevin.ai_builder.packets.PlaceModelPacket;
 //import com.knkevin.ai_builder.packets.UndoModelPacket;
+import com.knkevin.ai_builder.packets.PacketHandler;
+import com.knkevin.ai_builder.packets.PlaceModelPacket;
+import com.knkevin.ai_builder.packets.UndoModelPacket;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -41,11 +44,11 @@ public class KeyActions {
     }
 
     public static void placeModel() {
-        //PacketHandler.INSTANCE.sendToServer(new PlaceModelPacket());
+        PacketHandler.INSTANCE.send(new PlaceModelPacket(), Minecraft.getInstance().getConnection().getConnection());
     }
 
     public static void undoModel() {
-        //PacketHandler.INSTANCE.sendToServer(new UndoModelPacket());
+        PacketHandler.INSTANCE.send(new UndoModelPacket(), Minecraft.getInstance().getConnection().getConnection());
     }
 
     public static void setModeRotate(Player player) {

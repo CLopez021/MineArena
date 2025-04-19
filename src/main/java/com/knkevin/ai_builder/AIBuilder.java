@@ -3,6 +3,7 @@ package com.knkevin.ai_builder;
 import com.knkevin.ai_builder.command.arguments.ModCommandArguments;
 import com.knkevin.ai_builder.items.ModItems;
 import com.knkevin.ai_builder.models.Model;
+import com.knkevin.ai_builder.packets.PacketHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
@@ -43,6 +44,7 @@ public class AIBuilder {
 
         ModItems.register(modEventBus);
         ModCommandArguments.register(modEventBus);
+        PacketHandler.init();
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
