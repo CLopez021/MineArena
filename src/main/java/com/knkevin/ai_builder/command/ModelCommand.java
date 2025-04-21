@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import static com.knkevin.ai_builder.command.arguments.AxisArgument.axisArg;
 import static com.knkevin.ai_builder.command.arguments.DirectionArgument.directionArg;
 import static com.mojang.brigadier.arguments.FloatArgumentType.floatArg;
+import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
@@ -40,6 +41,7 @@ public class ModelCommand {
                     .then(argument("direction", directionArg()).executes(MoveCommand::moveDirection))
                 )
             )
+            .then(literal("ai").then(argument("prompt", string()).executes(AICommand::generateModel)))
         );
     }
 

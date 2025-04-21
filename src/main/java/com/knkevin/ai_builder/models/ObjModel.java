@@ -156,12 +156,14 @@ public class ObjModel extends Model {
     private void readMtl(File file) throws IOException {
         String objName = file.getName();
         String mtlName = "models/" + objName.substring(0, objName.length() - 4) + ".mtl";
-        FileReader fileReader;
-        try {fileReader = new FileReader(mtlName);}
-        catch (FileNotFoundException e) {return;}
-        BufferedReader bufferedReader = new BufferedReader(fileReader);
-        while (bufferedReader.ready()) {
-            readMtlLine(bufferedReader.readLine().strip().replaceAll(" +", " ").split(" ", 2));
+        File mtlFile = new File(mtlName);
+        if (!mtlFile.exists()) return;
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(mtlFile))) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                readMtlLine(line.strip().replaceAll(" +", " ").split(" ", 2));
+            }
         }
     }
 
@@ -221,10 +223,11 @@ public class ObjModel extends Model {
      * @throws IOException The file could not be opened or read.
      */
     private void readObj(File file) throws IOException {
-        FileReader fileReader = new FileReader(file);
-        BufferedReader bufferedReader = new BufferedReader(fileReader);
-        while (bufferedReader.ready()) {
-            readObjLine(bufferedReader.readLine().strip().replaceAll(" +", " ").split(" "));
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                readObjLine(line.strip().replaceAll(" +", " ").split(" "));
+            }
         }
     }
 
