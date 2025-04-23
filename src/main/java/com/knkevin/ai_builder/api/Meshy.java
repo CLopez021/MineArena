@@ -4,14 +4,10 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.knkevin.ai_builder.AIBuilder;
-import com.knkevin.ai_builder.models.Model;
 import com.knkevin.ai_builder.models.ObjModel;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -25,11 +21,14 @@ public class Meshy {
         String[] modelUrls = streamTextTo3DTask(refineTaskId);
         String objUrl = modelUrls[0];
         String mtlUrl = modelUrls[1];
+        String textureUrl = modelUrls[2];
         String objPath = "models/" + refineTaskId + ".obj";
         String mtlPath = "models/" + refineTaskId + ".mtl";
+        String texturePath = "models/texture_0.png";
         try {
             downloadFile(objUrl, objPath);
             downloadFile(mtlUrl, mtlPath);
+            downloadFile(textureUrl, texturePath);
             AIBuilder.model = new ObjModel(new File(objPath));
         } catch (Exception e) {
             e.printStackTrace();
@@ -48,10 +47,10 @@ public class Meshy {
                 + "}";
 
             HttpRequest request = HttpRequest.newBuilder()
-            .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
-            .header("Authorization", "Bearer " + apiKey)
-            .POST(HttpRequest.BodyPublishers.ofString(body))
-            .build();
+                .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String responseBody = response.body();
@@ -63,18 +62,51 @@ public class Meshy {
         }
     }
 
+    public static void waitForPreviewTask(String previewTaskId) throws Exception {
+        String apiUrl = "https://api.meshy.ai/openapi/v2/text-to-3d/" + previewTaskId;
+        HttpClient client = HttpClient.newHttpClient();
+
+        while (true) {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(apiUrl))
+                .header("Authorization", "Bearer " + apiKey)
+                .GET()
+                .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() != 200) {
+                throw new RuntimeException("HTTP error code: " + response.statusCode());
+            }
+
+            JsonObject previewTask = JsonParser.parseString(response.body()).getAsJsonObject();
+            String status = previewTask.get("status").getAsString();
+
+            if ("SUCCEEDED".equals(status)) {
+                System.out.println("Preview task finished.");
+                break;
+            }
+
+            System.out.println("Preview task status: " + status +
+                    " | Progress: " + previewTask.get("progress") +
+                    " | Retrying in 5 seconds...");
+            Thread.sleep(5000);
+        }
+    }
+
     public static String createRefineTask(String previewTaskId) {
         try (HttpClient client = HttpClient.newHttpClient()) {
+            waitForPreviewTask(previewTaskId);
             String body = "{"
-                    + "\"mode\":\"refine\","
-                    + "\"preview_task_id\":" + "\"" + previewTaskId + "\""
-                    + "}";
+                + "\"mode\":\"refine\","
+                + "\"preview_task_id\":" + "\"" + previewTaskId + "\""
+                + "}";
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
-                    .header("Authorization", "Bearer " + apiKey)
-                    .POST(HttpRequest.BodyPublishers.ofString(body))
-                    .build();
+                .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
+                .header("Authorization", "Bearer " + apiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String responseBody = response.body();
@@ -112,11 +144,18 @@ public class Meshy {
                     String status = data.get("status").getAsString();
                     if (status.equals("SUCCEEDED") || status.equals("FAILED") || status.equals("CANCELED")) {
                         if (status.equals("SUCCEEDED")) {
+                            System.out.println("Refine task finished.");
                             String objUrl = data.getAsJsonObject("model_urls").get("obj").getAsString();
                             String mtlUrl = data.getAsJsonObject("model_urls").get("mtl").getAsString();
-                            return new String[]{objUrl, mtlUrl};
+                            String textureUrl = data.getAsJsonArray("texture_urls").get(0).getAsJsonObject().get("base_color").getAsString();
+                            return new String[]{objUrl, mtlUrl, textureUrl};
                         }
+                        break;
                     }
+
+                    System.out.println("Refine task status: " + status +
+                        " | Progress: " + data.get("progress").getAsString() +
+                        " | Retrying in 5 seconds...");
 
                     eventData.setLength(0); // Reset buffer
                 }
