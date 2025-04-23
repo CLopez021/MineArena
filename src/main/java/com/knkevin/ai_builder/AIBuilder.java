@@ -1,13 +1,17 @@
 package com.knkevin.ai_builder;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.knkevin.ai_builder.command.arguments.ModCommandArguments;
 import com.knkevin.ai_builder.items.ModItems;
 import com.knkevin.ai_builder.models.Model;
+import com.knkevin.ai_builder.models.util.Palette;
 import com.knkevin.ai_builder.packets.PacketHandler;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -20,6 +24,9 @@ import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(AIBuilder.MOD_ID)
@@ -36,9 +43,6 @@ public class AIBuilder {
     public AIBuilder(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
 
-        // Register the commonSetup method for modloading
-        modEventBus.addListener(this::commonSetup);
-
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
 
@@ -51,10 +55,6 @@ public class AIBuilder {
 
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
         context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
-    }
-
-    private void commonSetup(final FMLCommonSetupEvent event) {
-
     }
 
     // Add the example block item to the building blocks tab

@@ -1,5 +1,7 @@
 package com.knkevin.ai_builder.models.util;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.knkevin.ai_builder.models.ObjModel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
@@ -11,7 +13,8 @@ import org.joml.Vector4i;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.jar.JarFile;
+
+import static com.knkevin.ai_builder.AIBuilder.MOD_ID;
 
 /**
  * A class for creating a quantized palette and writing it to a file.
@@ -20,17 +23,17 @@ public class Palette {
 	/**
 	 * How much to increment the quantized colors by.
 	 */
-	private static final int base = 20;
+	private static final int base = 8;
 
 	/**
 	 * A Map of colors as Integers mapped to block names.
 	 */
-	private static final Map<Integer, String> palette = new HashMap<>();
+	private static Map<Integer, String> palette = new HashMap<>();
 
 	/**
 	 * The text file to write and read the palette as text.
 	 */
-	public static final String fileName = "palette.txt";
+	public static final String fileName = "palette.json";
 
 	/**
 	 * @param color The color to match.
@@ -49,40 +52,21 @@ public class Palette {
 		return block.defaultBlockState();
 	}
 
-	/**
-	 * Populates the palette Map with entries from a text file.
-	 * The text file should be placed in assets/ai_builder.
-	 * @param path The path to the file within this mod's jar file.
-	 */
-	public static void loadPaletteFromText(String path) {
-		try {
-			InputStream inputStream = Palette.class.getClassLoader().getResourceAsStream("assets/ai_builder/" + path);
-			if (inputStream == null) return;
-			BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-			for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-				int color = Integer.parseInt(line.strip().split(" ")[0]);
-				String block = line.strip().split(" ")[1];
-				palette.put(color, block);
+	public static void loadPaletteFromJSON() {
+		try (InputStream inputStream = Palette.class.getResourceAsStream("/data/" + MOD_ID + "/" + fileName)) {
+			if (inputStream != null) {
+				Map<String, Integer> blockColors = new HashMap<>();
+				InputStreamReader reader = new InputStreamReader(inputStream);
+				JsonElement json = JsonParser.parseReader(reader);
+				for (Map.Entry<String, JsonElement> entry: json.getAsJsonObject().entrySet()) {
+					String block = entry.getKey();
+					int color = entry.getValue().getAsInt();
+					blockColors.put(block, color);
+				}
+				palette = createQuantizedPalette(blockColors);
+			} else {
+				System.err.println("Palette JSON file not found");
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	/**
-	 * Creates a quantized palette and writes it to a text file.
-	 * @param file A File to a Minecraft jar file.
-	 */
-	public static void paletteToText(File file) {
-		try {
-			Map<String, Integer> blockColors = BlockColors.getBlockColors(new JarFile(file));
-			Map<Integer, String> quantizedPalette = createQuantizedPalette(blockColors);
-			FileWriter fileWriter = new FileWriter(fileName);
-			for (Map.Entry<Integer, String> entry: quantizedPalette.entrySet()) {
-				String block = entry.getValue();
-				int color = entry.getKey();
-				fileWriter.write(color + " " + block + "\n");
-			} fileWriter.close();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

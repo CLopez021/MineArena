@@ -31,8 +31,7 @@ public class ModEvents {
     public static class ModModEvents {
         @SubscribeEvent
         public static void commonSetup(final FMLCommonSetupEvent event) {
-            Palette.paletteToText(new File("1.19.4.jar"));
-            Palette.loadPaletteFromText(Palette.fileName);
+            Palette.loadPaletteFromJSON();
             File folder = new File("models");
             if (!folder.exists()) folder.mkdir();
         }
