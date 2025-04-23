@@ -1,17 +1,35 @@
 package com.knkevin.ai_builder.items.custom;
 
+import com.google.common.collect.Multimap;
 import com.knkevin.ai_builder.AIBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.EquipmentSlotGroup;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.component.ItemAttributeModifiers;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
+
+import java.util.UUID;
 
 /**
  * The Model Hammer is an item to be used when manipulating and viewing the loaded 3d model.
@@ -22,6 +40,18 @@ public class ModelHammerItem extends Item {
         super(properties);
     }
 
+    @Override
+    public ItemAttributeModifiers getDefaultAttributeModifiers(ItemStack stack) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("minecraft", "player.block_interaction_range");
+        ResourceKey<Attribute> reachKey = ResourceKey.create(Registries.ATTRIBUTE, id);
+        Holder<Attribute> reachAttribute = BuiltInRegistries.ATTRIBUTE.getHolderOrThrow(reachKey);
+
+        return ItemAttributeModifiers.builder().add(reachAttribute,
+            new AttributeModifier(id, 64, AttributeModifier.Operation.ADD_VALUE),
+            EquipmentSlotGroup.MAINHAND)
+            .build();
+    }
+
     /**
      * Run when the player right-clicks on a block.
      * @param context The context for this event.
@@ -30,10 +60,15 @@ public class ModelHammerItem extends Item {
     public @NotNull InteractionResult useOn(@NotNull UseOnContext context) {
         Level level = context.getLevel();
         if (AIBuilder.model == null || level.isClientSide) return InteractionResult.FAIL;
-        BlockPos blockPos = context.getClickedPos();
-        Vec3i normal = context.getClickedFace().getNormal();
+        positionModel(context.getClickedPos(), context.getClickedFace());
+        return InteractionResult.SUCCESS;
+    }
+
+    public static void positionModel(BlockPos blockPos, Direction direction) {
+        if (AIBuilder.model == null) return;
 
         //Calculate the position to be one block off the clicked face, centered in that block position.
+        Vec3i normal = direction.getNormal();
         Vector3f pos = new Vector3f(
                 blockPos.getX() + normal.getX() + .5f,
                 blockPos.getY() + normal.getY() + .5f,
@@ -53,7 +88,6 @@ public class ModelHammerItem extends Item {
         }
 
         //Offset the new position of the model from the clicked face so that it is just touching it.
-        Direction direction = context.getClickedFace();
         switch (direction) {
             case UP -> pos.y -= (int) minCorner.y;
             case DOWN -> pos.y -= (int) maxCorner.y;
@@ -64,8 +98,7 @@ public class ModelHammerItem extends Item {
         }
         AIBuilder.model.position.set(pos.x, pos.y, pos.z);
 
-        Player player = context.getPlayer();
+        Player player = Minecraft.getInstance().player;
         if (player != null) player.sendSystemMessage(Component.literal("Set model position to " + pos.x + ", " + pos.y + ", " + pos.z));
-        return InteractionResult.SUCCESS;
     }
 }

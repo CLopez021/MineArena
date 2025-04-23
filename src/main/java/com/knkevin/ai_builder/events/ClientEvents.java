@@ -2,7 +2,7 @@ package com.knkevin.ai_builder.events;
 
 import com.knkevin.ai_builder.renderer.BoxRenderer;
 import com.knkevin.ai_builder.AIBuilder;
-import com.knkevin.ai_builder.key_bindings.KeyActions;
+import com.knkevin.ai_builder.key_bindings.InputActions;
 import com.knkevin.ai_builder.key_bindings.KeyBindings;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.InputEvent;
@@ -29,13 +29,18 @@ public class ClientEvents {
 
         @SubscribeEvent
         public static void mouseScroll(InputEvent.MouseScrollingEvent event) {
-            KeyActions.mouseScrollEvent(event);
+            InputActions.mouseScrollEvent(event);
+        }
+
+        @SubscribeEvent
+        public static void mouseButtonEvent(InputEvent.MouseButton event) {
+            InputActions.mouseButtonEvent(event);
         }
 
         @SubscribeEvent
         public static void clientTickEvent(TickEvent.ClientTickEvent event) {
             if (event.phase == TickEvent.Phase.END)
-                KeyActions.checkKeys();
+                InputActions.checkKeys();
         }
     }
 

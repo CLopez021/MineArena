@@ -5,27 +5,60 @@ import com.knkevin.ai_builder.items.ModItems;
 //import com.knkevin.ai_builder.packets.PacketHandler;
 //import com.knkevin.ai_builder.packets.PlaceModelPacket;
 //import com.knkevin.ai_builder.packets.UndoModelPacket;
+import com.knkevin.ai_builder.items.custom.ModelHammerItem;
 import com.knkevin.ai_builder.packets.PacketHandler;
 import com.knkevin.ai_builder.packets.PlaceModelPacket;
 import com.knkevin.ai_builder.packets.UndoModelPacket;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.InputEvent;
 import org.joml.Vector3f;
+
+import java.io.IOException;
 
 import static com.knkevin.ai_builder.items.custom.HammerModes.*;
 import static com.knkevin.ai_builder.key_bindings.KeyBindings.*;
 
-public class KeyActions {
-
-
-
+public class InputActions {
     public static void mouseScrollEvent(InputEvent.MouseScrollingEvent event) {
         Player player = Minecraft.getInstance().player;
         if (player == null || !player.getMainHandItem().getItem().equals(ModItems.MODEL_HAMMER.get()) || AIBuilder.model == null) return;
         handleMouseScroll((float) event.getDeltaY());
         event.setCanceled(true);
+    }
+
+    public static void mouseButtonEvent(InputEvent.MouseButton event) {
+        Player player = Minecraft.getInstance().player;
+        if (player == null || !player.getMainHandItem().getItem().equals(ModItems.MODEL_HAMMER.get()) || AIBuilder.model == null) return;
+        if (event.getButton() == InputConstants.MOUSE_BUTTON_RIGHT && event.getAction() == InputConstants.PRESS) handleRightClick(event);
+    }
+
+    public static void handleRightClick(InputEvent.MouseButton event) {
+        Player player = Minecraft.getInstance().player;
+        if (player == null) return;
+        try (Level level = player.level()) {
+            Vec3 eyePos = player.getEyePosition(1.0F);
+            Vec3 lookVec = player.getLookAngle();
+            Vec3 reachVec = eyePos.add(lookVec.scale(1000));
+
+            BlockHitResult result = level.clip(new net.minecraft.world.level.ClipContext(
+                eyePos,
+                reachVec,
+                net.minecraft.world.level.ClipContext.Block.OUTLINE,
+                net.minecraft.world.level.ClipContext.Fluid.NONE,
+                player
+            ));
+            ModelHammerItem.positionModel(result.getBlockPos(), result.getDirection());
+            event.setCanceled(true);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void checkKeys() {
