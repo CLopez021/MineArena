@@ -13,6 +13,7 @@ import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -45,7 +46,7 @@ public abstract class Model {
      * Points representing block coordinates are mapped to bytes.
      * The bits of each byte determine whether the face is to be rendered.
      */
-    public final ConcurrentMap<Point, Byte> blockFaces = new ConcurrentHashMap<>();
+    public final ConcurrentMap<String, Set<Point>> blockFaces = new ConcurrentHashMap<>();
 
     /**
      * Stores block coordinates mapped to BlockStates, representing the blocks before the model was placed.
@@ -209,37 +210,6 @@ public abstract class Model {
             case "x" -> position.add(distance,0,0);
             case "y" -> position.add(0,distance,0);
             case "z" -> position.add(0,0,distance);
-        }
-    }
-
-    /**
-     * Iterates through blockFaces and sets the appropriate bits to 1 if the face is to be rendered, or 0 otherwise.
-     */
-    protected void cullAdjacentFaces() {
-        Point adjacent = new Point(0,0,0);
-        for (Map.Entry<Point, Byte> entry: blockFaces.entrySet()) {
-            Point p = entry.getKey();
-            byte value = entry.getValue();
-            adjacent.x = p.x - 1;
-            adjacent.y = p.y;
-            adjacent.z = p.z;
-
-            if (blockFaces.containsKey(adjacent)) value -= 32;
-            adjacent.x = p.x + 1;
-            if (blockFaces.containsKey(adjacent)) value -= 16;
-            adjacent.x = p.x;
-
-            adjacent.y = p.y - 1;
-            if (blockFaces.containsKey(adjacent)) value -= 8;
-            adjacent.y = p.y + 1;
-            if (blockFaces.containsKey(adjacent)) value -= 4;
-            adjacent.y = p.y;
-
-            adjacent.z = p.z - 1;
-            if (blockFaces.containsKey(adjacent)) value -= 2;
-            adjacent.z = p.z + 1;
-            if (blockFaces.containsKey(adjacent)) value -= 1;
-            entry.setValue(value);
         }
     }
 }

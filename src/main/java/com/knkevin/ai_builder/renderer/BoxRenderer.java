@@ -20,6 +20,7 @@ import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.knkevin.ai_builder.items.custom.HammerModes.selectedAxis;
 import static com.knkevin.ai_builder.items.custom.HammerModes.viewMode;
@@ -198,18 +199,14 @@ public class BoxRenderer {
      * Renders a preview of the Model as blocks.
      * @param matrix4f The transformation matrix.
      * @param camera The camera position.
-     * @param points A map of Points to Bytes representing which faces to render.
+     * @param blocks A map of block names to sets of Points
      */
-    private static void renderBlocksPreview(Matrix4f matrix4f, Vector3f camera, Map<Point, Byte> points) {
+    private static void renderBlocksPreview(Matrix4f matrix4f, Vector3f camera, Map<String, Set<Point>> blocks) {
         //RenderSystem settings.
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
-        RenderSystem.disableCull();
+        RenderSystem.enableCull();
         RenderSystem.enableDepthTest();
         RenderSystem.enableBlend();
-        RenderSystem.setShaderTexture(0, defaultTexture);
-
-        //Getting and starting buffer
-        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
         //Calculating where to cull faces that are facing away from the camera.
         Vector3f cullNegative = new Vector3f(camera);
@@ -219,61 +216,64 @@ public class BoxRenderer {
         Vector3f p1 = new Vector3f();
         Vector3f p2 = new Vector3f();
 
-        for (Map.Entry<Point, Byte> entry: points.entrySet()) {
-            Point p = entry.getKey();
-            byte faces = entry.getValue();
+        for (Map.Entry<String, Set<Point>> blockEntry: blocks.entrySet()) {
+            RenderSystem.setShaderTexture(0, ResourceLocation.withDefaultNamespace("textures/block/" + blockEntry.getKey() + ".png"));
 
-            //Setting the two corners.
-            p1.set(p.x-.4995f, p.y-.4995f, p.z-.4995f).add(center);
-            p2.set(p1).add(.999f,.999f,.999f);
+            //Getting and starting buffer
+            BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
-            //Render each of the six faces if it is facing towards the camera, and if its corresponding bit is a 1.
-            // - x
-            if (p1.x > cullNegative.x && (faces & 32) == 32) {
-                buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(1,1);
-                buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,0);
-                buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(0,0);
-                buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(0,1);
+            for (Point p: blockEntry.getValue()) {
+                //Setting the two corners.
+                p1.set(p.x-.4995f, p.y-.4995f, p.z-.4995f).add(center);
+                p2.set(p1).add(.999f,.999f,.999f);
+
+                //Render each of the six faces if it is facing towards the camera, and if its corresponding bit is a 1.
+                // - x
+                if (p1.x > cullNegative.x) {
+                    buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(1,1);
+                    buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,0);
+                    buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(0,0);
+                    buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(0,1);
+                }
+                // + x
+                if (p2.x < cullPositive.x ) {
+                    buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(0,0);
+                    buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(0,1);
+                    buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(1,1);
+                    buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,0);
+                }
+                // - y
+                if (p1.y > cullNegative.y) {
+                    buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(0,0);
+                    buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(0,1);
+                    buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,1);
+                    buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,0);
+                }
+                // + y
+                if (p2.y < cullPositive.y) {
+                    buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(1,1);
+                    buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(1,0);
+                    buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(0,0);
+                    buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(0,1);
+                }
+                // - z
+                if (p1.z > cullNegative.z) {
+                    buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(0,0);
+                    buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(0,1);
+                    buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(1,1);
+                    buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(1,0);
+                }
+                // + z
+                if (p2.z < cullPositive.z) {
+                    buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,1);
+                    buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,0);
+                    buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(0,0);
+                    buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(0,1);
+                }
             }
-            // + x
-            if (p2.x < cullPositive.x && (faces & 16) == 16) {
-                buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(0,0);
-                buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(0,1);
-                buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(1,1);
-                buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,0);
-            }
-            // - y
-            if (p1.y > cullNegative.y && (faces & 8) == 8) {
-                buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(0,0);
-                buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(0,1);
-                buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,1);
-                buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,0);
-            }
-            // + y
-            if (p2.y < cullPositive.y && (faces & 4) == 4) {
-                buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(1,1);
-                buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(1,0);
-                buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(0,0);
-                buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(0,1);
-            }
-            // - z
-            if (p1.z > cullNegative.z && (faces & 2) == 2) {
-                buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(0,0);
-                buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(0,1);
-                buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(1,1);
-                buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(1,0);
-            }
-            // + z
-            if (p2.z < cullPositive.z && (faces & 1) == 1) {
-                buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,1);
-                buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,0);
-                buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(0,0);
-                buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(0,1);
-            }
-        }
-        try {
-            BufferUploader.drawWithShader(buffer.buildOrThrow());
-        } catch (IllegalStateException ignored) {
+            try {
+                BufferUploader.drawWithShader(buffer.buildOrThrow());
+            } catch (IllegalStateException ignored) {}
         }
     }
 

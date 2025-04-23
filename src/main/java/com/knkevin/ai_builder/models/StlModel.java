@@ -7,10 +7,7 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Vector3f;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Represents a 3D model created from an stl file.
@@ -58,8 +55,9 @@ public class StlModel extends Model {
      */
     public Map<BlockPos, BlockState> getBlocks() {
         Map<BlockPos, BlockState> blocks = new HashMap<>();
+        Set<Point> points = new HashSet<>();
         for (Triangle triangle: this.triangles)
-            for (Point p: triangle.transformed(this.getTransformationMatrix()).getBlockPoints())
+            for (Point p: triangle.transformed(this.getTransformationMatrix()).getBlockPoints(points))
                 blocks.put(p.blockPos(), this.block);
         return blocks;
     }
@@ -69,11 +67,10 @@ public class StlModel extends Model {
      */
     public void updateBlockFaces() {
         blockFaces.clear();
+        Set<Point> defaultBlock  = new HashSet<>();
         for (Triangle triangle: this.triangles) {
-            for (Point p : triangle.transformed(this.getTransformationMatrix()).getBlockPoints()) {
-                blockFaces.put(p, (byte) 63);
-            }
+            triangle.transformed(this.getTransformationMatrix()).getBlockPoints(defaultBlock);
         }
-        this.cullAdjacentFaces();
+        blockFaces.put("iron_block", defaultBlock);
     }
 }

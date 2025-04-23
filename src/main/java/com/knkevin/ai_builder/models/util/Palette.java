@@ -31,6 +31,11 @@ public class Palette {
 	private static Map<Integer, String> palette = new HashMap<>();
 
 	/**
+	 * A map of block names to their textures.
+	 */
+	public static Map<String, String> blockTextures = new HashMap<>();
+
+	/**
 	 * The text file to write and read the palette as text.
 	 */
 	public static final String fileName = "palette.json";
@@ -52,6 +57,20 @@ public class Palette {
 		return block.defaultBlockState();
 	}
 
+	/**
+	 * @param color The color to match.
+	 * @return The nearest block name to that color using the quantized palette.
+	 */
+	public static String getNearestBlockTexture(int color) {
+		int red = Math.min(255 - 255 % base, ((color >> 16 & 0xFF) + base/2) / base * base);
+		int green = Math.min(255 - 255 % base, ((color >> 8 & 0xFF) + base/2) / base * base);
+		int blue = Math.min(255 - 255 % base, ((color & 0xFF) + base/2) / base * base);
+		if ((color >> 24 & 0xFF) != 255) return "air";
+		int newColor = (255 << 24) | (red << 16) | (green << 8) | blue;
+		String blockName = palette.getOrDefault(newColor, ObjModel.DEFAULT_MATERIAL);
+		return blockTextures.getOrDefault(blockName, "iron_block");
+	}
+
 	public static void loadPaletteFromJSON() {
 		try (InputStream inputStream = Palette.class.getResourceAsStream("/data/" + MOD_ID + "/" + fileName)) {
 			if (inputStream != null) {
@@ -60,8 +79,10 @@ public class Palette {
 				JsonElement json = JsonParser.parseReader(reader);
 				for (Map.Entry<String, JsonElement> entry: json.getAsJsonObject().entrySet()) {
 					String block = entry.getKey();
-					int color = entry.getValue().getAsInt();
+					int color = entry.getValue().getAsJsonObject().get("color").getAsInt();
+					String texture = entry.getValue().getAsJsonObject().get("texture").getAsString();
 					blockColors.put(block, color);
+					blockTextures.put(block, texture);
 				}
 				palette = createQuantizedPalette(blockColors);
 			} else {

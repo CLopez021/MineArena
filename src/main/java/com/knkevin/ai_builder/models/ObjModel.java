@@ -139,13 +139,16 @@ public class ObjModel extends Model {
     protected void updateBlockFaces() {
         blockFaces.clear();
         for (String material: materialFaceMap.keySet()) {
+            BufferedImage texture = ObjModel.openTexture(materialFileMap.get(material));
+            int color = materialColorMap.getOrDefault(material, DEFAULT_COLOR);
             for (Face face: materialFaceMap.get(material)) {
                 for (Point p: face.getBlockPoints()) {
-                    blockFaces.put(p, (byte) 63);
+                    if (texture != null) color = ObjModel.getColor(texture, p.tx, p.ty);
+                    String blockTexture = Palette.getNearestBlockTexture(color);
+                    blockFaces.computeIfAbsent(blockTexture, ignored -> new HashSet<>()).add(p);
                 }
             }
         }
-        cullAdjacentFaces();
     }
 
     /**
@@ -368,7 +371,7 @@ public class ObjModel extends Model {
         private Set<Point> getBlockPoints() {
             Set<Point> blockPoints = new HashSet<>();
             for (Triangle triangle: getTriangles())
-                blockPoints.addAll(triangle.getBlockPoints());
+                triangle.getBlockPoints(blockPoints);
             return blockPoints;
         }
     }

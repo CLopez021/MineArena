@@ -44,8 +44,7 @@ public class Triangle {
     /**
      * @return A set of Points between the three vertices of this Triangle using integer coordinates.
      */
-    public Set<Point> getBlockPoints() {
-        Set<Point> points = new HashSet<>();
+    public Set<Point> getBlockPoints(Set<Point> points) {
         for (Point v4: v1.line(v2))
             for (Point p: v4.line(v3))
                 points.add(p.blockPoint());
