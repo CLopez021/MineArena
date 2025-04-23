@@ -133,8 +133,15 @@ public abstract class Model {
      * @param zScale The scale to set the z-component to.
      */
     public void setScale(float xScale, float yScale, float zScale) {
+        Vector3f rotatedMin = new Vector3f(minCorner).rotate(rotation);
+        Vector3f rotatedMax = new Vector3f(maxCorner).rotate(rotation);
+        float offset = Math.min(rotatedMin.y, rotatedMax.y);
+
+        // Offset y position so that the model scales from the bottom
+        this.position.set(this.position.x, this.position.y + Math.ceil(offset * this.scale.y), this.position.z);
         this.scale.set(xScale, yScale, zScale);
         this.scale.max(new Vector3f(0,0,0));
+        this.position.set(this.position.x, this.position.y - Math.ceil(offset * this.scale.y), this.position.z);
         if (HammerModes.viewMode == HammerModes.ViewMode.BLOCKS) this.updateBlockFaces();
     }
 
