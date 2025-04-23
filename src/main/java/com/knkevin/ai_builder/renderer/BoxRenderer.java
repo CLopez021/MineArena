@@ -212,8 +212,8 @@ public class BoxRenderer {
         BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
 
         //Calculating where to cull faces that are facing away from the camera.
-        Vector3f cullNegative = new Vector3f(camera).sub(.4995f,.4995f,.4995f);
-        Vector3f cullPositive = new Vector3f(cullNegative).add(.999f,.999f,.999f);
+        Vector3f cullNegative = new Vector3f(camera);
+        Vector3f cullPositive = new Vector3f(cullNegative);
 
         //Two points for minimum and maximum corners of blocks.
         Vector3f p1 = new Vector3f();
@@ -271,7 +271,10 @@ public class BoxRenderer {
                 buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(0,1);
             }
         }
-        BufferUploader.drawWithShader(buffer.buildOrThrow());
+        try {
+            BufferUploader.drawWithShader(buffer.buildOrThrow());
+        } catch (IllegalStateException ignored) {
+        }
     }
 
 
