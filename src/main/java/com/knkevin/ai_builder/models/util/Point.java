@@ -16,6 +16,8 @@ public class Point {
      */
     public float x, y, z, tx, ty;
 
+    public static float precision = 1.5f;
+
     /**
      * @param x X-coordinate of point.
      * @param y Y-coordinate of point.
@@ -80,8 +82,6 @@ public class Point {
      * @return A list of Points between this Point and Point p.
      */
     protected List<Point> line(Point p) {
-        float precision = 1.5f;
-
         float dx = p.x - this.x, dy = p.y - this.y, dz = p.z - this.z;
         float dtx = p.tx - this.tx, dty = p.ty - this.ty;
         float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);

@@ -24,8 +24,7 @@ public class HammerModes {
     public enum ViewMode {
         BOX(),
         BLOCKS(),
-        WIREFRAME(),
-        TEXTURED_MESH()
+        WIREFRAME()
     }
 
     public static Axis selectedAxis = Axis.Y;

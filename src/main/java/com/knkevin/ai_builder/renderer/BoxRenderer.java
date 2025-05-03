@@ -22,13 +22,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static com.knkevin.ai_builder.AIBuilder.model;
 import static com.knkevin.ai_builder.items.custom.HammerModes.*;
-import static com.knkevin.ai_builder.items.custom.HammerModes.TransformMode.ROTATE;
-import static com.knkevin.ai_builder.items.custom.HammerModes.TransformMode.TRANSLATE;
 
 /**
  * Handles rendering transformation guides and rendering either a blocks preview or bounding box of the currently loaded Model.

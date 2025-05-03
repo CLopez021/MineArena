@@ -125,10 +125,6 @@ public class InputActions {
                 player.sendSystemMessage(Component.literal("Viewing mesh outline."));
             }
             case ViewMode.WIREFRAME -> {
-                viewMode = ViewMode.TEXTURED_MESH;
-                player.sendSystemMessage(Component.literal("Viewing textured mesh."));
-            }
-            case ViewMode.TEXTURED_MESH -> {
                 viewMode = ViewMode.BLOCKS;
                 AIBuilder.model.applyScale(1);  // Cause update to calculate block positions
                 player.sendSystemMessage(Component.literal("Viewing blocks preview."));

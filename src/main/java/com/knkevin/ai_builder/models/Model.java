@@ -90,6 +90,8 @@ public abstract class Model {
     public int placeBlocks(Level level) {
         this.undo.clear();
         int count = 0;
+        float prevPrecision = Point.precision;
+        Point.precision = 2f;
         for (Map.Entry<BlockPos, BlockState> entry: this.getBlocks().entrySet()) {
             BlockPos blockPos = entry.getKey().offset((int)Math.floor(position.x), (int)Math.floor(position.y), (int)Math.floor(position.z));
             BlockState blockState = entry.getValue();
@@ -97,6 +99,7 @@ public abstract class Model {
             level.setBlockAndUpdate(blockPos, blockState);
             ++count;
         }
+        Point.precision = prevPrecision;
         return count;
     }
 
