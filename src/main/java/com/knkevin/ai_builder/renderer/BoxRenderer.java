@@ -5,6 +5,7 @@ import com.knkevin.ai_builder.items.ModItems;
 import com.knkevin.ai_builder.items.custom.HammerModes;
 import com.knkevin.ai_builder.models.Model;
 import com.knkevin.ai_builder.models.util.Point;
+import com.knkevin.ai_builder.models.util.Triangle;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
@@ -24,8 +25,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static com.knkevin.ai_builder.items.custom.HammerModes.selectedAxis;
-import static com.knkevin.ai_builder.items.custom.HammerModes.viewMode;
+import static com.knkevin.ai_builder.AIBuilder.model;
+import static com.knkevin.ai_builder.items.custom.HammerModes.*;
+import static com.knkevin.ai_builder.items.custom.HammerModes.TransformMode.ROTATE;
+import static com.knkevin.ai_builder.items.custom.HammerModes.TransformMode.TRANSLATE;
 
 /**
  * Handles rendering transformation guides and rendering either a blocks preview or bounding box of the currently loaded Model.
@@ -77,7 +80,6 @@ public class BoxRenderer {
      */
     public static void renderEvent(RenderLevelStageEvent event) {
         Player player = Minecraft.getInstance().player;
-        Model model = AIBuilder.model;
         //Only render if player is holding a ModelHammer and if a Model is loaded.
         if (player == null || !player.getMainHandItem().getItem().equals(ModItems.MODEL_HAMMER.get()) || model == null) return;;
 
@@ -98,27 +100,18 @@ public class BoxRenderer {
         Matrix4f unrotatedMatrix4 = new Matrix4f(matrix4f);
         matrix4f.translate(center).rotate(model.rotation).translate(center.negate(new Vector3f()));
 
-        //Render blocks preview.
-        if (viewMode == HammerModes.ViewMode.BLOCKS) renderBlocksPreview(unrotatedMatrix4, camPos, model.blockFaces);
-
         //Render appropriate visual guides for the transform mode.
         RenderSystem.lineWidth(3);
-        switch (HammerModes.transformMode) {
+        switch (transformMode) {
             case ROTATE -> renderRotateGuides(matrix4f, model.rotation);
             case SCALE -> renderScaleGuides(matrix4f, model.rotation);
             case TRANSLATE -> renderTranslationGuides(unrotatedMatrix4, model.rotation);
         }
 
-        //Render bounding box.
-        if (viewMode == HammerModes.ViewMode.BOX) {
-            //Corners of bounding box.
-            Vector3f cornerOne = new Vector3f(center).sub((float) Math.floor(size.x) + .5f, (float) Math.floor(size.y) + .5f, (float) Math.floor(size.z) + .5f);
-            Vector3f cornerTwo = new Vector3f(center).add((float) Math.floor(size.x) + .5f, (float) Math.floor(size.y) + .5f, (float) Math.floor(size.z) + .5f);
-
-            //Render model bounding box and box outline.
-            RenderSystem.lineWidth(2);
-            renderLineBox(matrix4f, model.rotation, cornerOne, cornerTwo, new Vector4i(255, 255, 255, 255));
-            renderBox(matrix4f, cornerOne, cornerTwo, new Vector4i(255, 255, 255, 64));
+        switch (viewMode) {
+            case BOX -> renderBoundingBox(matrix4f, model.rotation, center, size, new Vector4i(255, 255, 255, 255));
+            case WIREFRAME -> renderWireframe(new Matrix4f(unrotatedMatrix4).translate(model.position.x, model.position.y, model.position.z), model.getTriangles(), new Vector4i(255, 255, 255, 64));
+            case BLOCKS -> renderBlocksPreview(unrotatedMatrix4, camPos, model.blockFaces);
         }
 
         RenderSystem.enableCull();
@@ -279,6 +272,45 @@ public class BoxRenderer {
         }
     }
 
+    /**
+     * Render a wireframe of the model.
+     * @param matrix4f The transformation matrix.
+     * @param triangles The triangles making up the model, rotated and scaled.
+     * @param color The color of the wireframe.
+     */
+    public static void renderWireframe(Matrix4f matrix4f, List<Triangle> triangles, Vector4i color) {
+        RenderSystem.lineWidth(1);
+
+        LineBuffer buffer = new LineBuffer(matrix4f, new Quaternionf());
+        buffer.setColor(color.x, color.y, color.z, color.w);
+        for (Triangle triangle: triangles) {
+            Point p1 = triangle.v1;
+            Point p2 = triangle.v2;
+            Point p3 = triangle.v3;
+            buffer.beginLine(p1.x, p1.y, p1.z).endLine(p2.x, p2.y, p2.z).endLine(p3.x, p3.y, p3.z);
+            buffer.beginLine(p2.x, p2.y, p2.z).endLine(p3.x, p3.y, p3.z);
+        }
+        buffer.draw();
+    }
+
+    /**
+     * Renders the bounding box for the currently loaded model.
+     * @param matrix4f The transformation matrix.
+     * @param rotation The rotation of the model.
+     * @param center The center of the model.
+     * @param size The size of the model.
+     * @param color The color of the box.
+     */
+    public static void renderBoundingBox(Matrix4f matrix4f, Quaternionf rotation, Vector3f center, Vector3f size, Vector4i color) {
+        //Corners of bounding box.
+        Vector3f cornerOne = new Vector3f(center).sub((float) Math.floor(size.x) + .5f, (float) Math.floor(size.y) + .5f, (float) Math.floor(size.z) + .5f);
+        Vector3f cornerTwo = new Vector3f(center).add((float) Math.floor(size.x) + .5f, (float) Math.floor(size.y) + .5f, (float) Math.floor(size.z) + .5f);
+
+        //Render model bounding box and box outline.
+        RenderSystem.lineWidth(2);
+        renderLineBox(matrix4f, rotation, cornerOne, cornerTwo, color);
+        renderBox(matrix4f, cornerOne, cornerTwo, new Vector4i(color.x, color.y, color.z, color.w / 4));
+    }
 
     /**
      * Renders the outline of a box.
@@ -292,7 +324,6 @@ public class BoxRenderer {
         Vector3f p1 = new Vector3f(cornerOne).min(cornerTwo);
         Vector3f p2 = new Vector3f(cornerTwo).max(cornerTwo);
 
-        //Render three lines from four non-adjacent corners.
         //Render three lines from four non-adjacent corners.
         LineBuffer buffer = new LineBuffer(matrix4f, rotation);
         buffer.setColor(color.x, color.y, color.z, color.w);

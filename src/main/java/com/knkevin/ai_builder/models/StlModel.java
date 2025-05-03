@@ -36,6 +36,17 @@ public class StlModel extends Model {
     }
 
     /**
+     * @see Model#getTriangles()
+     */
+    public List<Triangle> getTriangles() {
+        List<Triangle> triangles = new ArrayList<>();
+        for (Triangle triangle: this.triangles) {
+            triangles.add(triangle.transformed(getTransformationMatrix()));
+        }
+        return triangles;
+    }
+
+    /**
      * @see Model#centerModel()
      */
     protected void centerModel() {

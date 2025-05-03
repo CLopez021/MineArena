@@ -2,6 +2,7 @@ package com.knkevin.ai_builder.models;
 
 import com.knkevin.ai_builder.items.custom.HammerModes;
 import com.knkevin.ai_builder.models.util.Point;
+import com.knkevin.ai_builder.models.util.Triangle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -12,6 +13,7 @@ import org.joml.Quaternionf;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,6 +71,11 @@ public abstract class Model {
      * Centers this Model.
      */
     protected abstract void centerModel();
+
+    /**
+     * @return A list of triangles that make up this model.
+     */
+    public abstract List<Triangle> getTriangles();
 
     /**
      * Recalculates the blocks and faces to be rendered by this Model's preview.

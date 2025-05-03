@@ -115,7 +115,7 @@ public class ObjModel extends Model {
             BufferedImage texture = materialFileMap.get(material);
             for (Face face: materialFaceMap.get(material)) {
                 for (Point p: face.getBlockPoints()) {
-                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.get(material);
+                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.getOrDefault(material, -1);
                     BlockState blockState = Palette.getNearestBlock(color);
                     blocks.put(p.blockPos(),blockState);
                 }
@@ -149,7 +149,7 @@ public class ObjModel extends Model {
             BufferedImage texture = materialFileMap.get(material);
             for (Face face: faces) {
                 for (Point p: face.getBlockPoints()) {
-                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.get(material);
+                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.getOrDefault(material, -1);
                     String blockTexture = Palette.getNearestBlockTexture(color);
                     if (!blockTexture.equals("air"))
                         blockFaces.computeIfAbsent(blockTexture, ignored -> ConcurrentHashMap.newKeySet()).add(p);
@@ -298,6 +298,20 @@ public class ObjModel extends Model {
     }
 
     /**
+     * @see Model#getTriangles()
+     */
+    public List<Triangle> getTriangles() {
+        List<Triangle> triangles = new ArrayList<>();
+        for (Map.Entry<String, List<Face>> entry: materialFaceMap.entrySet()) {
+            List<Face> faces = entry.getValue();
+            for (Face face: faces) {
+                face.getTriangles(triangles);
+            }
+        }
+        return triangles;
+    }
+
+    /**
      * Represents a face in an obj model.
      */
     private class Face {
@@ -343,7 +357,7 @@ public class ObjModel extends Model {
         }
 
         /**
-         * @return A list of Points representing the vertices that make up this Face.
+         * @return A list of Points representing the vertices that make up this Face, transformed into world coordinates.
          */
         private List<Point> getVertices() {
             List<Point> vertices = new ArrayList<>();
@@ -362,6 +376,20 @@ public class ObjModel extends Model {
          */
         private List<Triangle> getTriangles() {
             List<Triangle> triangles = new ArrayList<>();
+            List<Point> vertices = getVertices();
+            Point p1 = vertices.get(0);
+            for (int i = 1; i < numVertices-1; ++i) {
+                Point p2 = vertices.get(i);
+                Point p3 = vertices.get(i+1);
+                triangles.add(new Triangle(p1, p2, p3));
+            }
+            return triangles;
+        }
+
+        /**
+         * @return A list of Triangles that make up this Face.
+         */
+        private List<Triangle> getTriangles(List<Triangle> triangles) {
             List<Point> vertices = getVertices();
             Point p1 = vertices.get(0);
             for (int i = 1; i < numVertices-1; ++i) {
