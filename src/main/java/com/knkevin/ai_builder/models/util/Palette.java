@@ -53,7 +53,7 @@ public class Palette {
 		String blockName = palette.getOrDefault(newColor, ObjModel.DEFAULT_MATERIAL);
 		ResourceLocation id = ResourceLocation.tryParse(blockName);
 		Block block = ForgeRegistries.BLOCKS.getValue(id);
-		if (block == null) return Blocks.STONE.defaultBlockState();
+		if (block == null) return Blocks.IRON_BLOCK.defaultBlockState();
 		return block.defaultBlockState();
 	}
 

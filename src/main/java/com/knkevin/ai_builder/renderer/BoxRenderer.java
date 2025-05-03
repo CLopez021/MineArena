@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import static com.knkevin.ai_builder.items.custom.HammerModes.selectedAxis;
 import static com.knkevin.ai_builder.items.custom.HammerModes.viewMode;
@@ -201,7 +203,7 @@ public class BoxRenderer {
      * @param camera The camera position.
      * @param blocks A map of block names to sets of Points
      */
-    private static void renderBlocksPreview(Matrix4f matrix4f, Vector3f camera, Map<String, Set<Point>> blocks) {
+    private static void renderBlocksPreview(Matrix4f matrix4f, Vector3f camera, ConcurrentMap<String, Set<Point>> blocks) {
         //RenderSystem settings.
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.enableCull();

@@ -62,7 +62,10 @@ public class Point {
      * @return A new Point with integer position coordinates.
      */
     public Point blockPoint() {
-        return new Point((int) this.x, (int) this.y, (int) this.z, this.tx, this.ty);
+        this.x = (int) this.x;
+        this.y = (int) this.y;
+        this.z = (int) this.z;
+        return this;
     }
 
     /**
@@ -78,22 +81,30 @@ public class Point {
      */
     protected List<Point> line(Point p) {
         float precision = 1.5f;
-        float deltaX = p.x - this.x, deltaY = p.y - this.y, deltaZ = p.z - this.z, deltaTx = p.tx - this.tx, deltaTy = p.ty - this.ty;
-        float distance = (float) Math.sqrt(Math.pow(deltaX, 2) + Math.pow(deltaY, 2) + Math.pow(deltaZ, 2));
-        float dx = deltaX / distance / precision, dy = deltaY / distance / precision, dz = deltaZ / distance / precision, dtx = deltaTx / distance / precision, dty = deltaTy / distance / precision;
+
+        float dx = p.x - this.x, dy = p.y - this.y, dz = p.z - this.z;
+        float dtx = p.tx - this.tx, dty = p.ty - this.ty;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
+        int steps = (int) (distance * precision);
+
+        float stepX = dx / steps, stepY = dy / steps, stepZ = dz / steps;
+        float stepTx = dtx / steps, stepTy = dty / steps;
+
+        List<Point> points = new ArrayList<>(steps + 1);
         float x = this.x, y = this.y, z = this.z, tx = this.tx, ty = this.ty;
-        List<Point> points = new ArrayList<>();
-        for (float i = 0; i < distance; i+= 1 / precision) {
-            points.add(new Point(x,y,z,tx,ty));
-            x += dx;
-            y += dy;
-            z += dz;
-            tx += dtx;
-            ty += dty;
+        for (int i = 0; i < steps; i++) {
+            points.add(new Point(x, y, z, tx, ty));
+            x += stepX;
+            y += stepY;
+            z += stepZ;
+            tx += stepTx;
+            ty += stepTy;
         }
+
         points.add(new Point(p.x, p.y, p.z, p.tx, p.ty));
         return points;
     }
+
 
     /**
      * @param obj Object being compared.

@@ -13,6 +13,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents a 3D Model created from an obj file.
@@ -21,7 +22,7 @@ public class ObjModel extends Model {
     /**
      * The default material for missing or unassigned textures.
      */
-    public static final String DEFAULT_MATERIAL = "stone";
+    public static final String DEFAULT_MATERIAL = "iron_block  ";
 
     /**
      * The default color for missing or unassigned textures.
@@ -48,12 +49,17 @@ public class ObjModel extends Model {
      */
     private static int getColor(BufferedImage img, float x, float y) {
         if (img == null) return DEFAULT_COLOR;
+        int width = img.getWidth();
+        int height = img.getHeight();
         y = 1 - y;
-        int tx = (int) (x * img.getWidth()) - 1;
-        tx = (tx % img.getWidth() + img.getWidth()) % img.getWidth();
-        int ty = (int) (y * img.getHeight()) - 1;
-        ty = (ty % img.getHeight() + img.getHeight()) % img.getHeight();
-        return img.getRGB(tx,ty);
+
+        int tx = (int) (x * width);
+        int ty = (int) (y * height);
+
+        tx = ((tx % width) + width) % width;
+        ty = ((ty % height) + height) % height;
+
+        return img.getRGB(tx, ty);
     }
 
     /**
@@ -64,7 +70,7 @@ public class ObjModel extends Model {
     /**
      * A Map that maps material names to Files to texture images.
      */
-    private final HashMap<String, File> materialFileMap = new HashMap<>();
+    private final HashMap<String, BufferedImage> materialFileMap = new HashMap<>();
 
     /**
      * A Map that maps material names to colors.
@@ -106,11 +112,10 @@ public class ObjModel extends Model {
     public Map<BlockPos, BlockState> getBlocks() {
         Map<BlockPos, BlockState> blocks = new HashMap<>();
         for (String material: materialFaceMap.keySet()) {
-            BufferedImage texture = ObjModel.openTexture(materialFileMap.get(material));
-            int color = materialColorMap.getOrDefault(material, DEFAULT_COLOR);
+            BufferedImage texture = materialFileMap.get(material);
             for (Face face: materialFaceMap.get(material)) {
                 for (Point p: face.getBlockPoints()) {
-                    if (texture != null) color = ObjModel.getColor(texture, p.tx, p.ty);
+                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.get(material);
                     BlockState blockState = Palette.getNearestBlock(color);
                     blocks.put(p.blockPos(),blockState);
                 }
@@ -138,14 +143,16 @@ public class ObjModel extends Model {
      */
     protected void updateBlockFaces() {
         blockFaces.clear();
-        for (String material: materialFaceMap.keySet()) {
-            BufferedImage texture = ObjModel.openTexture(materialFileMap.get(material));
-            int color = materialColorMap.getOrDefault(material, DEFAULT_COLOR);
-            for (Face face: materialFaceMap.get(material)) {
+        for (Map.Entry<String, List<Face>> entry: materialFaceMap.entrySet()) {
+            String material = entry.getKey();
+            List<Face> faces = entry.getValue();
+            BufferedImage texture = materialFileMap.get(material);
+            for (Face face: faces) {
                 for (Point p: face.getBlockPoints()) {
-                    if (texture != null) color = ObjModel.getColor(texture, p.tx, p.ty);
+                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.get(material);
                     String blockTexture = Palette.getNearestBlockTexture(color);
-                    blockFaces.computeIfAbsent(blockTexture, ignored -> new HashSet<>()).add(p);
+                    if (!blockTexture.equals("air"))
+                        blockFaces.computeIfAbsent(blockTexture, ignored -> ConcurrentHashMap.newKeySet()).add(p);
                 }
             }
         }
@@ -203,10 +210,10 @@ public class ObjModel extends Model {
     private void readMapKd(String[] line) {
         File texturePath = new File("models/" + line[1]);
         if (texturePath.isFile())
-            materialFileMap.put(currentMaterial, texturePath);
+            materialFileMap.put(currentMaterial, ObjModel.openTexture(texturePath));
         texturePath = new File(line[1]);
         if (texturePath.isFile())
-            materialFileMap.put(currentMaterial, texturePath);
+            materialFileMap.put(currentMaterial, ObjModel.openTexture(texturePath));
     }
 
     /**
