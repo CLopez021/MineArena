@@ -12,9 +12,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 
-public class Meshy {
-    private static final String apiKey = "msy_dummy_api_key_for_test_mode_12345678";
+import static com.knkevin.ai_builder.Config.meshyApiKey;
 
+public class Meshy {
     public static void textTo3D(String prompt) {
         String previewTaskId = createPreviewTask(prompt);
         String refineTaskId = createRefineTask(previewTaskId);
@@ -48,15 +48,25 @@ public class Meshy {
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + meshyApiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String responseBody = response.body();
             JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+
+            int status = response.statusCode();
+            switch (status) {
+                case 401 -> throw new MeshyExceptions.InvalidApiKeyException();
+                case 402 -> throw new MeshyExceptions.PaymentRequiredException();
+                case 403 -> throw new MeshyExceptions.TooManyRequestsException();
+            }
+            if (status >= 500) throw new MeshyExceptions.ServerErrorException();
+            if (status >= 400) throw new RuntimeException(json.get("message").getAsString());
+
             return json.get("result").getAsString();
-        } catch (Exception e) {
+        } catch (IOException | InterruptedException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
@@ -69,7 +79,7 @@ public class Meshy {
         while (true) {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + meshyApiKey)
                 .GET()
                 .build();
 
@@ -104,13 +114,23 @@ public class Meshy {
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + meshyApiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             String responseBody = response.body();
             JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+
+            int status = response.statusCode();
+            switch (status) {
+                case 401 -> throw new MeshyExceptions.InvalidApiKeyException();
+                case 402 -> throw new MeshyExceptions.PaymentRequiredException();
+                case 403 -> throw new MeshyExceptions.TooManyRequestsException();
+            }
+            if (status >= 500) throw new MeshyExceptions.ServerErrorException();
+            if (status >= 400) throw new RuntimeException(json.get("message").getAsString());
+
             return json.get("result").getAsString();
         } catch (Exception e) {
             e.printStackTrace();
@@ -123,7 +143,7 @@ public class Meshy {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d/" + taskId + "/stream"))
-                .header("Authorization", "Bearer " + apiKey)
+                .header("Authorization", "Bearer " + meshyApiKey)
                 .header("Accept", "text/event-stream")
                 .GET()
                 .build();
