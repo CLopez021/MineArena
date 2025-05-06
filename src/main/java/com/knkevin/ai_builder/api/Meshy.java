@@ -11,14 +11,19 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.function.IntConsumer;
 
 import static com.knkevin.ai_builder.Config.meshyApiKey;
 
 public class Meshy {
-    public static void textTo3D(String prompt) {
+    public static void textTo3D(String prompt, IntConsumer updateProgress) throws Exception {
         String previewTaskId = createPreviewTask(prompt);
+        waitForTask(previewTaskId, 0, updateProgress);
+
         String refineTaskId = createRefineTask(previewTaskId);
-        String[] modelUrls = streamTextTo3DTask(refineTaskId);
+        waitForTask(refineTaskId, 50, updateProgress);
+
+        String[] modelUrls = retrieveTextTo3dTask(refineTaskId, updateProgress);
         String objUrl = modelUrls[0];
         String mtlUrl = modelUrls[1];
         String textureUrl = modelUrls[2];
@@ -72,8 +77,8 @@ public class Meshy {
         }
     }
 
-    public static void waitForPreviewTask(String previewTaskId) throws Exception {
-        String apiUrl = "https://api.meshy.ai/openapi/v2/text-to-3d/" + previewTaskId;
+    public static void waitForTask(String taskId, int offset, IntConsumer updateProgress) throws Exception {
+        String apiUrl = "https://api.meshy.ai/openapi/v2/text-to-3d/" + taskId;
         HttpClient client = HttpClient.newHttpClient();
 
         while (true) {
@@ -89,24 +94,28 @@ public class Meshy {
                 throw new RuntimeException("HTTP error code: " + response.statusCode());
             }
 
-            JsonObject previewTask = JsonParser.parseString(response.body()).getAsJsonObject();
-            String status = previewTask.get("status").getAsString();
+            JsonObject task = JsonParser.parseString(response.body()).getAsJsonObject();
+            String status = task.get("status").getAsString();
 
-            if ("SUCCEEDED".equals(status)) {
-                System.out.println("Preview task finished.");
+            int progress = task.get("progress").getAsInt();
+            updateProgress.accept(progress/2 + offset);
+
+            if (status.equals("SUCCEEDED")) {
+                System.out.println("Task status: " + status + " | Progress: " + progress);
+                System.out.println("Task finished.");
                 break;
             }
+            if (status.equals("FAILED")) {
+                throw new RuntimeException(task.get("message").getAsString());
+            }
 
-            System.out.println("Preview task status: " + status +
-                    " | Progress: " + previewTask.get("progress") +
-                    " | Retrying in 5 seconds...");
-            Thread.sleep(5000);
+            System.out.println("Task status: " + status + " | Progress: " + task.get("progress"));
+            Thread.sleep(1000);
         }
     }
 
     public static String createRefineTask(String previewTaskId) {
         try (HttpClient client = HttpClient.newHttpClient()) {
-            waitForPreviewTask(previewTaskId);
             String body = "{"
                 + "\"mode\":\"refine\","
                 + "\"preview_task_id\":" + "\"" + previewTaskId + "\""
@@ -138,49 +147,29 @@ public class Meshy {
         }
     }
 
-    public static String[] streamTextTo3DTask(String taskId) {
-        HttpResponse<InputStream> response;
+    public static String[] retrieveTextTo3dTask(String taskId, IntConsumer updateProgress) {
         try (HttpClient client = HttpClient.newHttpClient()) {
             HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d/" + taskId + "/stream"))
+                .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d/" + taskId))
                 .header("Authorization", "Bearer " + meshyApiKey)
-                .header("Accept", "text/event-stream")
                 .GET()
                 .build();
-            response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-            BufferedReader reader = new BufferedReader(new InputStreamReader(response.body()));
-            String line;
-            StringBuilder eventData = new StringBuilder();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            JsonObject task = JsonParser.parseString(response.body()).getAsJsonObject();
+            String status = task.get("status").getAsString();
 
-            while ((line = reader.readLine()) != null) {
-                if (line.startsWith("data:")) {
-                    eventData.append(line.substring(5).trim());
-                } else if (line.isEmpty() && !eventData.isEmpty()) {
-                    // Parse JSON using JsonElement and JsonObject from Gson
-                    JsonElement element = JsonParser.parseString(eventData.toString());
-                    JsonObject data = element.getAsJsonObject();
-
-                    String status = data.get("status").getAsString();
-                    if (status.equals("SUCCEEDED") || status.equals("FAILED") || status.equals("CANCELED")) {
-                        if (status.equals("SUCCEEDED")) {
-                            System.out.println("Refine task finished.");
-                            String objUrl = data.getAsJsonObject("model_urls").get("obj").getAsString();
-                            String mtlUrl = data.getAsJsonObject("model_urls").get("mtl").getAsString();
-                            String textureUrl = data.getAsJsonArray("texture_urls").get(0).getAsJsonObject().get("base_color").getAsString();
-                            return new String[]{objUrl, mtlUrl, textureUrl};
-                        }
-                        break;
-                    }
-
-                    System.out.println("Refine task status: " + status +
-                        " | Progress: " + data.get("progress").getAsString() +
-                        " | Retrying in 5 seconds...");
-
-                    eventData.setLength(0); // Reset buffer
-                }
+            if (status.equals("FAILED")) {
+                throw new RuntimeException(task.get("message").getAsString());
             }
-            throw new RuntimeException("An error occurred while generating the 3D model.");
+            if (!status.equals("SUCCEEDED")) {
+                throw new RuntimeException("Attempted to retrieve Text to 3D Task before it finished.");
+            }
+
+            String objUrl = task.getAsJsonObject("model_urls").get("obj").getAsString();
+            String mtlUrl = task.getAsJsonObject("model_urls").get("mtl").getAsString();
+            String textureUrl = task.getAsJsonArray("texture_urls").get(0).getAsJsonObject().get("base_color").getAsString();
+            return new String[]{objUrl, mtlUrl, textureUrl};
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
