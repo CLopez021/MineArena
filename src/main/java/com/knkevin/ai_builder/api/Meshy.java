@@ -5,18 +5,35 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.knkevin.ai_builder.AIBuilder;
 import com.knkevin.ai_builder.models.ObjModel;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.io.*;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Objects;
 import java.util.function.IntConsumer;
 
 import static com.knkevin.ai_builder.Config.meshyApiKey;
 
 public class Meshy {
-    public static void textTo3D(String prompt, IntConsumer updateProgress) throws Exception {
+    public static void textTo3D(CommandContext<CommandSourceStack> command) throws Exception {
+        String prompt = StringArgumentType.getString(command, "prompt");
+        command.getSource().sendSystemMessage(Component.literal("Started model generation for '" + prompt + "'."));
+
+        IntConsumer updateProgress = progress -> {
+            ServerPlayer player = command.getSource().getPlayer();
+            if (player != null) {
+                String bar = "§a" + new String(new char[progress / 2]).replace("\0", "|") + "§8" + new String(new char[50 - progress / 2]).replace("\0", "|") + "§f";
+                player.displayClientMessage(Component.literal("Progress: [" + bar + "] " + progress + "%"), true);
+            }
+        };
+
         String previewTaskId = createPreviewTask(prompt);
         waitForTask(previewTaskId, 0, updateProgress);
 
@@ -42,6 +59,10 @@ public class Meshy {
             new File(objPath).delete();
             new File(mtlPath).delete();
         }
+
+        Objects.requireNonNull(command.getSource().getPlayer()).displayClientMessage(Component.literal("Generation Complete"), true);
+        Component message = Component.literal("Successfully generated a model for '" + prompt + "'.");
+        command.getSource().sendSystemMessage(message);
     }
 
     public static String createPreviewTask(String prompt) {
