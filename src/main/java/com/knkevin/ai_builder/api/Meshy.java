@@ -1,6 +1,5 @@
 package com.knkevin.ai_builder.api;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.knkevin.ai_builder.AIBuilder;
@@ -20,8 +19,16 @@ import java.util.Objects;
 import java.util.function.IntConsumer;
 
 import static com.knkevin.ai_builder.Config.meshyApiKey;
+import static com.knkevin.ai_builder.command.AICommand.isCancelling;
+import static com.knkevin.ai_builder.command.AICommand.isGenerating;
 
 public class Meshy {
+    private static void checkCancellation() {
+        if (isCancelling) {
+            throw new RuntimeException("Cancelled current model generation.");
+        }
+    }
+
     public static void textTo3D(CommandContext<CommandSourceStack> command) throws Exception {
         String prompt = StringArgumentType.getString(command, "prompt");
         command.getSource().sendSystemMessage(Component.literal("Started model generation for '" + prompt + "'."));
@@ -41,6 +48,8 @@ public class Meshy {
         waitForTask(refineTaskId, 50, updateProgress);
 
         String[] modelUrls = retrieveTextTo3dTask(refineTaskId, updateProgress);
+        checkCancellation();
+
         String objUrl = modelUrls[0];
         String mtlUrl = modelUrls[1];
         String textureUrl = modelUrls[2];
@@ -51,7 +60,11 @@ public class Meshy {
             downloadFile(objUrl, objPath);
             downloadFile(mtlUrl, mtlPath);
             downloadFile(textureUrl, texturePath);
+            checkCancellation();
             AIBuilder.model = new ObjModel(new File(objPath));
+            Objects.requireNonNull(command.getSource().getPlayer()).displayClientMessage(Component.literal("Generation Complete"), true);
+            Component message = Component.literal("Successfully generated a model for '" + prompt + "'.");
+            command.getSource().sendSystemMessage(message);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -59,17 +72,14 @@ public class Meshy {
             new File(objPath).delete();
             new File(mtlPath).delete();
         }
-
-        Objects.requireNonNull(command.getSource().getPlayer()).displayClientMessage(Component.literal("Generation Complete"), true);
-        Component message = Component.literal("Successfully generated a model for '" + prompt + "'.");
-        command.getSource().sendSystemMessage(message);
     }
 
     public static String createPreviewTask(String prompt) {
         try (HttpClient client = HttpClient.newHttpClient()) {
             String body = "{"
                 + "\"mode\":\"preview\","
-                + "\"prompt\":" + "\"" + prompt + "\""
+                + "\"prompt\":" + "\"" + prompt + "\","
+                + "\"ai_model\":" + "\"" + "meshy-5" + "\""
                 + "}";
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -103,6 +113,7 @@ public class Meshy {
         HttpClient client = HttpClient.newHttpClient();
 
         while (true) {
+            checkCancellation();
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apiUrl))
                 .header("Authorization", "Bearer " + meshyApiKey)

@@ -13,6 +13,9 @@ import java.util.function.IntConsumer;
 import static com.knkevin.ai_builder.api.Meshy.textTo3D;
 
 public class AICommand {
+    public static boolean isGenerating = false;
+    public static boolean isCancelling = false;
+
     /**
      * Generates a 3D model from the given prompt.
      * @param command The executed command.
@@ -21,11 +24,32 @@ public class AICommand {
     protected static int generateModel(CommandContext<CommandSourceStack> command) {
         CompletableFuture.runAsync(() -> {
             try {
+                if (isGenerating || isCancelling) {
+                    command.getSource().sendFailure(Component.literal("You can only generate one model at a time! Cancel the current generation with /model ai cancel."));
+                    return;
+                }
+                isGenerating = true;
                 textTo3D(command);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                command.getSource().sendFailure(Component.literal(e.getLocalizedMessage()));
+                isGenerating = false;
+                isCancelling = false;
             }
         });
+        return 1;
+    }
+
+    /**
+     * Cancels the current model generation
+     * @param command The executed command.
+     * @return A 1 or 0 representing the success of the command.
+     */
+    protected static int cancelGeneration(CommandContext<CommandSourceStack> command) {
+        if (isCancelling) {
+            command.getSource().sendFailure(Component.literal("Currently cancelling the generation."));
+            return 0;
+        }
+        isCancelling = true;
         return 1;
     }
 }

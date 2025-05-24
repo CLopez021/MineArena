@@ -41,7 +41,9 @@ public class ModelCommand {
                     .then(argument("direction", directionArg()).executes(MoveCommand::moveDirection))
                 )
             )
-            .then(literal("ai").then(argument("prompt", string()).executes(AICommand::generateModel)))
+            .then(literal("ai")
+                    .then(literal("cancel").executes(AICommand::cancelGeneration))
+                    .then(argument("prompt", string()).executes(AICommand::generateModel)))
         );
     }
 
