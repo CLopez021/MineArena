@@ -44,11 +44,14 @@ public abstract class Model {
     public final Vector3f minCorner = new Vector3f(Float.MAX_VALUE, Float.MAX_VALUE, Float.MAX_VALUE), maxCorner = new Vector3f(Float.MIN_VALUE, Float.MIN_VALUE, Float.MIN_VALUE);
 
     /**
-     * To be used for rendering the preview of this model.
-     * Points representing block coordinates are mapped to bytes.
-     * The bits of each byte determine whether the face is to be rendered.
+     * Textures mapped to collection of points representing blocks.
      */
-    public final ConcurrentMap<String, Set<Point>> blockFaces = new ConcurrentHashMap<>();
+    public final ConcurrentMap<String, Set<Point>> textureToBlocks = new ConcurrentHashMap<>();
+
+    /**
+     * Points representing blocks mapped to integers representing which faces to render.
+     */
+    public final ConcurrentMap<Point, Integer> renderFaces = new ConcurrentHashMap<>();
 
     /**
      * Stores block coordinates mapped to BlockStates, representing the blocks before the model was placed.
@@ -65,7 +68,26 @@ public abstract class Model {
     /**
      * @return A map of block positions mapped to block states representing this 3d model as blocks.
      */
-    public abstract Map<BlockPos, BlockState> getBlocks();
+    public abstract Map<BlockPos, BlockState> getTextureToBlocks();
+
+    /**
+     * Computes whether to render a particular face.
+     * @param p A point representing a block.
+     * @param faceNum The index of the face to compute.
+     * @return Whether to render.
+     */
+    public boolean shouldRenderFace(Point p, int faceNum) {
+        Point adj  = new Point(p.x, p.y, p.z);
+        switch (faceNum) {
+            case 0 -> --adj.x;
+            case 1 -> ++adj.x;
+            case 2 -> --adj.y;
+            case 3 -> ++adj.y;
+            case 4 -> --adj.z;
+            case 5 -> ++adj.z;
+        }
+        return !renderFaces.containsKey(adj);
+    }
 
     /**
      * Centers this Model.
@@ -92,7 +114,7 @@ public abstract class Model {
         int count = 0;
         float prevPrecision = Point.precision;
         Point.precision = 2f;
-        for (Map.Entry<BlockPos, BlockState> entry: this.getBlocks().entrySet()) {
+        for (Map.Entry<BlockPos, BlockState> entry: this.getTextureToBlocks().entrySet()) {
             BlockPos blockPos = entry.getKey().offset((int)Math.floor(position.x), (int)Math.floor(position.y), (int)Math.floor(position.z));
             BlockState blockState = entry.getValue();
             this.undo.put(blockPos, level.getBlockState(blockPos));

@@ -1,9 +1,7 @@
 package com.knkevin.ai_builder.renderer;
 
-import com.knkevin.ai_builder.AIBuilder;
 import com.knkevin.ai_builder.items.ModItems;
 import com.knkevin.ai_builder.items.custom.HammerModes;
-import com.knkevin.ai_builder.models.Model;
 import com.knkevin.ai_builder.models.util.Point;
 import com.knkevin.ai_builder.models.util.Triangle;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -13,7 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
 import org.joml.*;
 
@@ -108,7 +105,7 @@ public class BoxRenderer {
         switch (viewMode) {
             case BOX -> renderBoundingBox(matrix4f, model.rotation, center, size, new Vector4i(255, 255, 255, 255));
             case WIREFRAME -> renderWireframe(new Matrix4f(unrotatedMatrix4).translate(model.position.x, model.position.y, model.position.z), model.getTriangles(), new Vector4i(255, 255, 255, 64));
-            case BLOCKS -> renderBlocksPreview(unrotatedMatrix4, camPos, model.blockFaces);
+            case BLOCKS -> renderBlocksPreview(unrotatedMatrix4, camPos, model.textureToBlocks);
         }
 
         RenderSystem.enableCull();
@@ -194,6 +191,8 @@ public class BoxRenderer {
      * @param blocks A map of block names to sets of Points
      */
     private static void renderBlocksPreview(Matrix4f matrix4f, Vector3f camera, ConcurrentMap<String, Set<Point>> blocks) {
+        assert model != null;
+
         //RenderSystem settings.
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         RenderSystem.enableCull();
@@ -221,42 +220,42 @@ public class BoxRenderer {
 
                 //Render each of the six faces if it is facing towards the camera, and if its corresponding bit is a 1.
                 // - x
-                if (p1.x > cullNegative.x) {
+                if (p1.x > cullNegative.x && model.shouldRenderFace(p, 0)) {
                     buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(1,1);
                     buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,0);
                     buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(0,0);
                     buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(0,1);
                 }
                 // + x
-                if (p2.x < cullPositive.x ) {
+                if (p2.x < cullPositive.x && model.shouldRenderFace(p, 1)) {
                     buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(0,0);
                     buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(0,1);
                     buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(1,1);
                     buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,0);
                 }
                 // - y
-                if (p1.y > cullNegative.y) {
+                if (p1.y > cullNegative.y && model.shouldRenderFace(p, 2)) {
                     buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(0,0);
                     buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(0,1);
                     buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,1);
                     buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,0);
                 }
                 // + y
-                if (p2.y < cullPositive.y) {
+                if (p2.y < cullPositive.y && model.shouldRenderFace(p, 3)) {
                     buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(1,1);
                     buffer.addVertex(matrix4f, p1.x, p2.y, p2.z).setUv(1,0);
                     buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(0,0);
                     buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(0,1);
                 }
                 // - z
-                if (p1.z > cullNegative.z) {
+                if (p1.z > cullNegative.z && model.shouldRenderFace(p, 4)) {
                     buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setUv(0,0);
                     buffer.addVertex(matrix4f, p1.x, p2.y, p1.z).setUv(0,1);
                     buffer.addVertex(matrix4f, p2.x, p2.y, p1.z).setUv(1,1);
                     buffer.addVertex(matrix4f, p2.x, p1.y, p1.z).setUv(1,0);
                 }
                 // + z
-                if (p2.z < cullPositive.z) {
+                if (p2.z < cullPositive.z && model.shouldRenderFace(p, 5)) {
                     buffer.addVertex(matrix4f, p1.x, p1.y, p2.z).setUv(1,1);
                     buffer.addVertex(matrix4f, p2.x, p1.y, p2.z).setUv(1,0);
                     buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setUv(0,0);

@@ -62,9 +62,9 @@ public class StlModel extends Model {
     }
 
     /**
-     * @see Model#getBlocks()
+     * @see Model#getTextureToBlocks()
      */
-    public Map<BlockPos, BlockState> getBlocks() {
+    public Map<BlockPos, BlockState> getTextureToBlocks() {
         Map<BlockPos, BlockState> blocks = new HashMap<>();
         Set<Point> points = new HashSet<>();
         for (Triangle triangle: this.triangles)
@@ -77,11 +77,15 @@ public class StlModel extends Model {
      * @see Model#updateBlockFaces()
      */
     public void updateBlockFaces() {
-        blockFaces.clear();
+        textureToBlocks.clear();
+        renderFaces.clear();
         Set<Point> defaultBlock  = new HashSet<>();
         for (Triangle triangle: this.triangles) {
-            triangle.transformed(this.getTransformationMatrix()).getBlockPoints(defaultBlock);
+            for (Point p: triangle.transformed(this.getTransformationMatrix()).getBlockPoints(new HashSet<>())) {
+                renderFaces.putIfAbsent(p, 0);
+                defaultBlock.add(p);
+            }
         }
-        blockFaces.put("iron_block", defaultBlock);
+        textureToBlocks.put("iron_block", defaultBlock);
     }
 }

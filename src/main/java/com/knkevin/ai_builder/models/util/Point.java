@@ -16,7 +16,7 @@ public class Point {
      */
     public float x, y, z, tx, ty;
 
-    public static float precision = 1.5f;
+    public static float precision = 2f;
 
     /**
      * @param x X-coordinate of point.

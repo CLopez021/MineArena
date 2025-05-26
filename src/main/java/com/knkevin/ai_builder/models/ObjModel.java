@@ -107,9 +107,9 @@ public class ObjModel extends Model {
     }
 
     /**
-     * @see Model#getBlocks()
+     * @see Model#getTextureToBlocks()
      */
-    public Map<BlockPos, BlockState> getBlocks() {
+    public Map<BlockPos, BlockState> getTextureToBlocks() {
         Map<BlockPos, BlockState> blocks = new HashMap<>();
         for (String material: materialFaceMap.keySet()) {
             BufferedImage texture = materialFileMap.get(material);
@@ -142,17 +142,21 @@ public class ObjModel extends Model {
      * @see Model#updateBlockFaces()
      */
     protected void updateBlockFaces() {
-        blockFaces.clear();
+        textureToBlocks.clear();
+        renderFaces.clear();
         for (Map.Entry<String, List<Face>> entry: materialFaceMap.entrySet()) {
             String material = entry.getKey();
             List<Face> faces = entry.getValue();
             BufferedImage texture = materialFileMap.get(material);
             for (Face face: faces) {
-                for (Point p: face.getBlockPoints()) {
-                    int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.getOrDefault(material, -1);
-                    String blockTexture = Palette.getNearestBlockTexture(color);
-                    if (!blockTexture.equals("air"))
-                        blockFaces.computeIfAbsent(blockTexture, ignored -> ConcurrentHashMap.newKeySet()).add(p);
+                for (Triangle triangle: face.getTriangles()) {
+                    for (Point p: triangle.getBlockPoints(new HashSet<>())) {
+                        int color = texture != null ? ObjModel.getColor(texture, p.tx, p.ty) : materialColorMap.getOrDefault(material, -1);
+                        String blockTexture = Palette.getNearestBlockTexture(color);
+                        if (!blockTexture.equals("air"))
+                            textureToBlocks.computeIfAbsent(blockTexture, ignored -> ConcurrentHashMap.newKeySet()).add(p);
+                        renderFaces.putIfAbsent(p, 0);
+                    }
                 }
             }
         }
