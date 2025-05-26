@@ -4,6 +4,7 @@ import com.knkevin.ai_builder.items.ModItems;
 import com.knkevin.ai_builder.items.custom.HammerModes;
 import com.knkevin.ai_builder.models.util.Point;
 import com.knkevin.ai_builder.models.util.Triangle;
+import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.Camera;
@@ -104,7 +105,7 @@ public class BoxRenderer {
 
         switch (viewMode) {
             case BOX -> renderBoundingBox(matrix4f, model.rotation, center, size, new Vector4i(255, 255, 255, 255));
-            case WIREFRAME -> renderWireframe(new Matrix4f(unrotatedMatrix4).translate(model.position.x, model.position.y, model.position.z), model.getTriangles(), new Vector4i(255, 255, 255, 64));
+            case WIREFRAME -> renderWireframe(new Matrix4f(unrotatedMatrix4).translate(model.position.x, model.position.y, model.position.z), model.getTriangles(), new Vector4i(255, 255, 255, 32));
             case BLOCKS -> renderBlocksPreview(unrotatedMatrix4, camPos, model.textureToBlocks);
         }
 
@@ -275,18 +276,37 @@ public class BoxRenderer {
      * @param color The color of the wireframe.
      */
     public static void renderWireframe(Matrix4f matrix4f, List<Triangle> triangles, Vector4i color) {
-        RenderSystem.lineWidth(1);
+        //RenderSystem settings.
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.enableCull();
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(519);
 
-        LineBuffer buffer = new LineBuffer(matrix4f, new Quaternionf());
-        buffer.setColor(color.x, color.y, color.z, color.w);
+        BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+
+        for (Triangle triangle : triangles) {
+            Point p1 = triangle.v1;
+            Point p2 = triangle.v2;
+            Point p3 = triangle.v3;
+
+            buffer.addVertex(matrix4f, p1.x, p1.y, p1.z).setColor(1, 1, 1, 0.125f);
+            buffer.addVertex(matrix4f, p2.x, p2.y, p2.z).setColor(1, 1, 1, 0.125f);
+            buffer.addVertex(matrix4f, p3.x, p3.y, p3.z).setColor(1, 1, 1, 0.125f);
+
+        }
+        BufferUploader.drawWithShader(buffer.buildOrThrow());
+
+        RenderSystem.lineWidth(1);
+        LineBuffer lineBuffer = new LineBuffer(matrix4f, new Quaternionf());
+        lineBuffer.setColor(color.x, color.y, color.z, color.w);
         for (Triangle triangle: triangles) {
             Point p1 = triangle.v1;
             Point p2 = triangle.v2;
             Point p3 = triangle.v3;
-            buffer.beginLine(p1.x, p1.y, p1.z).endLine(p2.x, p2.y, p2.z).endLine(p3.x, p3.y, p3.z);
-            buffer.beginLine(p2.x, p2.y, p2.z).endLine(p3.x, p3.y, p3.z);
+            lineBuffer.beginLine(p1.x, p1.y, p1.z).endLine(p2.x, p2.y, p2.z).endLine(p3.x, p3.y, p3.z);
+            lineBuffer.beginLine(p2.x, p2.y, p2.z).endLine(p3.x, p3.y, p3.z);
         }
-        buffer.draw();
+        lineBuffer.draw();
     }
 
     /**
