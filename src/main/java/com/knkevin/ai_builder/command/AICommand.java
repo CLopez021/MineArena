@@ -32,6 +32,7 @@ public class AICommand {
                 textTo3D(command);
             } catch (Exception e) {
                 command.getSource().sendFailure(Component.literal(e.getLocalizedMessage()));
+            } finally {
                 isGenerating = false;
                 isCancelling = false;
             }
@@ -45,6 +46,10 @@ public class AICommand {
      * @return A 1 or 0 representing the success of the command.
      */
     protected static int cancelGeneration(CommandContext<CommandSourceStack> command) {
+        if (!isGenerating) {
+            command.getSource().sendSystemMessage(Component.literal("There are no current generations in progress."));
+            return 1;
+        }
         if (isCancelling) {
             command.getSource().sendFailure(Component.literal("Currently cancelling the generation."));
             return 0;

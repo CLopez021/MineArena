@@ -20,7 +20,6 @@ import java.util.function.IntConsumer;
 
 import static com.knkevin.ai_builder.Config.meshyApiKey;
 import static com.knkevin.ai_builder.command.AICommand.isCancelling;
-import static com.knkevin.ai_builder.command.AICommand.isGenerating;
 
 public class Meshy {
     private static void checkCancellation() {

@@ -280,7 +280,6 @@ public class BoxRenderer {
         RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.enableCull();
         RenderSystem.enableDepthTest();
-        RenderSystem.depthFunc(519);
 
         BufferBuilder buffer = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
 
