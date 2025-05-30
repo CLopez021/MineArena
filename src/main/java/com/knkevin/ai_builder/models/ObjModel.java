@@ -337,7 +337,7 @@ public class ObjModel extends Model {
         /**
          * True if there are indices to texture vertices, false otherwise.
          */
-        private final boolean textured;
+        private boolean textured;
 
         /**
          * @param line An array of strings containing face data.
@@ -355,9 +355,9 @@ public class ObjModel extends Model {
                     int textureIndex = Integer.parseInt(numbers[1]);
                     textureIndex = textureIndex < 0 ? textureVertices.size() + textureIndex : textureIndex - 1;
                     textureIndices[i-1] = textureIndex;
+                    textured = true;
                 }
             }
-            textured = textureIndices[0] != 0;
         }
 
         /**

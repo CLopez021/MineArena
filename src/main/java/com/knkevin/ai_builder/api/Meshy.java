@@ -15,11 +15,16 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.function.IntConsumer;
 
 import static com.knkevin.ai_builder.Config.meshyApiKey;
-import static com.knkevin.ai_builder.command.AICommand.isCancelling;
+import static com.knkevin.ai_builder.command.GenerateCommand.isCancelling;
 
 public class Meshy {
     private static void checkCancellation() {
@@ -52,13 +57,22 @@ public class Meshy {
         String objUrl = modelUrls[0];
         String mtlUrl = modelUrls[1];
         String textureUrl = modelUrls[2];
-        String objPath = "models/" + refineTaskId + ".obj";
-        String mtlPath = "models/" + refineTaskId + ".mtl";
-        String texturePath = "models/texture_0.png";
+        String modelName = refineTaskId;
+        String textureName = "texture_0";
+        try {
+            modelName = StringArgumentType.getString(command, "model_name");
+            textureName = modelName;
+        } catch (IllegalArgumentException ignored) {
+        }
+
+        String objPath = "models/" + modelName + ".obj";
+        String mtlPath = "models/" + modelName + ".mtl";
+        String texturePath = "models/" + textureName + ".png";
         try {
             downloadFile(objUrl, objPath);
             downloadFile(mtlUrl, mtlPath);
             downloadFile(textureUrl, texturePath);
+            renameInFile(mtlPath, "texture_0", textureName);
             checkCancellation();
             AIBuilder.model = new ObjModel(new File(objPath));
             Objects.requireNonNull(command.getSource().getPlayer()).displayClientMessage(Component.literal("Generation Complete"), true);
@@ -68,9 +82,20 @@ public class Meshy {
             e.printStackTrace();
             throw new RuntimeException(e);
         } finally {
-            new File(objPath).delete();
-            new File(mtlPath).delete();
+            if (modelName.equals(refineTaskId)) {
+                new File(objPath).delete();
+                new File(mtlPath).delete();
+                new File(texturePath).delete();
+            }
         }
+    }
+
+    public static void renameInFile(String filePath, String oldStr, String newStr) throws Exception {
+        Path path = Paths.get(filePath);
+        Charset charset = StandardCharsets.ISO_8859_1;
+        String content = Files.readString(path, charset);
+        content = content.replace(oldStr, newStr);
+        Files.writeString(path, content);
     }
 
     public static String createPreviewTask(String prompt) {
@@ -78,7 +103,7 @@ public class Meshy {
             String body = "{"
                 + "\"mode\":\"preview\","
                 + "\"prompt\":" + "\"" + prompt + "\","
-                + "\"ai_model\":" + "\"" + "meshy-5" + "\""
+                + "\"ai_model\":" + "\"" + "meshy-4" + "\""
                 + "}";
 
             HttpRequest request = HttpRequest.newBuilder()

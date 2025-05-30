@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.knkevin.ai_builder.AIBuilder.MOD_ID;
+import static com.knkevin.ai_builder.models.util.VectorColors.intToARGB;
 
 /**
  * A class for creating a quantized palette and writing it to a file.
@@ -119,7 +120,7 @@ public class Palette {
 		String nearestBlock = ObjModel.DEFAULT_MATERIAL;
 		double nearestDistance = Double.MAX_VALUE, currentDistance;
 		for (Map.Entry<String, Integer> entry: blockColors.entrySet()) {
-			Vector4i color2 = VectorColors.intToARGB(entry.getValue());
+			Vector4i color2 = intToARGB(entry.getValue());
 			currentDistance = VectorColors.colorSquaredDistance(color, color2);
 			if (currentDistance > nearestDistance) continue;
 			nearestDistance = currentDistance;

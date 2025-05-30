@@ -1,18 +1,14 @@
 package com.knkevin.ai_builder.command;
 
-import com.knkevin.ai_builder.api.MeshyExceptions;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.IntConsumer;
 
 import static com.knkevin.ai_builder.api.Meshy.textTo3D;
 
-public class AICommand {
+public class GenerateCommand {
     public static boolean isGenerating = false;
     public static boolean isCancelling = false;
 

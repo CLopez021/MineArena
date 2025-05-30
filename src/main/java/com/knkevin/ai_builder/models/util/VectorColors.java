@@ -34,7 +34,7 @@ public class VectorColors {
 
 	public static float colorSquaredDistance(Vector4i colorOne, Vector4i colorTwo) {
 		Vector3f rgb = new Vector3f(colorOne.y - colorTwo.y, colorOne.z - colorTwo.z, colorOne.w - colorTwo.w);
-		rgb.mul(rgb).mul(.3f,.59f,.11f);
+		rgb.mul(rgb);
 		return rgb.x + rgb.y + rgb.z;
 	}
 }
