@@ -29,7 +29,7 @@ public class LoadCommand {
      */
     protected static int load(CommandContext<CommandSourceStack> command) {
         if (!Minecraft.getInstance().isSingleplayer()) {
-            command.getSource().sendSystemMessage(Component.literal("Error: Models can only be loaded in single-player!"));
+            command.getSource().sendFailure(Component.literal("Error: Models can only be loaded in single-player!"));
             return 0;
         }
         try {
@@ -38,7 +38,7 @@ public class LoadCommand {
             command.getSource().sendSystemMessage(Component.literal(fileName + " loaded successfully."));
             return 1;
         } catch (Exception e) {
-            command.getSource().sendSystemMessage(Component.literal("Error: The model could not be loaded."));
+            command.getSource().sendFailure(Component.literal("Error: The model could not be loaded."));
             e.printStackTrace();
             return 0;
         }

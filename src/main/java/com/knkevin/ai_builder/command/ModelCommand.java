@@ -56,7 +56,7 @@ public class ModelCommand {
      * @return 0
      */
     protected static int noModelLoaded(CommandContext<CommandSourceStack> command) {
-        command.getSource().sendSystemMessage(Component.literal("Error: No model has been loaded."));
+        command.getSource().sendFailure(Component.literal("Error: No model has been loaded."));
         return 0;
     }
 }

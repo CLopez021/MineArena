@@ -11,7 +11,7 @@ import net.minecraftforge.registries.RegistryObject;
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, AIBuilder.MOD_ID);
 
-    public static final RegistryObject<Item> MODEL_HAMMER = ITEMS.register("model_hammer", () -> new ModelHammerItem(new Item.Properties()));
+    public static final RegistryObject<Item> MODEL_HAMMER = ITEMS.register("model_hammer", () -> new ModelHammerItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

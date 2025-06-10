@@ -30,7 +30,7 @@ public class UndoModelPacket {
             if (AIBuilder.model != null) {
                 AIBuilder.model.undo(player.level());
                 player.sendSystemMessage(Component.literal("Undo successful."));
-            } else player.sendSystemMessage(Component.literal("Error: No model loaded."));
+            }
         });
         ctx.setPacketHandled(true);
     }

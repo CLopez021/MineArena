@@ -21,13 +21,13 @@ public class GenerateCommand {
         CompletableFuture.runAsync(() -> {
             try {
                 if (isGenerating || isCancelling) {
-                    command.getSource().sendFailure(Component.literal("You can only generate one model at a time! Cancel the current generation with /model ai cancel."));
+                    command.getSource().sendFailure(Component.literal("Error: You can only generate one model at a time! Cancel the current generation with /model ai cancel."));
                     return;
                 }
                 isGenerating = true;
                 textTo3D(command);
             } catch (Exception e) {
-                command.getSource().sendFailure(Component.literal(e.getLocalizedMessage()));
+                command.getSource().sendFailure(Component.literal("Error: " + e.getLocalizedMessage()));
             } finally {
                 isGenerating = false;
                 isCancelling = false;
@@ -47,7 +47,7 @@ public class GenerateCommand {
             return 1;
         }
         if (isCancelling) {
-            command.getSource().sendFailure(Component.literal("Currently cancelling the generation."));
+            command.getSource().sendFailure(Component.literal("Error: Already cancelling the current generation."));
             return 0;
         }
         isCancelling = true;

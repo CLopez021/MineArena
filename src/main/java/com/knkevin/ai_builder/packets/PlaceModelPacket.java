@@ -31,7 +31,7 @@ public class PlaceModelPacket {
             if (AIBuilder.model != null) {
                 AIBuilder.model.placeBlocks(player.level());
                 player.sendSystemMessage(Component.literal("Successfully placed model."));
-            } else player.sendSystemMessage(Component.literal("Error: No model loaded."));
+            }
         });
         ctx.setPacketHandled(true);
     }
