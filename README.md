@@ -1,6 +1,6 @@
 <p align="center"><img src="./images/ai_builder_logo.png" alt="Logo" width="200"></p>
 <h1 align="center">
-	Minecraft AI Builder
+	Mine Arena
 </h1>
 <p>A Forge mod built for Minecraft Java 1.21.1 that allows you to build anything in Minecraft using the power of AI. The AI uses a text prompt to generate a 3D model of your idea, which you can then place into your Minecraft world. Alternatively, you can import your own 3D model files.</p>
 <p>Models are automatically converted into a voxelized, blocky representations complete with textures and color matching. Players can scale, rotate, and position models in-game using intuitive keyboard and mouse controls, or through commands for more fine-tuned adjustments. </p>
@@ -31,7 +31,7 @@ Below are screenshots demonstrating AI model generation and placement in Minecra
 ![Iron Man Helmet](./images/iron_man_helmet.png)
 
 <h2>How to Install/Compile</h2>
-<p>To install this mod, simply copy the <code>MC-AI-Builder.jar</code> file into the mods folder of your Minecraft directory. Alternatively, you can directly download the file from this <a href="https://drive.google.com/uc?export=download&id=1Bp_lS0GqzacMcxNTcNYeq7HC8XZUqaBp">link</a>.
+<p>To install this mod, simply copy the <code>mine_arena-1.0.0.jar</code> file into the mods folder of your Minecraft directory.
 </p>
 <p>If you would like to compile the .jar file yourself, navigate to the root directory of the project and run <code>gradlew build</code> from the command line.</p>
 
@@ -47,7 +47,7 @@ Below are screenshots demonstrating AI model generation and placement in Minecra
 <h3>Generating a Model</h3>
 <ol>
     <li>To generate models using AI, an API key from Meshy is required. This involves creating an account on their website, and purchasing a subscription to get access to their API. This can be done here: <a href="https://www.meshy.ai/settings/api">Meshy API Page</a></li>
-    <li>After acquiring an API key, go into the config folder of your Minecraft directory, and open "ai_builder-common.toml". Paste your API key here.</li>
+    <li>After acquiring an API key, go into the config folder of your Minecraft directory, and open "mine_arena-common.toml". Paste your API key here.</li>
     <li>Once you load up your world, run the command <code>model generate &lt;prompt&gt;</code> to generate a model.
 </ol>
 
