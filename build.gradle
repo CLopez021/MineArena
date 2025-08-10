@@ -161,9 +161,10 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
-    // Simple Voice Chat API for compile time use
+    // Simple Voice Chat API for compile time use and IDE navigation
+    // implementation "de.maxhenkel.voicechat:voicechat-api:2.5.36"
     compileOnly "de.maxhenkel.voicechat:voicechat-api:2.5.36"
-    
+
     // Simple Voice Chat mod for development environment
     // Using 1.21.1 version as it should be compatible with 1.21.1
     runtimeOnly fg.deobf("maven.modrinth:simple-voice-chat:forge-1.21.1-2.5.36")

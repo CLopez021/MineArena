@@ -2,6 +2,7 @@ package com.clopez021.mine_arena.events;
 
 import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.command.ModelCommand;
+import com.clopez021.mine_arena.command.AudioCommand;
 import com.clopez021.mine_arena.models.util.Palette;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -20,6 +21,7 @@ public class ModEvents {
         @SubscribeEvent
         public static void registerCommands(final RegisterCommandsEvent event) {
             ModelCommand.register(event.getDispatcher());
+            AudioCommand.register(event.getDispatcher());
             ConfigCommand.register(event.getDispatcher());
         }
     }
