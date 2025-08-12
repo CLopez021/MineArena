@@ -7,7 +7,7 @@ import com.clopez021.mine_arena.items.ModItems;
 import com.clopez021.mine_arena.models.Model;
 import com.clopez021.mine_arena.models.util.Palette;
 import com.clopez021.mine_arena.packets.PacketHandler;
-import com.clopez021.mine_arena.voicechat.RecorderManager;
+import com.clopez021.mine_arena.audio.RecorderManager;
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;

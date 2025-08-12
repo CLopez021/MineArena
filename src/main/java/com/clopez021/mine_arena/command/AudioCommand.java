@@ -19,7 +19,10 @@ public class AudioCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(literal("audio")
             .then(literal("record")
-                .then(argument("command", string()).executes(AudioRecordCommand::startRecording))
+                .executes(AudioRecordCommand::startRecording)
+            )
+            .then(literal("transcribe")
+                .executes(AudioRecordCommand::startTranscription)
             )
         );
     }

@@ -1,4 +1,4 @@
-package com.clopez021.mine_arena.voicechat;
+package com.clopez021.mine_arena.audio;
 
 import de.maxhenkel.voicechat.api.ForgeVoicechatPlugin;
 import de.maxhenkel.voicechat.api.VoicechatApi;
