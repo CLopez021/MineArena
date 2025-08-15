@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Minecraft Voice Proxy</title>
+  <style>
+    body { 
+      font-family: system-ui, sans-serif; 
+      padding: 20px; 
+      max-width: 400px; 
+      margin: 0 auto;
+      background: #1a1a1a;
+      color: #ffffff;
+    }
+    .container {
+      background: #2a2a2a;
+      border-radius: 8px;
+      padding: 20px;
+      text-align: center;
+    }
+    h1 {
+      margin: 0 0 16px 0;
+      color: #4CAF50;
+      font-size: 1.5em;
+    }
+    .status {
+      background: #333;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 16px 0;
+      border-left: 4px solid #4CAF50;
+    }
+    .status.listening {
+      border-left-color: #FF5722;
+      background: #2d1b1b;
+    }
+    .status.error {
+      border-left-color: #f44336;
+      background: #2d1b1b;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎤 Voice Proxy</h1>
+    <div id="status" class="status">Connecting...</div>
+    <button id="enableBtn">Enable Microphone</button>
+  </div>
+
+<script>
+(() => {
+  // ====== CONFIG ======
+  const MAX_RATIO = 0.10;
+  let lang = "en-US";
+  let spells = [];
+  let isListening = false;
+  
+  const params = new URLSearchParams(location.search);
+  const wsPort = Number(params.get("wsPort") || "8765");
+  const WS_URL = `ws://127.0.0.1:${wsPort}/bridge`;
+
+  // DOM elements
+  const statusEl = document.getElementById("status");
+  const enableBtn = document.getElementById("enableBtn");
+
+  // ====== WS BRIDGE ======
+  let ws;
+  function send(msg) { 
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify(msg)); 
+    }
+  }
+  
+  function connectWS() {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => setStatus("Connected - Click to enable microphone");
+    
+    ws.onmessage = (evt) => {
+      const msg = JSON.parse(evt.data || "{}");
+      if (msg.type === "config") {
+        if (msg.lang) lang = msg.lang;
+        if (Array.isArray(msg.spells)) {
+          spells = msg.spells;
+          applyGrammarAndRestart();
+        }
+      } else if (msg.type === "start") {
+        startRecognition();
+      } else if (msg.type === "stop") {
+        stopRecognition();
+      }
+    };
+    
+    ws.onclose = () => { 
+      setStatus("Reconnecting...", false); 
+      setTimeout(connectWS, 1000); 
+    };
+    
+    ws.onerror = () => setStatus("Connection error", true);
+  }
+  connectWS();
+
+  // ====== SPEECH RECOGNITION ======
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SGL = window.SpeechGrammarList || window.webkitSpeechGrammarList;
+
+  let recog = null;
+  let grammarList = null;
+
+  function setStatus(text, isError = false) { 
+    statusEl.textContent = text;
+    statusEl.classList.remove("listening", "error");
+    if (isError) {
+      statusEl.classList.add("error");
+    } else if (isListening) {
+      statusEl.classList.add("listening");
+    }
+  }
+
+  function jsgfFrom(list) {
+    const q = s => `"${s.replace(/[\\";]/g,"")}"`;
+    const alts = (list && list.length) ? list.map(q).join(" | ") : '"placeholder"';
+    return `#JSGF V1.0; grammar spells; public <spell> = ${alts};`;
+  }
+
+  function applyGrammar() {
+    if (!SGL) return;
+    grammarList = new SGL();
+    grammarList.addFromString(jsgfFrom(spells), 1.0);
+    if (recog) recog.grammars = grammarList;
+  }
+
+  function stopRecognition() { 
+    try { 
+      if (recog) recog.abort(); 
+    } catch {} 
+    isListening = false;
+    enableBtn.disabled = false;
+    setStatus("Stopped");
+  }
+
+  function applyGrammarAndRestart() {
+    if (!isListening) return;
+    stopRecognition();
+    applyGrammar();
+    startRecognition();
+  }
+
+  function startRecognition() {
+    if (!SR) { 
+      setStatus("Speech recognition not supported", true); 
+      return; 
+    }
+    
+    if (!recog) {
+      recog = new SR();
+      recog.continuous = true;
+      recog.interimResults = false;  // Only final results
+      recog.lang = lang;
+      if (grammarList) recog.grammars = grammarList;
+
+      recog.onresult = (e) => {
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const result = e.results[i];
+          if (result.isFinal) {
+            const heard = result[0].transcript.trim();
+            const alts = [];
+            for (let k = 0; k < result.length; k++) {
+              alts.push({ text: result[k].transcript, confidence: result[k].confidence ?? null });
+            }
+            
+            const match = matchSpell(heard, spells, alts);
+            if (match) {
+              send({
+                type: "command",
+                spell: match.spell,
+                heard,
+                matchKind: match.kind,
+                distance: match.distance ?? 0,
+                confidence: match.confidence,
+                ts: Date.now()
+              });
+            }
+          }
+        }
+      };
+
+      recog.onstart = () => {
+        isListening = true;
+        enableBtn.disabled = true;
+        setStatus(`Listening (${lang})`);
+      };
+
+      recog.onend = () => {
+        if (isListening) {
+          setTimeout(() => { 
+            try { 
+              if (isListening) recog.start(); 
+            } catch {} 
+          }, 200);
+        }
+      };
+
+      recog.onerror = (e) => {
+        if (e.error === 'not-allowed') {
+          setStatus("Microphone permission denied", true);
+          isListening = false;
+          enableBtn.disabled = false;
+        }
+      };
+    }
+
+    recog.lang = lang;
+    try { 
+      recog.start(); 
+    } catch {
+      setStatus("Failed to start listening", true);
+    }
+  }
+
+  // ====== MATCHING ======
+  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s']/g," ").replace(/\s+/g," ").trim();
+  const stripVerb = s => s.replace(/\b(cast|use|activate|summon|spell)\b/g,"").trim();
+
+  function levenshtein(a, b) {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    let prev = new Uint16Array(n + 1);
+    let curr = new Uint16Array(n + 1);
+    for (let j = 0; j <= n; j++) prev[j] = j;
+    for (let i = 1; i <= m; i++) {
+      curr[0] = i;
+      const ca = a.charCodeAt(i - 1);
+      for (let j = 1; j <= n; j++) {
+        const cb = b.charCodeAt(j - 1);
+        const cost = (ca === cb) ? 0 : 1;
+        curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
+      }
+      const tmp = prev; prev = curr; curr = tmp;
+    }
+    return prev[n];
+  }
+
+  function matchSpell(heard, list, alts) {
+    const heardNorm = norm(stripVerb(norm(heard)));
+    if (!heardNorm) return null;
+
+    // 1) exact/contains
+    for (const s of list) {
+      const sNorm = norm(s);
+      if (!sNorm) continue;
+      if (heardNorm === sNorm || heardNorm.includes(sNorm) || sNorm.includes(heardNorm)) {
+        return { spell: s, kind: "exact", confidence: alts?.[0]?.confidence ?? null };
+      }
+    }
+
+    // 2) fuzzy
+    let best = { s: null, ratio: 1 };
+    for (const s of list) {
+      const sNorm = norm(s);
+      if (!sNorm) continue;
+      const d = levenshtein(heardNorm, sNorm);
+      const ratio = d / Math.max(heardNorm.length, sNorm.length, 1);
+      if (ratio < best.ratio) best = { s, ratio };
+    }
+    if (best.s && best.ratio <= MAX_RATIO) {
+      return { spell: best.s, kind: "fuzzy", distance: +best.ratio.toFixed(3), confidence: alts?.[0]?.confidence ?? null };
+    }
+    return null;
+  }
+
+  // ====== EVENT LISTENERS ======
+  enableBtn.addEventListener("click", startRecognition);
+})();
+</script>
+</body>
+</html> 

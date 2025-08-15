@@ -1,8 +1,13 @@
 package com.clopez021.mine_arena.command;
 
+import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
+import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -20,6 +25,24 @@ public class AudioCommand {
         dispatcher.register(literal("audio")
             .then(literal("record")
                 .then(argument("command", string()).executes(AudioRecordCommand::startRecording))
+            )
+            .then(literal("addSpell")
+                .then(argument("spell", greedyString()).executes(context -> {
+                    try {
+                        ServerPlayer player = context.getSource().getPlayerOrException();
+                        String spell = context.getArgument("spell", String.class);
+                        
+                        SpeechRecognitionManager.addSpell(player, spell);
+                        
+                        context.getSource().sendSuccess(() -> 
+                            Component.literal("Added spell: " + spell), false);
+                        
+                        return 1;
+                    } catch (CommandSyntaxException e) {
+                        context.getSource().sendFailure(Component.literal("Command error: " + e.getMessage()));
+                        return 0;
+                    }
+                }))
             )
         );
     }

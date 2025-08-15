@@ -168,6 +168,9 @@ dependencies {
     // Simple Voice Chat mod for development environment
     // Using 1.21.1 version as it should be compatible with 1.21.1
     runtimeOnly fg.deobf("maven.modrinth:simple-voice-chat:forge-1.21.1-2.5.36")
+
+    // Java WebSocket library for speech recognition sidecar
+    implementation 'org.java-websocket:Java-WebSocket:1.6.0'
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
