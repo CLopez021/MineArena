@@ -38,29 +38,13 @@
       border-left-color: #f44336;
       background: #2d1b1b;
     }
-    button {
-      background: #4CAF50;
-      color: white;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #45a049;
-    }
-    button:disabled {
-      background: #666;
-      cursor: not-allowed;
-    }
+
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🎤 Voice Proxy</h1>
     <div id="status" class="status">Connecting...</div>
-    <button id="enableBtn">Enable Microphone</button>
   </div>
 
 <script>
@@ -77,7 +61,6 @@
 
   // DOM elements
   const statusEl = document.getElementById("status");
-  const enableBtn = document.getElementById("enableBtn");
 
   // ====== WS BRIDGE ======
   let ws;
@@ -89,7 +72,12 @@
   
   function connectWS() {
     ws = new WebSocket(WS_URL);
-    ws.onopen = () => setStatus("Connected - Click to enable microphone");
+    ws.onopen = () => {
+      setStatus("Connected - Starting microphone...");
+      // Auto-start speech recognition once connected
+      startRecognition();
+      setStatus("Connected");
+    };
     
     ws.onmessage = (evt) => {
       const msg = JSON.parse(evt.data || "{}");
@@ -150,7 +138,6 @@
       if (recog) recog.abort(); 
     } catch {} 
     isListening = false;
-    enableBtn.disabled = false;
     setStatus("Stopped");
   }
 
@@ -184,6 +171,7 @@
               alts.push({ text: result[k].transcript, confidence: result[k].confidence ?? null });
             }
             
+            console.log("heard", heard, "spells", spells, "alts", alts);
             const match = matchSpell(heard, spells, alts);
             if (match) {
               send({
@@ -202,7 +190,6 @@
 
       recog.onstart = () => {
         isListening = true;
-        enableBtn.disabled = true;
         setStatus(`Listening (${lang})`);
       };
 
@@ -218,9 +205,8 @@
 
       recog.onerror = (e) => {
         if (e.error === 'not-allowed') {
-          setStatus("Microphone permission denied", true);
+          setStatus("Microphone permission denied - please allow and refresh", true);
           isListening = false;
-          enableBtn.disabled = false;
         }
       };
     }
@@ -285,8 +271,8 @@
     return null;
   }
 
-  // ====== EVENT LISTENERS ======
-  enableBtn.addEventListener("click", startRecognition);
+  // Auto-start when page loads
+  // Speech recognition will start automatically when WebSocket connects
 })();
 </script>
 </body>

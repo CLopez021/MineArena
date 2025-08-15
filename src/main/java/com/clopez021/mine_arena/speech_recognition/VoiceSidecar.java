@@ -18,6 +18,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import com.clopez021.mine_arena.packets.PacketHandler;
+import com.clopez021.mine_arena.packets.OpenVoiceUrlPacket;
+import net.minecraft.server.level.ServerPlayer;
+
 /**
  * Singleton client for managing Web Speech API integration with Minecraft.
  * Provides voice recognition capabilities through a browser-based sidecar interface.
@@ -75,9 +79,10 @@ public final class VoiceSidecar {
      * @param initialSpells List of spell phrases to recognize
      * @param lang Language code (e.g., "en-US")
      * @param commandHandler Callback to handle recognized speech commands
+     * @param player The ServerPlayer to send the URL prompt to
      * @throws Exception if startup fails
      */
-    public void start(List<String> initialSpells, String lang, Consumer<SpeechCommand> commandHandler) throws Exception {
+    public void start(List<String> initialSpells, String lang, Consumer<SpeechCommand> commandHandler, ServerPlayer player) throws Exception {
         if (isRunning) {
             return; // Already running
         }
@@ -96,9 +101,9 @@ public final class VoiceSidecar {
         http.createContext("/", this::handleHttpRequest);
         http.start();
 
-        // Print URL for manual navigation
+        // Send URL prompt to client
         String url = "http://127.0.0.1:" + httpPort + "/index.html?wsPort=" + wsPort + "&playerId=" + playerId;
-        System.out.println("Voice recognition URL: " + url);
+        PacketHandler.INSTANCE.send(new OpenVoiceUrlPacket(url), player.connection.getConnection());
 
         // Push initial config
         sendConfig(lang, initialSpells);

@@ -19,5 +19,6 @@ public class PacketHandler {
         int index = -1;
         INSTANCE.messageBuilder(PlaceModelPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(PlaceModelPacket::encode).decoder(PlaceModelPacket::decode).consumerMainThread(PlaceModelPacket::handle).add();
         INSTANCE.messageBuilder(UndoModelPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(UndoModelPacket::encode).decoder(UndoModelPacket::decode).consumerMainThread(UndoModelPacket::handle).add();
+        INSTANCE.messageBuilder(OpenVoiceUrlPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT).encoder(OpenVoiceUrlPacket::encode).decoder(OpenVoiceUrlPacket::decode).consumerMainThread(OpenVoiceUrlPacket::handle).add();
     }
 }

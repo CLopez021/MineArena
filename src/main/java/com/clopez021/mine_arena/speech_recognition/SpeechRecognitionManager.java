@@ -43,7 +43,7 @@ public class SpeechRecognitionManager {
         
         try {
             VoiceSidecar sidecar = VoiceSidecar.getInstance(playerId);
-            sidecar.start(spells, language, command -> handleSpeechCommand(player, command));
+            sidecar.start(spells, language, command -> handleSpeechCommand(player, command), player);
             
             System.out.println("Started voice recognition for player: " + player.getName().getString());
         } catch (Exception e) {
