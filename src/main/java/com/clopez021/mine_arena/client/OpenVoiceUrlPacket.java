@@ -1,6 +1,5 @@
-package com.clopez021.mine_arena.packets;
+package com.clopez021.mine_arena.client;
 
-import com.clopez021.mine_arena.speech_recognition.VoiceSidecarUi;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.event.network.CustomPayloadEvent;

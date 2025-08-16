@@ -1,5 +1,6 @@
 package com.clopez021.mine_arena.packets;
 
+import com.clopez021.mine_arena.client.OpenVoiceUrlPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.NetworkDirection;

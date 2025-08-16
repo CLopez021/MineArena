@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import com.clopez021.mine_arena.packets.PacketHandler;
-import com.clopez021.mine_arena.packets.OpenVoiceUrlPacket;
+import com.clopez021.mine_arena.client.OpenVoiceUrlPacket;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -311,4 +311,4 @@ public final class VoiceSidecar {
             }
         }
     }
-} 
+}
