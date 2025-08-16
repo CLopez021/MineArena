@@ -81,15 +81,18 @@
     
     ws.onmessage = (evt) => {
       const msg = JSON.parse(evt.data || "{}");
-      if (msg.type === "config") {
+      console.log("[Voice Debug] Received message:", msg);
+      
+      if (msg["type"] === "config") {
+        console.log("[Voice Debug] Config received - lang:", msg.lang, "spells:", msg.spells);
         if (msg.lang) lang = msg.lang;
         if (Array.isArray(msg.spells)) {
           spells = msg.spells;
           applyGrammarAndRestart();
         }
-      } else if (msg.type === "start") {
+      } else if (msg["type"] === "start") {
         startRecognition();
-      } else if (msg.type === "stop") {
+      } else if (msg["type"] === "stop") {
         stopRecognition();
       }
     };
@@ -135,17 +138,30 @@
 
   function stopRecognition() { 
     try { 
-      if (recog) recog.abort(); 
-    } catch {} 
+      if (recog) {
+        recog.abort();
+      }
+    } catch (e) {
+      console.log("[Voice Debug] Error stopping recognition:", e);
+    } 
     isListening = false;
     setStatus("Stopped");
   }
 
   function applyGrammarAndRestart() {
     if (!isListening) return;
-    stopRecognition();
+    console.log("[Voice Debug] Applying grammar and restarting recognition");
+    
+    // Apply new grammar to the existing recognition object
     applyGrammar();
-    startRecognition();
+    // Abort current recognition - onend will restart automatically
+    try {
+      if (recog) {
+        recog.abort();
+      }
+    } catch (e) {
+      console.log("[Voice Debug] Error aborting for restart:", e);
+    }
   }
 
   function startRecognition() {
@@ -214,7 +230,8 @@
     recog.lang = lang;
     try { 
       recog.start(); 
-    } catch {
+    } catch (e) {
+      console.log("[Voice Debug] Error starting recognition:", e);
       setStatus("Failed to start listening", true);
     }
   }
