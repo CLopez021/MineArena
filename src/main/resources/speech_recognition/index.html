@@ -86,7 +86,9 @@
       if (msg["type"] === "config") {
         console.log("[Voice Debug] Config received - lang:", msg.lang, "spells:", msg.spells);
         if (msg.lang) lang = msg.lang;
+        console.log("[Voice Debug] Lang:", lang);
         if (Array.isArray(msg.spells)) {
+          console.log("[Voice Debug] Updated spells array:", msg.spells);
           spells = msg.spells;
           applyGrammarAndRestart();
         }
@@ -166,7 +168,7 @@
 
   function startRecognition() {
     if (!SR) { 
-      setStatus("Speech recognition not supported", true); 
+      setStatus("Speech recognition not supported", true);
       return; 
     }
     
