@@ -1,4 +1,4 @@
-package com.clopez021.mine_arena.speech_recognition;
+package com.clopez021.mine_arena.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.ConfirmScreen;

@@ -1,5 +1,7 @@
 package com.clopez021.mine_arena.speech_recognition;
 
+import com.clopez021.mine_arena.packets.PacketHandler;
+import com.clopez021.mine_arena.packets.VoiceSidecarConfigPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -41,15 +43,8 @@ public class SpeechRecognitionManager {
         UUID playerId = player.getUUID();
         playerSpells.put(playerId, new ArrayList<>(spells));
         
-        try {
-            VoiceSidecar sidecar = VoiceSidecar.getInstance(playerId);
-            sidecar.start(spells, language, command -> handleSpeechCommand(player, command), player);
-            
-            System.out.println("Started voice recognition for player: " + player.getName().getString());
-        } catch (Exception e) {
-            System.err.println("Failed to start voice recognition for player " + player.getName().getString() + ": " + e.getMessage());
-            e.printStackTrace();
-        }
+        // Ask the client to start the sidecar
+        PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, spells), player.connection.getConnection());
     }
     
     /**
@@ -59,9 +54,9 @@ public class SpeechRecognitionManager {
      */
     public static void stopVoiceRecognition(ServerPlayer player) {
         UUID playerId = player.getUUID();
-        VoiceSidecar.removeInstance(playerId);
         playerSpells.remove(playerId);
         
+        // TODO: Send stop packet to client if needed
         System.out.println("Stopped voice recognition for player: " + player.getName().getString());
     }
     
@@ -75,10 +70,8 @@ public class SpeechRecognitionManager {
         UUID playerId = player.getUUID();
         playerSpells.put(playerId, new ArrayList<>(spells));
         
-        VoiceSidecar sidecar = VoiceSidecar.getInstance(playerId);
-        if (sidecar.isRunning()) {
-            sidecar.sendConfig(DEFAULT_LANGUAGE, spells);
-        }
+        // Send config update to client
+        PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(DEFAULT_LANGUAGE, spells), player.connection.getConnection());
     }
     
     /**
@@ -95,13 +88,8 @@ public class SpeechRecognitionManager {
         if (!spells.contains(spell)) {
             spells.add(spell);
             
-            // Auto-start voice recognition if not running
-            VoiceSidecar sidecar = VoiceSidecar.getInstance(playerId);
-            if (!sidecar.isRunning()) {
-                startVoiceRecognition(player, spells, DEFAULT_LANGUAGE);
-            } else {
-                updateSpells(player, spells);
-            }
+            // Auto-start voice recognition if not running, or update if running
+            updateSpells(player, spells);
         }
     }
     
