@@ -41,9 +41,9 @@ public class VoiceSidecarConfigPacket {
 			var player = Minecraft.getInstance().player;
 			if (player == null) return;
 			try {
-				var sidecar = VoiceSidecar.getInstance(player.getUUID());
+				var sidecar = VoiceSidecar.getInstance();
 				if (!sidecar.isRunning()) {
-					sidecar.start(spells, lang, null);
+					sidecar.start(spells, lang);
 				} else {
 					sidecar.sendConfig(lang, spells);
 				}

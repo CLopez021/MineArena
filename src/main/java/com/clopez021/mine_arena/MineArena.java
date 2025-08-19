@@ -8,7 +8,7 @@ import com.clopez021.mine_arena.models.Model;
 import com.clopez021.mine_arena.models.util.Palette;
 import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.voicechat.RecorderManager;
-import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
+
 import com.mojang.logging.LogUtils;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
@@ -76,8 +76,8 @@ public class MineArena {
     public void onServerStopping(ServerStoppingEvent event) {
         // Clean up any active recordings when server stops
         RecorderManager.stopAllRecordings();
-        // Clean up speech recognition instances
-        SpeechRecognitionManager.shutdownAll();
+        // Clean up player management and speech recognition instances
+        com.clopez021.mine_arena.player.PlayerManager.shutdownAll();
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent

@@ -50,7 +50,6 @@
 <script>
 (() => {
   // ====== CONFIG ======
-  const MAX_RATIO = 0.10;
   let lang = "en-US";
   let spells = [];
   let isListening = false;
@@ -90,7 +89,7 @@
         if (Array.isArray(msg.spells)) {
           console.log("[Voice Debug] Updated spells array:", msg.spells);
           spells = msg.spells;
-          applyGrammarAndRestart();
+          // No need to restart - just update the spell list
         }
       } else if (msg["type"] === "start") {
         startRecognition();
@@ -110,32 +109,158 @@
 
   // ====== SPEECH RECOGNITION ======
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  const SGL = window.SpeechGrammarList || window.webkitSpeechGrammarList;
 
   let recog = null;
-  let grammarList = null;
 
   function setStatus(text, isError = false) { 
-    statusEl.textContent = text;
-    statusEl.classList.remove("listening", "error");
-    if (isError) {
-      statusEl.classList.add("error");
-    } else if (isListening) {
-      statusEl.classList.add("listening");
+    statusEl.textContent = text; 
+    statusEl.style.color = isError ? "#ff4444" : "#ffffff";
+  }
+
+  // ===================== Normalization helpers =====================
+
+  /**
+   * normalize(s)
+   *  - Lowercase
+   *  - Keep letters (a–z), digits (0–9), spaces, and apostrophes.
+   *    The regex /[^a-z0-9\s']/g matches any character NOT in that set and
+   *    replaces it with a single space.
+   *  - Collapse multiple spaces -> one space
+   *  - Trim leading/trailing spaces
+   */
+  function normalize(s) {
+    return String(s)
+      .toLowerCase()
+      .replace(/[^a-z0-9\s']/g, " ") // keep a-z, 0-9, spaces, apostrophes
+      .replace(/\s+/g, " ")          // collapse runs of whitespace
+      .trim();
+  }
+
+  /** tokenize(s): normalize + split on single spaces */
+  function tokenize(s) {
+    const n = normalize(s);
+    return n ? n.split(" ") : [];
+  }
+
+  /** joinTokens(tokens): join tokens with single spaces to compare phrases */
+  function joinTokens(toks) {
+    return toks.join(" ");
+  }
+
+  // ===================== Levenshtein distance =====================
+  
+  function levenshtein(a, b) {
+    if (a.length === 0) return b.length;
+    if (b.length === 0) return a.length;
+    
+    const matrix = [];
+    for (let i = 0; i <= b.length; i++) {
+      matrix[i] = [i];
     }
+    for (let j = 0; j <= a.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= b.length; i++) {
+      for (let j = 1; j <= a.length; j++) {
+        if (b.charAt(i - 1) === a.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1, // substitution
+            matrix[i][j - 1] + 1,     // insertion
+            matrix[i - 1][j] + 1      // deletion
+          );
+        }
+      }
+    }
+    
+    return matrix[b.length][a.length];
   }
 
-  function jsgfFrom(list) {
-    const q = s => `"${s.replace(/[\\";]/g,"")}"`;
-    const alts = (list && list.length) ? list.map(q).join(" | ") : '"placeholder"';
-    return `#JSGF V1.0; grammar spells; public <spell> = ${alts};`;
+  // ===================== Core matching logic =====================
+
+  const MAX_EDITS = 1; // Allow at most 1 total character edit (sub/ins/del)
+
+  /**
+   * tryMatchSpan(spanTokens, spellNorm)
+   *  - spanTokens: contiguous tokens from the HEARD text (already normalized)
+   *  - spellNorm:  normalized spell string (spaces preserved)
+   *
+   * Checks two things:
+   *   1) No-merge: span tokens as-is vs spell (<= MAX_EDITS)
+   *   2) Single-merge: try compacting exactly ONE adjacent pair inside the span
+   *      (remove the space between tokens[j] and tokens[j+1]) and compare (<=1 edit).
+   *
+   * Returns true if either passes, false otherwise.
+   */
+  function tryMatchSpan(spanTokens, spellNorm) {
+    // 1) No merge
+    const phrase = joinTokens(spanTokens);
+    if (levenshtein(phrase, spellNorm) <= MAX_EDITS) return true;
+
+    // 2) Exactly one adjacent merge (remove the space once)
+    if (spanTokens.length >= 2) {
+      for (let j = 0; j < spanTokens.length - 1; j++) {
+        const merged = [
+          ...spanTokens.slice(0, j),
+          spanTokens[j] + spanTokens[j + 1], // compact these two
+          ...spanTokens.slice(j + 2)
+        ];
+        const mergedPhrase = joinTokens(merged);
+        if (levenshtein(mergedPhrase, spellNorm) <= MAX_EDITS) return true;
+      }
+    }
+
+    return false;
   }
 
-  function applyGrammar() {
-    if (!SGL) return;
-    grammarList = new SGL();
-    grammarList.addFromString(jsgfFrom(spells), 1.0);
-    if (recog) recog.grammars = grammarList;
+  /**
+   * matchSpell(heard, spells, alts = [])
+   *  - heard: top transcript string from ASR
+   *  - spells: array of spell strings (may be 1+ words)
+   *  - alts: optional n-best hypotheses (each with {text|transcript})
+   *
+   * Returns the matched spell string or null. Binary decision — match or not.
+   *
+   * Rules:
+   *  - Never modify/compact the spell text.
+   *  - Only compact ONE adjacent pair in the HEARD phrase (tested exhaustively).
+   *  - For a spell with m tokens, we only consider heard spans of length m (no-merge)
+   *    and length m+1 (one merge reduces it back to m).
+   */
+  function matchSpell(heard, spells, alts = []) {
+    const hyps = [heard, ...alts.map(a => a.text || a.transcript).filter(Boolean)];
+
+    // Pre-normalize spells once
+    const spellInfos = spells.map(s => {
+      const norm = normalize(s);
+      return { orig: s, norm, tokens: norm ? norm.split(" ") : [] };
+    });
+
+    for (const hyp of hyps) {
+      const heardTokens = tokenize(hyp);
+      if (!heardTokens.length) continue;
+
+      for (const sp of spellInfos) {
+        const m = sp.tokens.length;
+        if (m === 0) continue;
+
+        // A) spans of length m (no-merge path allowed inside tryMatchSpan)
+        for (let i = 0; i + m <= heardTokens.length; i++) {
+          const span = heardTokens.slice(i, i + m);
+          if (tryMatchSpan(span, sp.norm)) return sp.orig;
+        }
+
+        // B) spans of length m+1 (exactly one merge will reduce to m)
+        for (let i = 0; i + m + 1 <= heardTokens.length; i++) {
+          const span = heardTokens.slice(i, i + m + 1);
+          if (tryMatchSpan(span, sp.norm)) return sp.orig;
+        }
+      }
+    }
+
+    return null;
   }
 
   function stopRecognition() { 
@@ -150,22 +275,6 @@
     setStatus("Stopped");
   }
 
-  function applyGrammarAndRestart() {
-    if (!isListening) return;
-    console.log("[Voice Debug] Applying grammar and restarting recognition");
-    
-    // Apply new grammar to the existing recognition object
-    applyGrammar();
-    // Abort current recognition - onend will restart automatically
-    try {
-      if (recog) {
-        recog.abort();
-      }
-    } catch (e) {
-      console.log("[Voice Debug] Error aborting for restart:", e);
-    }
-  }
-
   function startRecognition() {
     if (!SR) { 
       setStatus("Speech recognition not supported", true);
@@ -177,7 +286,6 @@
       recog.continuous = true;
       recog.interimResults = false;  // Only final results
       recog.lang = lang;
-      if (grammarList) recog.grammars = grammarList;
 
       recog.onresult = (e) => {
         for (let i = e.resultIndex; i < e.results.length; i++) {
@@ -190,16 +298,11 @@
             }
             
             console.log("heard", heard, "spells", spells, "alts", alts);
-            const match = matchSpell(heard, spells, alts);
-            if (match) {
+            const matchedSpell = matchSpell(heard, spells, alts);
+            if (matchedSpell) {
               send({
-                type: "command",
-                spell: match.spell,
-                heard,
-                matchKind: match.kind,
-                distance: match.distance ?? 0,
-                confidence: match.confidence,
-                ts: Date.now()
+                type: "spellCast",
+                spell: matchedSpell
               });
             }
           }
@@ -238,57 +341,7 @@
     }
   }
 
-  // ====== MATCHING ======
-  const norm = s => s.toLowerCase().replace(/[^a-z0-9\s']/g," ").replace(/\s+/g," ").trim();
-  const stripVerb = s => s.replace(/\b(cast|use|activate|summon|spell)\b/g,"").trim();
 
-  function levenshtein(a, b) {
-    const m = a.length, n = b.length;
-    if (m === 0) return n;
-    if (n === 0) return m;
-    let prev = new Uint16Array(n + 1);
-    let curr = new Uint16Array(n + 1);
-    for (let j = 0; j <= n; j++) prev[j] = j;
-    for (let i = 1; i <= m; i++) {
-      curr[0] = i;
-      const ca = a.charCodeAt(i - 1);
-      for (let j = 1; j <= n; j++) {
-        const cb = b.charCodeAt(j - 1);
-        const cost = (ca === cb) ? 0 : 1;
-        curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost);
-      }
-      const tmp = prev; prev = curr; curr = tmp;
-    }
-    return prev[n];
-  }
-
-  function matchSpell(heard, list, alts) {
-    const heardNorm = norm(stripVerb(norm(heard)));
-    if (!heardNorm) return null;
-
-    // 1) exact/contains
-    for (const s of list) {
-      const sNorm = norm(s);
-      if (!sNorm) continue;
-      if (heardNorm === sNorm || heardNorm.includes(sNorm) || sNorm.includes(heardNorm)) {
-        return { spell: s, kind: "exact", confidence: alts?.[0]?.confidence ?? null };
-      }
-    }
-
-    // 2) fuzzy
-    let best = { s: null, ratio: 1 };
-    for (const s of list) {
-      const sNorm = norm(s);
-      if (!sNorm) continue;
-      const d = levenshtein(heardNorm, sNorm);
-      const ratio = d / Math.max(heardNorm.length, sNorm.length, 1);
-      if (ratio < best.ratio) best = { s, ratio };
-    }
-    if (best.s && best.ratio <= MAX_RATIO) {
-      return { spell: best.s, kind: "fuzzy", distance: +best.ratio.toFixed(3), confidence: alts?.[0]?.confidence ?? null };
-    }
-    return null;
-  }
 
   // Auto-start when page loads
   // Speech recognition will start automatically when WebSocket connects

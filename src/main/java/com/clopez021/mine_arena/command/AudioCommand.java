@@ -1,6 +1,6 @@
 package com.clopez021.mine_arena.command;
 
-import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
+import com.clopez021.mine_arena.player.PlayerManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
@@ -32,7 +32,7 @@ public class AudioCommand {
                         ServerPlayer player = context.getSource().getPlayerOrException();
                         String spell = context.getArgument("spell", String.class);
                         
-                        SpeechRecognitionManager.addSpell(player, spell);
+                        PlayerManager.getInstance().addSpell(player, spell);
                         
                         context.getSource().sendSuccess(() -> 
                             Component.literal("Added spell: " + spell), false);
