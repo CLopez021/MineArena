@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Mod.EventBusSubscriber(modid = "mine_arena")
 public class PlayerManager {
     
-    private static PlayerManager instance;
+    private static PlayerManager instance=new PlayerManager();
     
     private final Map<UUID, List<String>> playerSpells = new ConcurrentHashMap<>();
     private final Map<UUID, String> playerLanguages = new ConcurrentHashMap<>();
@@ -38,7 +38,9 @@ public class PlayerManager {
      * @return The PlayerManager instance
      */
     public static PlayerManager getInstance() {
+        System.out.println("Getting instance of PlayerManager");
         if (instance == null) {
+            System.out.println("Instance is null");
             synchronized (PlayerManager.class) {
                 if (instance == null) {
                     instance = new PlayerManager();
@@ -211,7 +213,7 @@ public class PlayerManager {
             }
             
             // Optionally auto-start voice recognition on login
-            // manager.startVoiceRecognition(player);
+            manager.startVoiceRecognition(player);
         }
     }
     
