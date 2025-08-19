@@ -1,50 +1,40 @@
 package com.clopez021.mine_arena.speech_recognition;
 
+import com.clopez021.mine_arena.client.speech_recognition.VoiceSidecar;
 import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.packets.VoiceSidecarConfigPacket;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manager class for handling speech recognition integration with Minecraft events.
- * This class provides a convenient way to manage voice sidecars for players.
+ * Manager class for handling speech recognition functionality.
+ * This class focuses solely on speech recognition operations.
+ * Player management is handled by PlayerManager.
  */
-@Mod.EventBusSubscriber(modid = "mine_arena")
 public class SpeechRecognitionManager {
     
-    private static final Map<UUID, List<String>> playerSpells = new ConcurrentHashMap<>();
-    private static final String DEFAULT_LANGUAGE = "en-US";
-    
-    // Default spell list - empty, players add their own
-    private static final List<String> DEFAULT_SPELLS = Arrays.asList();
+    // Track which players have active voice recognition
+    private static final Set<UUID> activeVoiceRecognition = ConcurrentHashMap.newKeySet();
     
     /**
-     * Starts voice recognition for a player with default spells.
-     * 
-     * @param player The ServerPlayer to start voice recognition for
-     */
-    public static void startVoiceRecognition(ServerPlayer player) {
-        startVoiceRecognition(player, DEFAULT_SPELLS, DEFAULT_LANGUAGE);
-    }
-    
-    /**
-     * Starts voice recognition for a player with custom spells.
+     * Starts voice recognition for a player with specified spells and language.
      * 
      * @param player The ServerPlayer to start voice recognition for
      * @param spells List of spell phrases to recognize
      * @param language Language code (e.g., "en-US")
      */
     public static void startVoiceRecognition(ServerPlayer player, List<String> spells, String language) {
-        UUID playerId = player.getUUID();
-        playerSpells.put(playerId, new ArrayList<>(spells));
-        
-        // Ask the client to start the sidecar
-        PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, spells), player.connection.getConnection());
+        if (!isVoiceRecognitionActive(player)) {
+            activeVoiceRecognition.add(player.getUUID());
+            
+            // Send config to client to start the sidecar
+            PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, spells), player.connection.getConnection());
+            
+            System.out.println("Started voice recognition for player: " + player.getName().getString() + 
+                " with " + spells.size() + " spells in language: " + language);
+        }
     }
     
     /**
@@ -53,114 +43,38 @@ public class SpeechRecognitionManager {
      * @param player The ServerPlayer to stop voice recognition for
      */
     public static void stopVoiceRecognition(ServerPlayer player) {
-        UUID playerId = player.getUUID();
-        playerSpells.remove(playerId);
-        
-        // TODO: Send stop packet to client if needed
-        System.out.println("Stopped voice recognition for player: " + player.getName().getString());
+        if (isVoiceRecognitionActive(player)) {
+            activeVoiceRecognition.remove(player.getUUID());
+            // TODO: Send stop packet to client if needed
+            System.out.println("Stopped voice recognition for player: " + player.getName().getString());
+        }
     }
     
     /**
-     * Updates the spell list for a player.
+     * Updates the configuration for an active voice recognition session.
      * 
-     * @param player The ServerPlayer to update spells for
+     * @param player The ServerPlayer to update configuration for
+     * @param language New language code
      * @param spells New list of spell phrases
      */
-    public static void updateSpells(ServerPlayer player, List<String> spells) {
-        UUID playerId = player.getUUID();
-        playerSpells.put(playerId, new ArrayList<>(spells));
-        
-        // Send config update to client
-        PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(DEFAULT_LANGUAGE, spells), player.connection.getConnection());
-    }
-    
-    /**
-     * Adds a spell to a player's recognition list.
-     * Auto-starts voice recognition if not already running.
-     * 
-     * @param player The ServerPlayer to add spell for
-     * @param spell The spell phrase to add
-     */
-    public static void addSpell(ServerPlayer player, String spell) {
-        UUID playerId = player.getUUID();
-        List<String> spells = playerSpells.computeIfAbsent(playerId, k -> new ArrayList<>(DEFAULT_SPELLS));
-        
-        if (!spells.contains(spell)) {
-            spells.add(spell);
+    public static void updateConfiguration(ServerPlayer player, String language, List<String> spells) {
+        if (isVoiceRecognitionActive(player)) {
+            // Send updated config to client
+            PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, spells), player.connection.getConnection());
             
-            // Auto-start voice recognition if not running, or update if running
-            updateSpells(player, spells);
+            System.out.println("Updated voice recognition config for player: " + player.getName().getString() + 
+                " with " + spells.size() + " spells in language: " + language);
         }
     }
     
     /**
-     * Removes a spell from a player's recognition list.
+     * Checks if voice recognition is currently active for a player.
      * 
-     * @param player The ServerPlayer to remove spell for
-     * @param spell The spell phrase to remove
+     * @param player The ServerPlayer to check
+     * @return true if voice recognition is active, false otherwise
      */
-    public static void removeSpell(ServerPlayer player, String spell) {
-        UUID playerId = player.getUUID();
-        List<String> spells = playerSpells.get(playerId);
-        
-        if (spells != null && spells.remove(spell)) {
-            updateSpells(player, spells);
-        }
-    }
-    
-    /**
-     * Gets the current spell list for a player.
-     * 
-     * @param player The ServerPlayer to get spells for
-     * @return List of spell phrases, or empty list if none configured
-     */
-    public static List<String> getSpells(ServerPlayer player) {
-        return playerSpells.getOrDefault(player.getUUID(), Collections.emptyList());
-    }
-    
-    /**
-     * Handles a speech command recognized for a player.
-     * Outputs the match to Minecraft chat.
-     * 
-     * @param player The ServerPlayer who spoke the command
-     * @param command The recognized speech command
-     */
-    private static void handleSpeechCommand(ServerPlayer player, SpeechCommand command) {
-        String spell = command.getSpell();
-        String heard = command.getHeard();
-        double confidence = command.getConfidence();
-        String matchType = command.getMatchKind();
-        
-        // Output to console for debugging
-        System.out.printf("[Voice] Player %s: '%s' -> %s (%s, conf: %.2f)%n", 
-            player.getName().getString(), heard, spell, matchType, confidence);
-        
-        // Output to Minecraft chat
-        String chatMessage = String.format("🎤 Voice: \"%s\" -> %s (%s)", 
-            heard, spell, matchType);
-        
-        player.sendSystemMessage(net.minecraft.network.chat.Component.literal(chatMessage));
-    }
-    
-    /**
-     * Event handler for player login - automatically start voice recognition.
-     */
-    @SubscribeEvent
-    public static void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            // Optionally auto-start voice recognition on login
-            // startVoiceRecognition(player);
-        }
-    }
-    
-    /**
-     * Event handler for player logout - clean up voice recognition resources.
-     */
-    @SubscribeEvent
-    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            stopVoiceRecognition(player);
-        }
+    public static boolean isVoiceRecognitionActive(ServerPlayer player) {
+        return activeVoiceRecognition.contains(player.getUUID());
     }
     
     /**
@@ -168,8 +82,7 @@ public class SpeechRecognitionManager {
      * Should be called during server shutdown.
      */
     public static void shutdownAll() {
-        VoiceSidecar.getAllInstances().keySet().forEach(VoiceSidecar::removeInstance);
-        playerSpells.clear();
+        activeVoiceRecognition.clear();
         System.out.println("Shut down all voice recognition instances");
     }
 } 
