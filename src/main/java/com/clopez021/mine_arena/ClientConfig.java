@@ -15,7 +15,7 @@ public class ClientConfig
     public static String meshyApiKey;
 
     public static final ForgeConfigSpec.ConfigValue<String> MESHY_API_KEY = BUILDER
-        .comment("Meshy API Key for 3D model generation (client-side)")
+        .comment("Meshy API Key")
         .define("meshyApiKey", "YOUR_API_KEY");
 
     static final ForgeConfigSpec SPEC = BUILDER.build();
