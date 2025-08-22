@@ -23,7 +23,7 @@ import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.function.IntConsumer;
 
-import static com.clopez021.mine_arena.Config.meshyApiKey;
+import static com.clopez021.mine_arena.ClientConfig.meshyApiKey;
 import static com.clopez021.mine_arena.command.GenerateCommand.isCancelling;
 
 public class Meshy {
