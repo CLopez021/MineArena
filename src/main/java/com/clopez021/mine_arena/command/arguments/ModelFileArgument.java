@@ -36,7 +36,7 @@ public class ModelFileArgument implements ArgumentType<String> {
         if (directory.isDirectory())
             for (String path: Objects.requireNonNull(directory.list())) {
                 path = path.toLowerCase();
-                if (path.endsWith(".stl") || path.endsWith(".obj"))
+                if (path.endsWith(".obj"))
                     fileList.add(path);
             }
         return fileList;

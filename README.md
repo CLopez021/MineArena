@@ -4,7 +4,7 @@
 </h1>
 <p>A Forge mod built for Minecraft Java 1.21.1 that allows you to build anything in Minecraft using the power of AI. The AI uses a text prompt to generate a 3D model of your idea, which you can then place into your Minecraft world. Alternatively, you can import your own 3D model files.</p>
 <p>Models are automatically converted into a voxelized, blocky representations complete with textures and color matching. Players can scale, rotate, and position models in-game using intuitive keyboard and mouse controls, or through commands for more fine-tuned adjustments. </p>
-<p>This mod supports .obj and .stl file formats, and provides a real-time preview of the model as it is transformed and placed within the world.</p>
+<p>This mod supports .obj file format, and provides a real-time preview of the model as it is transformed and placed within the world.</p>
 
 ## Demo
 
@@ -84,7 +84,7 @@ Below are screenshots demonstrating AI model generation and placement in Minecra
 <p>You can also manipulate models using in-game commands. The <code>/model</code> command offers several subcommands for loading, transforming, and adjusting models.</p>
 
 <h4><code>/model load &lt;filename&gt;</code></h4>
-<p>Loads a model from the <code>models</code> folder. Supported formats: <code>.stl</code> and <code>.obj</code>.</p>
+<p>Loads a model from the <code>models</code> folder. Supported format: <code>.obj</code>.</p>
 
 <h4><code>/model generate...</code></h4>
 <ul>
