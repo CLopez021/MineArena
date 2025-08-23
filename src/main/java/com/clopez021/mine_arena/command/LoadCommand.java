@@ -3,8 +3,6 @@ package com.clopez021.mine_arena.command;
 import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.models.Model;
 import com.clopez021.mine_arena.models.ObjModel;
-import com.clopez021.mine_arena.models.StlAsciiModel;
-import com.clopez021.mine_arena.models.StlBinaryModel;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.client.Minecraft;
@@ -13,9 +11,7 @@ import net.minecraft.network.chat.Component;
 import org.apache.commons.io.FilenameUtils;
 import org.openjdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 
 /**
@@ -48,28 +44,13 @@ public class LoadCommand {
      * @param file A File to a 3D model.
      * @return A Model constructed from the file.
      * @throws IOException The File could not be opened.
-     * @throws ValueException The File was not an STL or OBJ file.
+     * @throws ValueException The File was not an OBJ file.
      */
     public static Model loadModel(File file) throws IOException, ValueException {
         String extension = FilenameUtils.getExtension(file.getName()).toLowerCase();
-        if (extension.equals("obj"))
+        if (extension.equals("obj")) {
             return new ObjModel(file);
-        if (extension.equals("stl")) {
-            if (isStlAscii(file))
-                return new StlAsciiModel(file);
-            return new StlBinaryModel(file);
         }
-        throw new ValueException("Error: The file is not a valid model type.");
-    }
-
-    /**
-     * @param file A File to an STL model.
-     * @return Whether the File is in ASCII format.
-     * @throws IOException The file could not be opened.
-     */
-    private static boolean isStlAscii(File file) throws IOException {
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            return br.readLine().strip().startsWith("solid");
-        }
+        throw new ValueException("Error: The file is not a valid OBJ model file.");
     }
 }
