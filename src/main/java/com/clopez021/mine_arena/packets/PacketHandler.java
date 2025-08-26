@@ -21,5 +21,6 @@ public class PacketHandler {
         INSTANCE.messageBuilder(UndoModelPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(UndoModelPacket::encode).decoder(UndoModelPacket::decode).consumerMainThread(UndoModelPacket::handle).add();
         INSTANCE.messageBuilder(VoiceSidecarConfigPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT).encoder(VoiceSidecarConfigPacket::encode).decoder(VoiceSidecarConfigPacket::decode).consumerMainThread(VoiceSidecarConfigPacket::handle).add();
         INSTANCE.messageBuilder(RecognizedSpeechPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(RecognizedSpeechPacket::encode).decoder(RecognizedSpeechPacket::decode).consumerMainThread(RecognizedSpeechPacket::handle).add();
+        INSTANCE.messageBuilder(ModelEntitySyncPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT).encoder(ModelEntitySyncPacket::encode).decoder(ModelEntitySyncPacket::decode).consumerMainThread(ModelEntitySyncPacket::handle).add();
     }
 }

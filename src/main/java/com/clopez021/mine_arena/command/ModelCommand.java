@@ -3,6 +3,8 @@ package com.clopez021.mine_arena.command;
 import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.entity.ModelEntity;
 import com.clopez021.mine_arena.entity.ModEntities;
+import com.clopez021.mine_arena.packets.ModelEntitySyncPacket;
+import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.command.arguments.ApplySetArgument;
 import com.clopez021.mine_arena.command.arguments.AxisArgument;
 import com.clopez021.mine_arena.command.arguments.DirectionArgument;
@@ -15,6 +17,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.PacketDistributor;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
@@ -89,6 +92,10 @@ public class ModelCommand {
 		// set render/collision bounds based on current model
 		e.setFromModelBounds(MineArena.model.minCorner, MineArena.model.maxCorner);
 		level.addFreshEntity(e);
+		
+		// sync voxel data to clients
+		PacketHandler.INSTANCE.send(new ModelEntitySyncPacket(e.getId(), e.microScale, e.minCorner.x, e.minCorner.y, e.minCorner.z, e.voxels), PacketDistributor.TRACKING_ENTITY.with(e));
+		
 		source.sendSystemMessage(Component.literal("Spawned model entity with microScale=" + micro + ", voxels=" + e.voxels.size()));
 		return 1;
 	}
@@ -124,6 +131,10 @@ public class ModelCommand {
 		e.minCorner.set(0, 0, 0);
 		e.setFromModelBounds(new org.joml.Vector3f(0, 0, 0), new org.joml.Vector3f(1, 3, 1));
 		level.addFreshEntity(e);
+		
+		// sync voxel data to clients
+		PacketHandler.INSTANCE.send(new ModelEntitySyncPacket(e.getId(), e.microScale, e.minCorner.x, e.minCorner.y, e.minCorner.z, e.voxels), PacketDistributor.TRACKING_ENTITY.with(e));
+		
 		source.sendSystemMessage(Component.literal("Spawned one-block model entity."));
 		return 1;
 	}

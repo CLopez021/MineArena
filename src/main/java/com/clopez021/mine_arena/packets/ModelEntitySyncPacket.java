@@ -3,15 +3,15 @@ package com.clopez021.mine_arena.packets;
 import com.clopez021.mine_arena.entity.ModelEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.event.network.CustomPayloadEvent;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Supplier;
 
 public class ModelEntitySyncPacket {
 	private final int entityId;
@@ -41,7 +41,7 @@ public class ModelEntitySyncPacket {
 			buf.writeVarInt(pos.getX());
 			buf.writeVarInt(pos.getY());
 			buf.writeVarInt(pos.getZ());
-			ResourceLocation key = Block.REGISTRY.getKey(state.getBlock());
+			ResourceLocation key = BuiltInRegistries.BLOCK.getKey(state.getBlock());
 			buf.writeResourceLocation(key);
 		}
 	}
@@ -59,15 +59,15 @@ public class ModelEntitySyncPacket {
 			int y = buf.readVarInt();
 			int z = buf.readVarInt();
 			ResourceLocation key = buf.readResourceLocation();
-			Block block = Block.REGISTRY.get(key);
+			Block block = BuiltInRegistries.BLOCK.get(key);
 			BlockState state = block.defaultBlockState();
 			map.put(new BlockPos(x, y, z), state);
 		}
 		return new ModelEntitySyncPacket(id, micro, minX, minY, minZ, map);
 	}
 
-	public static void handle(ModelEntitySyncPacket pkt, Supplier<NetworkEvent.Context> ctx) {
-		ctx.get().enqueueWork(() -> {
+	public static void handle(ModelEntitySyncPacket pkt, CustomPayloadEvent.Context ctx) {
+		ctx.enqueueWork(() -> {
 			var level = Minecraft.getInstance().level;
 			if (level == null) return;
 			var ent = level.getEntity(pkt.entityId);
@@ -77,6 +77,6 @@ public class ModelEntitySyncPacket {
 				me.setVoxels(pkt.voxels);
 			}
 		});
-		ctx.get().setPacketHandled(true);
+		ctx.setPacketHandled(true);
 	}
 } 
