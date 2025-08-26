@@ -36,11 +36,11 @@ public class ModelEntityRenderer extends EntityRenderer<ModelEntity> {
         int light1 = LevelRenderer.getLightColor(entity.level(), entity.blockPosition().above());
 
         // bottom block
-        blockRenderer.renderSingleBlock(state, pose, buf, light0, OverlayTexture.NO_OVERLAY);
+        blockRenderer.renderSingleBlock(state, pose, buf, light0, OverlayTexture.NO_OVERLAY, net.minecraftforge.client.model.data.ModelData.EMPTY, null);
 
         // top block (translate up by exactly 1 block)
         pose.translate(0.0, 1.0, 0.0);
-        blockRenderer.renderSingleBlock(state, pose, buf, light1, OverlayTexture.NO_OVERLAY);
+        blockRenderer.renderSingleBlock(state, pose, buf, light1, OverlayTexture.NO_OVERLAY, net.minecraftforge.client.model.data.ModelData.EMPTY, null);
 
         pose.popPose();
 	}
