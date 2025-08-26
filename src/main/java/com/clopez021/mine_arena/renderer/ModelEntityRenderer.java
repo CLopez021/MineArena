@@ -10,39 +10,49 @@ import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
-import net.minecraft.client.renderer.block.BlockRenderDispatcher;
+import net.minecraft.core.registries.BuiltInRegistries;
+import java.util.logging.Logger;
 public class ModelEntityRenderer extends EntityRenderer<ModelEntity> {
-	private final BlockRenderDispatcher blockRenderer;
-    public ModelEntityRenderer(EntityRendererProvider.Context context) {
+	private final net.minecraft.client.renderer.block.BlockRenderDispatcher blockRenderer;
+	public ModelEntityRenderer(EntityRendererProvider.Context context) {
 		super(context);
-        this.blockRenderer = context.getBlockRenderDispatcher();
+		this.blockRenderer = context.getBlockRenderDispatcher();
 	}
 
 	@Override
 	public void render(ModelEntity entity, float yaw, float partialTicks, PoseStack pose, MultiBufferSource buf, int packedLight) {
-        super.render(entity, yaw, partialTicks, pose, buf, packedLight);
+		super.render(entity, yaw, partialTicks, pose, buf, packedLight);
 
-        pose.pushPose();
+		pose.pushPose();
+		// center local block grid on the entity position (so local 0,0,0 is centered at entity)
+		pose.translate(-0.5, 0.0, -0.5);
 
-        // Entity position is already applied; center the first cube on the entity
-        // (renderSingleBlock draws a [0..1] cube at the current origin)
-        pose.translate(-0.5, 0.0, -0.5);
+		// draw each voxel block at its local integer offset
+		for (var entry : entity.voxels.entrySet()) {
+			var localPos = entry.getKey();
+			BlockState state = entry.getValue();
+			ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
+            Logger.getLogger("MineArena").info("Voxel block: " + blockId + " at " + localPos);
 
-        var state = Blocks.IRON_BLOCK.defaultBlockState();
+			pose.pushPose();
+			pose.translate(localPos.getX(), localPos.getY(), localPos.getZ());
 
-        // You can sample lighting per block if you want nicer lighting:
-        int light0 = LevelRenderer.getLightColor(entity.level(), entity.blockPosition());
-        int light1 = LevelRenderer.getLightColor(entity.level(), entity.blockPosition().above());
+			// sample lighting at the corresponding world position
+			int light = LevelRenderer.getLightColor(entity.level(), entity.blockPosition().offset(localPos));
 
-        // bottom block
-        blockRenderer.renderSingleBlock(state, pose, buf, light0, OverlayTexture.NO_OVERLAY, net.minecraftforge.client.model.data.ModelData.EMPTY, null);
+			blockRenderer.renderSingleBlock(
+				state,
+				pose,
+				buf,
+				light,
+				OverlayTexture.NO_OVERLAY,
+				net.minecraftforge.client.model.data.ModelData.EMPTY,
+				null
+			);
+			pose.popPose();
+		}
 
-        // top block (translate up by exactly 1 block)
-        pose.translate(0.0, 1.0, 0.0);
-        blockRenderer.renderSingleBlock(state, pose, buf, light1, OverlayTexture.NO_OVERLAY, net.minecraftforge.client.model.data.ModelData.EMPTY, null);
-
-        pose.popPose();
+		pose.popPose();
 	}
 
 	@Override

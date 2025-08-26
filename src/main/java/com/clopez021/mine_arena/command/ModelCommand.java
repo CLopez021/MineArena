@@ -108,6 +108,7 @@ public class ModelCommand {
 		BlockState state = Blocks.IRON_BLOCK.defaultBlockState();
 
 		var entityType = ModEntities.MODEL_ENTITY.get();
+		System.out.println("entityType: " + entityType);
 		ModelEntity e = entityType.create(level);
 		if (e == null) return 0;
 		// place entity at player pos
@@ -118,6 +119,7 @@ public class ModelCommand {
 		java.util.HashMap<net.minecraft.core.BlockPos, BlockState> one = new java.util.HashMap<>();
 		one.put(new net.minecraft.core.BlockPos(0, 2, 0), state);
 		e.setVoxels(one);
+		System.out.println("e.voxels: " + e.voxels.entrySet());
 		// bounds that encompass the single block
 		e.minCorner.set(0, 0, 0);
 		e.setFromModelBounds(new org.joml.Vector3f(0, 0, 0), new org.joml.Vector3f(1, 3, 1));

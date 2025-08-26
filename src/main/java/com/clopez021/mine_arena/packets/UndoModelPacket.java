@@ -6,8 +6,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 
-import java.util.function.Supplier;
-
 /**
  * A packet sent from the client to server in order to undo the last placement of the loaded Model.
  */
