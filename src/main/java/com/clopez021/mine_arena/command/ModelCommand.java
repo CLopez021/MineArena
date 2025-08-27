@@ -4,9 +4,7 @@ import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.entity.SpellEntity;
 import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.models.util.Point;
-import com.clopez021.mine_arena.command.arguments.ApplySetArgument;
-import com.clopez021.mine_arena.command.arguments.AxisArgument;
-import com.clopez021.mine_arena.command.arguments.DirectionArgument;
+
 import com.clopez021.mine_arena.command.arguments.ModelFileArgument;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
@@ -40,21 +38,6 @@ public class ModelCommand {
 		dispatcher.register(literal("model")
 			.then(literal("load").then(argument("filename", ModelFileArgument.modelFileArgument()).executes(LoadCommand::load)))
 			.then(literal("place").executes(PlaceCommand::place))
-			.then(literal("undo").executes(UndoCommand::undo))
-			// .then(literal("scale").then(argument("applySet", ApplySetArgument.applySetArg())
-			//     .then(argument("scale", floatArg()).executes(ScaleCommand::scaleAll))
-			//     .then(argument("x-scale", floatArg()).then(argument("y-scale", floatArg()).then(argument("z-scale", floatArg()).executes(ScaleCommand::scale))))
-			//     .then(argument("axis", axisArg()).then(argument("scale", floatArg()).executes(ScaleCommand::scaleAxis)))
-			// ))
-			// .then(literal("rotate")
-			//     .then(argument("x-angle", floatArg()).then(argument("y-angle", floatArg()).then(argument("z-angle", floatArg()).executes(RotateCommand::rotate))))
-			//     .then(argument("axis", axisArg()).then(argument("angle", floatArg()).executes(RotateCommand::rotateAxis))
-			// ))
-			// .then(literal("move")
-			//     .then(argument("distance", floatArg()).executes(MoveCommand::move)
-			//         .then(argument("direction", directionArg()).executes(MoveCommand::moveDirection))
-			//     )
-			// )
 			.then(literal("generate")
 				.then(literal("cancel").executes(GenerateCommand::cancelGeneration))
 				.then(argument("prompt", greedyString()).executes(GenerateCommand::generateModel)
@@ -73,31 +56,6 @@ public class ModelCommand {
 		if (model == null) return Map.of();
 		Map<BlockPos, BlockState> blocks = model.getTextureToBlocks();
 		return new HashMap<>(blocks);
-	}
-
-	/**
-	 * Gets high-density voxels from the model by temporarily increasing precision and scale.
-	 * @return A map of BlockPos to BlockState with higher block density than the default.
-	 */
-	private static Map<BlockPos, BlockState> getHighDensityVoxels() {
-		if (MineArena.model == null) return Map.of();
-		
-		// Save current values
-		float originalPrecision = Point.precision;
-		Vector3f originalScale = new Vector3f(MineArena.model.scale);
-		
-		try {
-			// Increase precision and scale for higher block density
-			Point.precision = 8f;  // 4x higher than default 2f
-			MineArena.model.setScale(originalScale.x * 4f, originalScale.y * 4f, originalScale.z * 4f);
-			
-			// Get the high-density blocks
-			return MineArena.model.getTextureToBlocks();
-		} finally {
-			// Always restore original values
-			Point.precision = originalPrecision;
-			MineArena.model.setScale(originalScale.x, originalScale.y, originalScale.z);
-		}
 	}
 
 	/**
