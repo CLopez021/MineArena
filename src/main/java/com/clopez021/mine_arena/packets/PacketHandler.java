@@ -4,7 +4,6 @@ package com.clopez021.mine_arena.packets;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.ChannelBuilder;
 import net.minecraftforge.network.NetworkDirection;
-import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.SimpleChannel;
 
 /**
