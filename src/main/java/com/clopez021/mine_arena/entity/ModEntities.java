@@ -11,12 +11,12 @@ import net.minecraftforge.registries.RegistryObject;
 public class ModEntities {
 	public static final DeferredRegister<EntityType<?>> ENTITIES = DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, MineArena.MOD_ID);
 
-	public static final RegistryObject<EntityType<ModelEntity>> MODEL_ENTITY = ENTITIES.register(
-			"model_entity",
-			() -> EntityType.Builder.<ModelEntity>of(ModelEntity::new, MobCategory.MISC)
+	public static final RegistryObject<EntityType<SpellEntity>> SPELL_ENTITY = ENTITIES.register(
+			"spell_entity",
+			() -> EntityType.Builder.<SpellEntity>of(SpellEntity::new, MobCategory.MISC)
 					.sized(1.0f, 1.0f)
 					.clientTrackingRange(128)
-					.build("model_entity")
+					.build("spell_entity")
 	);
 
 	public static void register(IEventBus eventBus) {

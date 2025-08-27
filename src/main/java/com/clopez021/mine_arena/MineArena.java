@@ -6,7 +6,6 @@ import com.clopez021.mine_arena.command.arguments.ModCommandArguments;
 import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.items.ModItems;
 import com.clopez021.mine_arena.models.Model;
-import com.clopez021.mine_arena.models.util.Palette;
 import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.voicechat.RecorderManager;
 
@@ -89,7 +88,7 @@ public class MineArena {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            EntityRenderers.register(com.clopez021.mine_arena.entity.ModEntities.MODEL_ENTITY.get(), com.clopez021.mine_arena.renderer.ModelEntityRenderer::new);
+            EntityRenderers.register(com.clopez021.mine_arena.entity.ModEntities.SPELL_ENTITY.get(), com.clopez021.mine_arena.renderer.SpellEntityRenderer::new);
         }
     }
 }

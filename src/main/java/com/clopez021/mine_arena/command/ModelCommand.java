@@ -1,10 +1,8 @@
 package com.clopez021.mine_arena.command;
 
 import com.clopez021.mine_arena.MineArena;
-import com.clopez021.mine_arena.entity.ModelEntity;
+import com.clopez021.mine_arena.entity.SpellEntity;
 import com.clopez021.mine_arena.entity.ModEntities;
-import com.clopez021.mine_arena.packets.ModelEntitySyncPacket;
-import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.command.arguments.ApplySetArgument;
 import com.clopez021.mine_arena.command.arguments.AxisArgument;
 import com.clopez021.mine_arena.command.arguments.DirectionArgument;
@@ -17,7 +15,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.PacketDistributor;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
@@ -83,20 +80,18 @@ public class ModelCommand {
 		var level = source.getLevel();
 		Vec3 pos = source.getPosition();
 
-		var entityType = ModEntities.MODEL_ENTITY.get();
-		ModelEntity e = entityType.create(level);
+		var entityType = ModEntities.SPELL_ENTITY.get();
+		SpellEntity e = entityType.create(level);
 		if (e == null) return 0;
 		e.setPos(pos.x, pos.y, pos.z);
-		e.microScale = micro;
-		e.setVoxels(com.clopez021.mine_arena.models.util.VoxelHelper.buildVoxels(MineArena.model));
+		e.setMicroScaleServer(micro);
+		e.setBlocksServer(com.clopez021.mine_arena.models.util.VoxelHelper.buildVoxels(MineArena.model));
 		// set render/collision bounds based on current model
+		e.setMinCornerServer(MineArena.model.minCorner);
 		e.setFromModelBounds(MineArena.model.minCorner, MineArena.model.maxCorner);
 		level.addFreshEntity(e);
 		
-		// sync voxel data to clients
-		PacketHandler.INSTANCE.send(new ModelEntitySyncPacket(e.getId(), e.microScale, e.minCorner.x, e.minCorner.y, e.minCorner.z, e.voxels), PacketDistributor.TRACKING_ENTITY.with(e));
-		
-		source.sendSystemMessage(Component.literal("Spawned model entity with microScale=" + micro + ", voxels=" + e.voxels.size()));
+		source.sendSystemMessage(Component.literal("Spawned spell entity with microScale=" + micro + ", blocks=" + e.blocks.size()));
 		return 1;
 	}
 
@@ -114,28 +109,25 @@ public class ModelCommand {
 		// Pick a single blockstate from the model, fallback to iron block
 		BlockState state = Blocks.IRON_BLOCK.defaultBlockState();
 
-		var entityType = ModEntities.MODEL_ENTITY.get();
+		var entityType = ModEntities.SPELL_ENTITY.get();
 		System.out.println("entityType: " + entityType);
-		ModelEntity e = entityType.create(level);
+		SpellEntity e = entityType.create(level);
 		if (e == null) return 0;
 		// place entity at player pos
 		e.setPos(pos.x, pos.y, pos.z);
 		// full-size single block
-		e.microScale = 1.0f;
-		// one voxel at (0, 2, 0) so it appears above the player
+		e.setMicroScaleServer(1.0f);
+		// one block at (0, 2, 0) so it appears above the player
 		java.util.HashMap<net.minecraft.core.BlockPos, BlockState> one = new java.util.HashMap<>();
 		one.put(new net.minecraft.core.BlockPos(0, 2, 0), state);
-		e.setVoxels(one);
-		System.out.println("e.voxels: " + e.voxels.entrySet());
+		e.setBlocksServer(one);
+		System.out.println("e.blocks: " + e.blocks.entrySet());
 		// bounds that encompass the single block
-		e.minCorner.set(0, 0, 0);
+		e.setMinCornerServer(new org.joml.Vector3f(0, 0, 0));
 		e.setFromModelBounds(new org.joml.Vector3f(0, 0, 0), new org.joml.Vector3f(1, 3, 1));
 		level.addFreshEntity(e);
 		
-		// sync voxel data to clients
-		PacketHandler.INSTANCE.send(new ModelEntitySyncPacket(e.getId(), e.microScale, e.minCorner.x, e.minCorner.y, e.minCorner.z, e.voxels), PacketDistributor.TRACKING_ENTITY.with(e));
-		
-		source.sendSystemMessage(Component.literal("Spawned one-block model entity."));
+		source.sendSystemMessage(Component.literal("Spawned one-block spell entity."));
 		return 1;
 	}
 }
