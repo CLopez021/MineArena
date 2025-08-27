@@ -3,6 +3,7 @@ package com.clopez021.mine_arena.command;
 import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.entity.SpellEntity;
 import com.clopez021.mine_arena.entity.ModEntities;
+import com.clopez021.mine_arena.models.util.Point;
 import com.clopez021.mine_arena.command.arguments.ApplySetArgument;
 import com.clopez021.mine_arena.command.arguments.AxisArgument;
 import com.clopez021.mine_arena.command.arguments.DirectionArgument;
@@ -11,10 +12,14 @@ import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Vector3f;
+
+import java.util.Map;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
@@ -56,11 +61,36 @@ public class ModelCommand {
 				)
 			)
 			.then(literal("entity")
-				.executes(ctx -> spawnEntityWithScale(ctx, 16f/16f))
+				.executes(ctx -> spawnEntityWithScale(ctx, 1/16f))
 				.then(argument("microScale", FloatArgumentType.floatArg(0.001f, 1.0f)).executes(ModelCommand::spawnEntity))
 			)
 			.then(literal("entity_one").executes(ModelCommand::spawnSingleBlockEntity))
 		);
+	}
+
+	/**
+	 * Gets high-density voxels from the model by temporarily increasing precision and scale.
+	 * @return A map of BlockPos to BlockState with higher block density than the default.
+	 */
+	private static Map<BlockPos, BlockState> getHighDensityVoxels() {
+		if (MineArena.model == null) return Map.of();
+		
+		// Save current values
+		float originalPrecision = Point.precision;
+		Vector3f originalScale = new Vector3f(MineArena.model.scale);
+		
+		try {
+			// Increase precision and scale for higher block density
+			Point.precision = 8f;  // 4x higher than default 2f
+			MineArena.model.setScale(originalScale.x * 4f, originalScale.y * 4f, originalScale.z * 4f);
+			
+			// Get the high-density blocks
+			return MineArena.model.getTextureToBlocks();
+		} finally {
+			// Always restore original values
+			Point.precision = originalPrecision;
+			MineArena.model.setScale(originalScale.x, originalScale.y, originalScale.z);
+		}
 	}
 
 	/**
@@ -85,7 +115,7 @@ public class ModelCommand {
 		if (e == null) return 0;
 		e.setPos(pos.x, pos.y, pos.z);
 		e.setMicroScaleServer(micro);
-		e.setBlocksServer(com.clopez021.mine_arena.models.util.VoxelHelper.buildVoxels(MineArena.model));
+		e.setBlocksServer(getHighDensityVoxels());
 		// set render/collision bounds based on current model
 		e.setMinCornerServer(MineArena.model.minCorner);
 		e.setFromModelBounds(MineArena.model.minCorner, MineArena.model.maxCorner);
@@ -116,7 +146,7 @@ public class ModelCommand {
 		// place entity at player pos
 		e.setPos(pos.x, pos.y, pos.z);
 		// full-size single block
-		e.setMicroScaleServer(1.0f);
+		e.setMicroScaleServer(.2f);
 		// one block at (0, 2, 0) so it appears above the player
 		java.util.HashMap<net.minecraft.core.BlockPos, BlockState> one = new java.util.HashMap<>();
 		one.put(new net.minecraft.core.BlockPos(0, 2, 0), state);

@@ -26,13 +26,14 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 		pose.pushPose();
 		// center local block grid on the entity position (so local 0,0,0 is centered at entity)
 		pose.translate(-0.5, 0.0, -0.5);
+		// scale blocks by microScale so each unit cube becomes microScale^3 in world units
+		pose.scale(entity.microScale, entity.microScale, entity.microScale);
 
 		// draw each block at its local integer offset
 		for (var entry : entity.blocks.entrySet()) {
 			var localPos = entry.getKey();
 			BlockState state = entry.getValue();
 			ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
-			Logger.getLogger("MineArena").info("Spell block: " + blockId + " at " + localPos);
 
 			pose.pushPose();
 			pose.translate(localPos.getX(), localPos.getY(), localPos.getZ());
