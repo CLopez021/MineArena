@@ -26,7 +26,8 @@ import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 import static com.mojang.brigadier.arguments.FloatArgumentType.floatArg;
-
+import com.clopez021.mine_arena.models.Model;
+import java.util.HashMap;
 /**
  * The main class for the "model" command.
  */
@@ -66,6 +67,12 @@ public class ModelCommand {
 			)
 			.then(literal("entity_one").executes(ModelCommand::spawnSingleBlockEntity))
 		);
+	}
+
+	public static Map<BlockPos, BlockState> buildVoxels(Model model) {
+		if (model == null) return Map.of();
+		Map<BlockPos, BlockState> blocks = model.getTextureToBlocks();
+		return new HashMap<>(blocks);
 	}
 
 	/**
@@ -115,7 +122,7 @@ public class ModelCommand {
 		if (e == null) return 0;
 		e.setPos(pos.x, pos.y, pos.z);
 		e.setMicroScaleServer(micro);
-		e.setBlocksServer(getHighDensityVoxels());
+		e.setBlocksServer(buildVoxels(MineArena.model));
 		// set render/collision bounds based on current model
 		e.setMinCornerServer(MineArena.model.minCorner);
 		e.setFromModelBounds(MineArena.model.minCorner, MineArena.model.maxCorner);
