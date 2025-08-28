@@ -16,14 +16,10 @@ import java.util.Map;
  */
 public class SpellEntityInitData {
 	public final Map<BlockPos, BlockState> blocks;
-	public final Vector3f minCorner;
-	public final Vector3f maxCorner;
 	public final float microScale;
 
-	public SpellEntityInitData(Map<BlockPos, BlockState> blocks, Vector3f minCorner, Vector3f maxCorner, float microScale) {
+	public SpellEntityInitData(Map<BlockPos, BlockState> blocks, float microScale) {
 		this.blocks = blocks;
-		this.minCorner = minCorner;
-		this.maxCorner = maxCorner;
 		this.microScale = microScale;
 	}
 
@@ -45,13 +41,6 @@ public class SpellEntityInitData {
 		}
 		json.add("blocks", blocksArray);
 		
-		// Vector primitives
-		json.addProperty("minX", minCorner.x);
-		json.addProperty("minY", minCorner.y);
-		json.addProperty("minZ", minCorner.z);
-		json.addProperty("maxX", maxCorner.x);
-		json.addProperty("maxY", maxCorner.y);
-		json.addProperty("maxZ", maxCorner.z);
 		json.addProperty("microScale", microScale);
 		
 		return json;
@@ -76,19 +65,8 @@ public class SpellEntityInitData {
 			blocks.put(pos, block.defaultBlockState());
 		}
 
-		// Rebuild vectors
-		Vector3f minCorner = new Vector3f(
-			json.get("minX").getAsFloat(),
-			json.get("minY").getAsFloat(),
-			json.get("minZ").getAsFloat()
-		);
-		Vector3f maxCorner = new Vector3f(
-			json.get("maxX").getAsFloat(),
-			json.get("maxY").getAsFloat(),
-			json.get("maxZ").getAsFloat()
-		);
 		float microScale = json.get("microScale").getAsFloat();
 
-		return new SpellEntityInitData(blocks, minCorner, maxCorner, microScale);
+		return new SpellEntityInitData(blocks, microScale);
 	}
 } 

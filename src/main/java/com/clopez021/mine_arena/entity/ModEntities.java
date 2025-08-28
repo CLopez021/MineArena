@@ -15,7 +15,6 @@ public class ModEntities {
 	public static final RegistryObject<EntityType<SpellEntity>> SPELL_ENTITY = ENTITIES.register(
 			"spell_entity",
 			() -> EntityType.Builder.<SpellEntity>of(SpellEntity::new, MobCategory.MISC)
-					.sized(1.0f, 1.0f)
 					.clientTrackingRange(128)
 					.build("spell_entity")
 	);

@@ -75,8 +75,12 @@ public class ModelCommand {
 		SpellEntity e = entityType.create(level);
 		if (e == null) return 0;
 		e.setPos(pos.x, pos.y, pos.z);
-		// Initialize with SpellEntityInitData
-		var initData = new SpellEntityInitData(buildVoxels(MineArena.model), MineArena.model.minCorner, MineArena.model.maxCorner, 1f / 16f);
+		
+		// Build block map - entity will calculate bounds from blocks
+		Map<BlockPos, BlockState> blocks = buildVoxels(MineArena.model);
+		float microScale = 1f / 16f;
+		
+		var initData = new SpellEntityInitData(blocks, microScale);
 		e.initializeServer(initData);
 		level.addFreshEntity(e);
 		
