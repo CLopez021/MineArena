@@ -12,10 +12,8 @@ import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Vector3f;
 
 import java.util.Map;
 
@@ -23,7 +21,6 @@ import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
-import static com.mojang.brigadier.arguments.FloatArgumentType.floatArg;
 import com.clopez021.mine_arena.models.Model;
 import java.util.HashMap;
 /**
@@ -48,7 +45,6 @@ public class ModelCommand {
 				.executes(ctx -> spawnEntityWithScale(ctx, 1/16f))
 				.then(argument("microScale", FloatArgumentType.floatArg(0.001f, 1.0f)).executes(ModelCommand::spawnEntity))
 			)
-			.then(literal("entity_one").executes(ModelCommand::spawnSingleBlockEntity))
 		);
 	}
 
@@ -93,36 +89,5 @@ public class ModelCommand {
 	private static int spawnEntity(CommandContext<CommandSourceStack> command) {
 		float micro = FloatArgumentType.getFloat(command, "microScale");
 		return spawnEntityWithScale(command, micro);
-	}
-
-	private static int spawnSingleBlockEntity(CommandContext<CommandSourceStack> command) {
-		if (MineArena.model == null) return noModelLoaded(command);
-		var source = command.getSource();
-		var level = source.getLevel();
-		Vec3 pos = source.getPosition();
-
-		// Pick a single blockstate from the model, fallback to iron block
-		BlockState state = Blocks.IRON_BLOCK.defaultBlockState();
-
-		var entityType = ModEntities.SPELL_ENTITY.get();
-		System.out.println("entityType: " + entityType);
-		SpellEntity e = entityType.create(level);
-		if (e == null) return 0;
-		// place entity at player pos
-		e.setPos(pos.x, pos.y, pos.z);
-		// full-size single block
-		e.setMicroScaleServer(.2f);
-		// one block at (0, 2, 0) so it appears above the player
-		java.util.HashMap<net.minecraft.core.BlockPos, BlockState> one = new java.util.HashMap<>();
-		one.put(new net.minecraft.core.BlockPos(0, 2, 0), state);
-		e.setBlocksServer(one);
-		System.out.println("e.blocks: " + e.blocks.entrySet());
-		// bounds that encompass the single block
-		e.setMinCornerServer(new org.joml.Vector3f(0, 0, 0));
-		e.setFromModelBounds(new org.joml.Vector3f(0, 0, 0), new org.joml.Vector3f(1, 3, 1));
-		level.addFreshEntity(e);
-		
-		source.sendSystemMessage(Component.literal("Spawned one-block spell entity."));
-		return 1;
 	}
 }
