@@ -1,4 +1,4 @@
-package com.clopez021.mine_arena.entity;
+package com.clopez021.mine_arena.spell;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -205,5 +205,28 @@ public class SpellEntity extends Entity {
 		AABB local = new AABB(min.x * microScale, min.y * microScale, min.z * microScale,
 				max.x * microScale, max.y * microScale, max.z * microScale);
 		this.setBoundingBox(local.move(this.position()));
+	}
+
+	// ------------ Convenience initialization method ------------
+	/**
+	 * Initialize the spell entity with all data at once (server-side only).
+	 * This is the recommended way to set up a new SpellEntity after creation.
+	 */
+	public void initializeServer(Map<BlockPos, BlockState> blocks, Vector3f minCorner, Vector3f maxCorner, float microScale) {
+		if (level().isClientSide) {
+			throw new IllegalStateException("initializeServer() can only be called on the server side!");
+		}
+		
+		setMicroScaleServer(microScale);
+		setMinCornerServer(minCorner);
+		setBlocksServer(blocks);
+		setFromModelBounds(minCorner, maxCorner);
+	}
+
+	/**
+	 * Initialize from SpellEntityInitData (server-side only).
+	 */
+	public void initializeServer(SpellEntityInitData data) {
+		initializeServer(data.blocks, data.minCorner, data.maxCorner, data.microScale);
 	}
 } 

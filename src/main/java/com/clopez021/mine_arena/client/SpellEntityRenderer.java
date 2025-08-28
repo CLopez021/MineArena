@@ -1,8 +1,8 @@
 package com.clopez021.mine_arena.client;
 
-import com.clopez021.mine_arena.entity.SpellEntity;
+import com.clopez021.mine_arena.spell.SpellEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -38,14 +38,11 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 			pose.pushPose();
 			pose.translate(localPos.getX(), localPos.getY(), localPos.getZ());
 
-			// sample lighting at the corresponding world position
-			int light = LevelRenderer.getLightColor(entity.level(), entity.blockPosition().offset(localPos));
-
 			blockRenderer.renderSingleBlock(
 				state,
 				pose,
 				buf,
-				light,
+				LightTexture.FULL_BRIGHT,
 				OverlayTexture.NO_OVERLAY,
 				net.minecraftforge.client.model.data.ModelData.EMPTY,
 				null

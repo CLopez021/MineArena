@@ -1,6 +1,7 @@
 package com.clopez021.mine_arena.entity;
 
 import com.clopez021.mine_arena.MineArena;
+import com.clopez021.mine_arena.spell.SpellEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.eventbus.api.IEventBus;
