@@ -1,4 +1,4 @@
-package com.clopez021.mine_arena.renderer;
+package com.clopez021.mine_arena.client;
 
 import com.clopez021.mine_arena.entity.SpellEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
