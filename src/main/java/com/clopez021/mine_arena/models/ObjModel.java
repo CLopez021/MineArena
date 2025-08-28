@@ -24,6 +24,8 @@ public class ObjModel extends Model {
      */
     public static final String DEFAULT_MATERIAL = "iron_block  ";
 
+    public static final float MODEL_SCALE = 50;
+
     /**
      * The default color for missing or unassigned textures.
      */
@@ -101,7 +103,7 @@ public class ObjModel extends Model {
         currentMaterial = DEFAULT_MATERIAL;
         materialFaceMap.put(currentMaterial, new ArrayList<>());
         readObj(file);
-        setScale(50);
+        setScale(MODEL_SCALE);
         centerModel();
         updateBlockFaces();
     }

@@ -1,7 +1,8 @@
 package com.clopez021.mine_arena.command;
 
 import com.clopez021.mine_arena.MineArena;
-import com.clopez021.mine_arena.entity.SpellEntity;
+import com.clopez021.mine_arena.spell.SpellEntity;
+import com.clopez021.mine_arena.spell.SpellEntityInitData;
 import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.models.util.Point;
 
@@ -42,8 +43,7 @@ public class ModelCommand {
 				)
 			)
 			.then(literal("entity")
-				.executes(ctx -> spawnEntityWithScale(ctx, 1/16f))
-				.then(argument("microScale", FloatArgumentType.floatArg(0.001f, 1.0f)).executes(ModelCommand::spawnEntity))
+				.executes(ModelCommand::spawnEntity)
 			)
 		);
 	}
@@ -64,8 +64,8 @@ public class ModelCommand {
 		return 0;
 	}
 
-	private static int spawnEntityWithScale(CommandContext<CommandSourceStack> command, float micro) {
-		if (MineArena.model == null) return noModelLoaded(command);
+	private static int spawnEntity(CommandContext<CommandSourceStack> command) {
+		if (MineArena.model == null) return noModelLoaded(command);	
 
 		var source = command.getSource();
 		var level = source.getLevel();
@@ -75,19 +75,17 @@ public class ModelCommand {
 		SpellEntity e = entityType.create(level);
 		if (e == null) return 0;
 		e.setPos(pos.x, pos.y, pos.z);
-		e.setMicroScaleServer(micro);
-		e.setBlocksServer(buildVoxels(MineArena.model));
-		// set render/collision bounds based on current model
-		e.setMinCornerServer(MineArena.model.minCorner);
-		e.setFromModelBounds(MineArena.model.minCorner, MineArena.model.maxCorner);
+		
+		// Build block map - entity will calculate bounds from blocks
+		Map<BlockPos, BlockState> blocks = buildVoxels(MineArena.model);
+		float microScale = 1f / 16f;
+		
+		var initData = new SpellEntityInitData(blocks, microScale);
+		e.initializeServer(initData);
 		level.addFreshEntity(e);
 		
-		source.sendSystemMessage(Component.literal("Spawned spell entity with microScale=" + micro + ", blocks=" + e.blocks.size()));
+		source.sendSystemMessage(Component.literal("Spawned spell entity with blocks=" + e.blocks.size()));
 		return 1;
 	}
 
-	private static int spawnEntity(CommandContext<CommandSourceStack> command) {
-		float micro = FloatArgumentType.getFloat(command, "microScale");
-		return spawnEntityWithScale(command, micro);
-	}
 }

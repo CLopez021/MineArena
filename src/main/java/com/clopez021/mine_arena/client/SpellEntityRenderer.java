@@ -1,8 +1,8 @@
 package com.clopez021.mine_arena.client;
 
-import com.clopez021.mine_arena.entity.SpellEntity;
+import com.clopez021.mine_arena.spell.SpellEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -24,8 +24,12 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 		super.render(entity, yaw, partialTicks, pose, buf, packedLight);
 
 		pose.pushPose();
-		// center local block grid on the entity position (so local 0,0,0 is centered at entity)
-		pose.translate(-0.5, 0.0, -0.5);
+		// center the model on entity position using computed center
+		pose.translate(
+			-entity.centerLocalX,                    // center the model on entity X
+			-(entity.minCorner.y * entity.microScale), // minY at the entity feet
+			-entity.centerLocalZ                     // center the model on entity Z
+		);
 		// scale blocks by microScale so each unit cube becomes microScale^3 in world units
 		pose.scale(entity.microScale, entity.microScale, entity.microScale);
 
@@ -38,14 +42,11 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 			pose.pushPose();
 			pose.translate(localPos.getX(), localPos.getY(), localPos.getZ());
 
-			// sample lighting at the corresponding world position
-			int light = LevelRenderer.getLightColor(entity.level(), entity.blockPosition().offset(localPos));
-
 			blockRenderer.renderSingleBlock(
 				state,
 				pose,
 				buf,
-				light,
+				LightTexture.FULL_BRIGHT,
 				OverlayTexture.NO_OVERLAY,
 				net.minecraftforge.client.model.data.ModelData.EMPTY,
 				null

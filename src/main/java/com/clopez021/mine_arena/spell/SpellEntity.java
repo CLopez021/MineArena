@@ -1,4 +1,4 @@
-package com.clopez021.mine_arena.entity;
+package com.clopez021.mine_arena.spell;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -13,7 +13,8 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.entity.Pose;
+import net.minecraft.world.entity.EntityDimensions;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
@@ -27,18 +28,12 @@ public class SpellEntity extends Entity {
 	private static final String NBT_POS_X = "x";
 	private static final String NBT_POS_Y = "y";
 	private static final String NBT_POS_Z = "z";
-	private static final String NBT_MIN_CORNER = "minCorner";
-	private static final String NBT_MIN_CORNER_X = "x";
-	private static final String NBT_MIN_CORNER_Y = "y";
-	private static final String NBT_MIN_CORNER_Z = "z";
 	private static final String NBT_BLOCKS_SAVE = "blocks_nbt";
 	private static final String NBT_MICRO_SCALE = "microScale";
 
 	// ---- Synced keys ----
 	private static final EntityDataAccessor<Float> DATA_MICRO =
 		SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.FLOAT);
-	private static final EntityDataAccessor<CompoundTag> DATA_MIN_CORNER =
-		SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.COMPOUND_TAG);
 
 	// The block map lives in one CompoundTag
 	private static final EntityDataAccessor<CompoundTag> DATA_BLOCKS =
@@ -48,6 +43,10 @@ public class SpellEntity extends Entity {
 	public float microScale = 1f / 16f;
 	public final Vector3f minCorner = new Vector3f();
 	public final Map<BlockPos, BlockState> blocks = new HashMap<>();
+	
+	// Dynamic dimensions
+	private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
+	public float centerLocalX, centerLocalZ;
 
 	public SpellEntity(EntityType<? extends Entity> type, Level level) {
 		super(type, level);
@@ -57,7 +56,6 @@ public class SpellEntity extends Entity {
 	@Override
 	protected void defineSynchedData(SynchedEntityData.Builder b) {
 		b.define(DATA_MICRO, 1f / 16f);
-		b.define(DATA_MIN_CORNER, new CompoundTag());
 		b.define(DATA_BLOCKS, new CompoundTag());
 	}
 
@@ -66,17 +64,6 @@ public class SpellEntity extends Entity {
 	private void applyMicroScale(float value) {
 		this.microScale = value;
 		this.entityData.set(DATA_MICRO, value);
-	}
-
-	private void applyMinCorner(Vector3f v) {
-		this.minCorner.set(v);
-		CompoundTag pos = new CompoundTag();
-		pos.putFloat(NBT_MIN_CORNER_X, v.x);
-		pos.putFloat(NBT_MIN_CORNER_Y, v.y);
-		pos.putFloat(NBT_MIN_CORNER_Z, v.z);
-		CompoundTag root = new CompoundTag();
-		root.put(NBT_MIN_CORNER, pos);
-		this.entityData.set(DATA_MIN_CORNER, root);
 	}
 
 	private void applyBlocks(Map<BlockPos, BlockState> map) {
@@ -108,13 +95,6 @@ public class SpellEntity extends Entity {
 		}
 	}
 
-	public void setMinCornerServer(Vector3f v) {
-		if (!level().isClientSide) {
-			applyMinCorner(v);
-			refreshDimensions();
-		}
-	}
-
 	/** Pack your map -> NBT and set once. Auto-broadcasts to all trackers. */
 	public void setBlocksServer(Map<BlockPos, BlockState> map) {
 		if (!level().isClientSide) {
@@ -131,18 +111,14 @@ public class SpellEntity extends Entity {
 
 		if (key == DATA_MICRO) {
 			this.microScale = this.entityData.get(DATA_MICRO);
+			recalcBoundsFromBlocks();
 			refreshDimensions();
-		} else if (key == DATA_MIN_CORNER) {
-			CompoundTag root = this.entityData.get(DATA_MIN_CORNER);
-			if (root != null && root.contains(NBT_MIN_CORNER, Tag.TAG_COMPOUND)) {
-				CompoundTag pos = root.getCompound(NBT_MIN_CORNER);
-				this.minCorner.set(pos.getFloat(NBT_MIN_CORNER_X), pos.getFloat(NBT_MIN_CORNER_Y), pos.getFloat(NBT_MIN_CORNER_Z));
-				refreshDimensions();
-			}
 		} else if (key == DATA_BLOCKS) {
 			Map<BlockPos, BlockState> map = rebuildBlocksFromData();
 			this.blocks.clear();
 			this.blocks.putAll(map);
+			recalcBoundsFromBlocks();
+			refreshDimensions();
 		}
 	}
 
@@ -169,13 +145,6 @@ public class SpellEntity extends Entity {
 	@Override
 	protected void addAdditionalSaveData(CompoundTag tag) {
 		tag.putFloat(NBT_MICRO_SCALE, this.microScale);
-		CompoundTag pos = new CompoundTag();
-		pos.putFloat(NBT_MIN_CORNER_X, this.minCorner.x);
-		pos.putFloat(NBT_MIN_CORNER_Y, this.minCorner.y);
-		pos.putFloat(NBT_MIN_CORNER_Z, this.minCorner.z);
-		CompoundTag minRoot = new CompoundTag();
-		minRoot.put(NBT_MIN_CORNER, pos);
-		tag.put(NBT_MIN_CORNER, minRoot);
 		tag.put(NBT_BLOCKS_SAVE, this.entityData.get(DATA_BLOCKS).copy());
 	}
 
@@ -187,23 +156,67 @@ public class SpellEntity extends Entity {
 			applyMicroScale(tag.getFloat(NBT_MICRO_SCALE));
 		}
 
-		if (tag.contains(NBT_MIN_CORNER, Tag.TAG_COMPOUND)) {
-			CompoundTag minRoot = tag.getCompound(NBT_MIN_CORNER);
-			CompoundTag pos = minRoot.getCompound(NBT_MIN_CORNER);
-			applyMinCorner(new Vector3f(pos.getFloat(NBT_MIN_CORNER_X), pos.getFloat(NBT_MIN_CORNER_Y), pos.getFloat(NBT_MIN_CORNER_Z)));
-		}
-
 		if (tag.contains(NBT_BLOCKS_SAVE, Tag.TAG_COMPOUND)) {
 			this.entityData.set(DATA_BLOCKS, tag.getCompound(NBT_BLOCKS_SAVE).copy());
 			applyBlocks(rebuildBlocksFromData());
 		}
 	}
 
-	// ------------ Existing AABB helper ------------
-	public void setFromModelBounds(Vector3f min, Vector3f max) {
-		this.minCorner.set(min);
-		AABB local = new AABB(min.x * microScale, min.y * microScale, min.z * microScale,
-				max.x * microScale, max.y * microScale, max.z * microScale);
-		this.setBoundingBox(local.move(this.position()));
+	// ------------ Dynamic dimensions (canonical approach) ------------
+	
+	@Override
+	public EntityDimensions getDimensions(Pose pose) {
+		// Minecraft's AABB is square in XZ; pick the larger span
+		float width = Math.max(spanX, spanZ);
+		float height = Math.max(0.1f, spanY);
+		return EntityDimensions.fixed(Math.max(0.1f, width), height);
+	}
+	
+	private void recalcBoundsFromBlocks() {
+		if (blocks.isEmpty()) { 
+			spanX = spanY = spanZ = 0.5f; 
+			centerLocalX = centerLocalZ = 0f;
+			return; 
+		}
+
+		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+		int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+
+		for (BlockPos p : blocks.keySet()) {
+			minX = Math.min(minX, p.getX());
+			minY = Math.min(minY, p.getY());
+			minZ = Math.min(minZ, p.getZ());
+			maxX = Math.max(maxX, p.getX() + 1);
+			maxY = Math.max(maxY, p.getY() + 1);
+			maxZ = Math.max(maxZ, p.getZ() + 1);
+		}
+
+		spanX = (maxX - minX) * microScale;
+		spanY = (maxY - minY) * microScale;
+		spanZ = (maxZ - minZ) * microScale;
+
+		// local center for rendering alignment
+		centerLocalX = ((minX + maxX) * 0.5f) * microScale;
+		centerLocalZ = ((minZ + maxZ) * 0.5f) * microScale;
+
+		// keep minCorner cache synced
+		this.minCorner.set(minX, minY, minZ);
+		
+		System.out.println("Recalculated bounds: spanX=" + spanX + ", spanY=" + spanY + ", spanZ=" + spanZ);
+		System.out.println("Center: centerLocalX=" + centerLocalX + ", centerLocalZ=" + centerLocalZ);
+	}
+
+	/**
+	 * Initialize from SpellEntityInitData (server-side only).
+	 */
+	public void initializeServer(SpellEntityInitData data) {
+		if (level().isClientSide) {
+			throw new IllegalStateException("initializeServer() can only be called on the server side!");
+		}
+		
+		setMicroScaleServer(data.microScale);
+		setBlocksServer(data.blocks);
+		recalcBoundsFromBlocks();
+		refreshDimensions(); // now uses our new spans
 	}
 } 
