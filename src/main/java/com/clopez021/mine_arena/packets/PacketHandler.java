@@ -17,8 +17,7 @@ public class PacketHandler {
 
     public static void init() {
         int index = -1;
-        INSTANCE.messageBuilder(PlaceModelPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(PlaceModelPacket::encode).decoder(PlaceModelPacket::decode).consumerMainThread(PlaceModelPacket::handle).add();
-        INSTANCE.messageBuilder(UndoModelPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(UndoModelPacket::encode).decoder(UndoModelPacket::decode).consumerMainThread(UndoModelPacket::handle).add();
+
         INSTANCE.messageBuilder(VoiceSidecarConfigPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT).encoder(VoiceSidecarConfigPacket::encode).decoder(VoiceSidecarConfigPacket::decode).consumerMainThread(VoiceSidecarConfigPacket::handle).add();
         INSTANCE.messageBuilder(RecognizedSpeechPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(RecognizedSpeechPacket::encode).decoder(RecognizedSpeechPacket::decode).consumerMainThread(RecognizedSpeechPacket::handle).add();
     }

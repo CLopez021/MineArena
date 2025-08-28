@@ -101,7 +101,7 @@ public class ObjModel extends Model {
         currentMaterial = DEFAULT_MATERIAL;
         materialFaceMap.put(currentMaterial, new ArrayList<>());
         readObj(file);
-        setScale(0);
+        setScale(50);
         centerModel();
         updateBlockFaces();
     }

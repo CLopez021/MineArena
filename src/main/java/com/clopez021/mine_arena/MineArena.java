@@ -55,19 +55,9 @@ public class MineArena {
         ModEntities.register(modEventBus);
         PacketHandler.init();
 
-        // Register the item to a creative tab
-        modEventBus.addListener(this::addCreative);
-
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
         context.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
         context.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
-    }
-
-    // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(ModItems.MODEL_HAMMER);
-        }
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
@@ -88,7 +78,7 @@ public class MineArena {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            EntityRenderers.register(com.clopez021.mine_arena.entity.ModEntities.SPELL_ENTITY.get(), com.clopez021.mine_arena.renderer.SpellEntityRenderer::new);
+            		EntityRenderers.register(com.clopez021.mine_arena.entity.ModEntities.SPELL_ENTITY.get(), com.clopez021.mine_arena.client.SpellEntityRenderer::new);
         }
     }
 }
