@@ -115,15 +115,15 @@ public class PlayerManager {
     }
     
     /**
-     * Removes a spell from a player's recognition list.
-     * 
+     * Removes a spell from a player's recognition list by spell name.
+     *
      * @param serverPlayer The ServerPlayer to remove spell for
-     * @param spell The spell phrase to remove
+     * @param name The spell name to remove
      */
-    public void removeSpell(ServerPlayer serverPlayer, String spell) {
+    public void removeSpell(ServerPlayer serverPlayer, String name) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
-            player.removeSpell(spell);
+            player.removeSpell(name);
         }
     }
     

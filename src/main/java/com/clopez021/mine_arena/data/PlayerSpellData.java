@@ -141,16 +141,16 @@ public class PlayerSpellData extends SavedData {
     }
     
     /**
-     * Gets the spells for a player keyed by phrase.
+     * Gets the spells for a player keyed by name.
      *
      * @param playerId Player UUID as string
-     * @return Map of phrase -> PlayerSpell, or empty map if none configured
+     * @return Map of name -> PlayerSpell, or empty map if none configured
      */
     public Map<String, PlayerSpell> getSpells(String playerId) {
         List<PlayerSpell> list = playerSpells.getOrDefault(playerId, DEFAULT_SPELLS);
         Map<String, PlayerSpell> map = new HashMap<>();
         for (PlayerSpell ps : list) {
-            map.put(ps.phrase(), ps);
+            map.put(ps.name(), ps);
         }
         return map;
     }

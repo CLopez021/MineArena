@@ -51,6 +51,7 @@
 (() => {
   // ====== CONFIG ======
   let lang = "en-US";
+  // Array of entries: { phrase: string, name: string }
   let spells = [];
   let isListening = false;
   
@@ -87,8 +88,9 @@
         if (msg.lang) lang = msg.lang;
         console.log("[Voice Debug] Lang:", lang);
         if (Array.isArray(msg.spells)) {
+          // Expect array of { phrase, name }
           console.log("[Voice Debug] Updated spells array:", msg.spells);
-          spells = msg.spells;
+          spells = msg.spells.filter(s => s && typeof s.phrase === 'string' && typeof s.name === 'string');
           // No need to restart - just update the spell list
         }
       } else if (msg["type"] === "start") {
@@ -298,12 +300,13 @@
             }
             
             console.log("heard", heard, "spells", spells, "alts", alts);
-            const matchedSpell = matchSpell(heard, spells, alts);
-            if (matchedSpell) {
-              send({
-                type: "spellCast",
-                spell: matchedSpell
-              });
+            // Match against phrases, then map to the spell name to send back
+            const phrases = spells.map(s => s.phrase);
+            const matchedPhrase = matchSpell(heard, phrases, alts);
+            if (matchedPhrase) {
+              const entry = spells.find(s => s.phrase === matchedPhrase);
+              const spellName = entry ? entry.name : matchedPhrase;
+              send({ type: "spellCast", spell: spellName });
             }
           }
         }

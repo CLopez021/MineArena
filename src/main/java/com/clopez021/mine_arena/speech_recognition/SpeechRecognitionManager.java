@@ -19,21 +19,21 @@ public class SpeechRecognitionManager {
     private static final Set<UUID> activeVoiceRecognition = ConcurrentHashMap.newKeySet();
     
     /**
-     * Starts voice recognition for a player with specified spells and language.
-     * 
+     * Starts voice recognition for a player with specified mapping and language.
+     *
      * @param player The ServerPlayer to start voice recognition for
-     * @param spells List of spell phrases to recognize
+     * @param phraseToName Mapping from spoken phrase -> spell name
      * @param language Language code (e.g., "en-US")
      */
-    public static void startVoiceRecognition(ServerPlayer player, List<String> spells, String language) {
+    public static void startVoiceRecognition(ServerPlayer player, Map<String, String> phraseToName, String language) {
         if (!isVoiceRecognitionActive(player)) {
             activeVoiceRecognition.add(player.getUUID());
             
             // Send config to client to start the sidecar
-            PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, spells), player.connection.getConnection());
+            PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, phraseToName), player.connection.getConnection());
             
-            System.out.println("Started voice recognition for player: " + player.getName().getString() + 
-                " with " + spells.size() + " spells in language: " + language);
+            System.out.println("Started voice recognition for player: " + player.getName().getString() +
+                " with " + (phraseToName != null ? phraseToName.size() : 0) + " mappings in language: " + language);
         }
     }
     
@@ -52,18 +52,18 @@ public class SpeechRecognitionManager {
     
     /**
      * Updates the configuration for an active voice recognition session.
-     * 
+     *
      * @param player The ServerPlayer to update configuration for
      * @param language New language code
-     * @param spells New list of spell phrases
+     * @param phraseToName New mapping from spoken phrase -> spell name
      */
-    public static void updateConfiguration(ServerPlayer player, String language, List<String> spells) {
+    public static void updateConfiguration(ServerPlayer player, String language, Map<String, String> phraseToName) {
         if (isVoiceRecognitionActive(player)) {
             // Send updated config to client
-            PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, spells), player.connection.getConnection());
+            PacketHandler.INSTANCE.send(new VoiceSidecarConfigPacket(language, phraseToName), player.connection.getConnection());
             
-            System.out.println("Updated voice recognition config for player: " + player.getName().getString() + 
-                " with " + spells.size() + " spells in language: " + language);
+            System.out.println("Updated voice recognition config for player: " + player.getName().getString() +
+                " with " + (phraseToName != null ? phraseToName.size() : 0) + " mappings in language: " + language);
         }
     }
     

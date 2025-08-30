@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 public class Player {
     private final UUID uuid;
-    // phrase -> PlayerSpell
+    // name -> PlayerSpell (runtime lookup by name)
     private final Map<String, PlayerSpell> spells;
     private String language;
     private ServerPlayer serverPlayer; // Reference to update speech recognition
@@ -46,7 +46,7 @@ public class Player {
     public void addSpells(Collection<PlayerSpell> spells) {
         boolean changed = false;
         for (PlayerSpell ps : spells) {
-            PlayerSpell prev = this.spells.put(ps.phrase(), ps);
+            PlayerSpell prev = this.spells.put(ps.name(), ps);
             if (prev == null || !prev.equals(ps)) changed = true;
         }
         if (changed) {
@@ -63,7 +63,7 @@ public class Player {
     
     // Spell management with auto-save and speech recognition updates
     public void addSpell(PlayerSpell spell) {
-        String key = spell.phrase();
+        String key = spell.name();
         if (!spells.containsKey(key)) {
             spells.put(key, spell);
             saveData();
@@ -71,8 +71,8 @@ public class Player {
         }
     }
     
-    public boolean removeSpell(String spell) {
-        boolean removed = spells.remove(spell) != null;
+    public boolean removeSpell(String name) {
+        boolean removed = spells.remove(name) != null;
         if (removed) {
             saveData();
             updateSpeechRecognition();
@@ -91,11 +91,11 @@ public class Player {
             try {
                 PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
                 String playerIdStr = uuid.toString();
-                Map<String, PlayerSpell> savedSpells = data.getSpells(playerIdStr);
+                Map<String, PlayerSpell> savedByName = data.getSpells(playerIdStr);
                 String savedLanguage = data.getLanguage(playerIdStr);
                 
                 this.spells.clear();
-                this.spells.putAll(savedSpells);
+                this.spells.putAll(savedByName);
                 this.language = savedLanguage;
             } catch (Exception e) {
                 System.err.println("Failed to load player data: " + e.getMessage());
@@ -113,6 +113,7 @@ public class Player {
             try {
                 PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
                 String playerIdStr = uuid.toString();
+                // Persist name-keyed map (PlayerSpellData stores as a list internally)
                 data.setSpells(playerIdStr, spells);
                 data.setLanguage(playerIdStr, language);
             } catch (Exception e) {
@@ -124,8 +125,9 @@ public class Player {
     // Speech recognition management
     public void startVoiceRecognition() {
         if (serverPlayer != null) {
-            List<String> phrases = new ArrayList<>(spells.keySet());
-            SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phrases, language);
+            Map<String, String> phraseToName = new HashMap<>();
+            for (PlayerSpell ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phraseToName, language);
         }
     }
     
@@ -137,8 +139,9 @@ public class Player {
     
     private void updateSpeechRecognition() {
         if (serverPlayer != null && SpeechRecognitionManager.isVoiceRecognitionActive(serverPlayer)) {
-            List<String> phrases = new ArrayList<>(spells.keySet());
-            SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phrases);
+            Map<String, String> phraseToName = new HashMap<>();
+            for (PlayerSpell ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phraseToName);
         }
     }
 }
