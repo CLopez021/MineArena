@@ -1,5 +1,6 @@
 package com.clopez021.mine_arena.command;
 
+import com.clopez021.mine_arena.data.PlayerSpell;
 import com.clopez021.mine_arena.player.PlayerManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -27,23 +28,35 @@ public class AudioCommand {
                 .then(argument("command", string()).executes(AudioRecordCommand::startRecording))
             )
             .then(literal("addSpell")
-                .then(argument("spell", greedyString()).executes(context -> {
-                    try {
-                        ServerPlayer player = context.getSource().getPlayerOrException();
-                        String spell = context.getArgument("spell", String.class);
-                        
-                        PlayerManager.getInstance().addSpell(player, spell);
-                        
-                        context.getSource().sendSuccess(() -> 
-                            Component.literal("Added spell: " + spell), false);
-                        
-                        return 1;
-                    } catch (CommandSyntaxException e) {
-                        context.getSource().sendFailure(Component.literal("Command error: " + e.getMessage()));
-                        return 0;
-                    }
-                }))
+                .then(argument("name", string())
+                    .then(argument("phrase", string())
+                        .then(argument("entityDataFile", string())
+                            .executes(context -> {
+                                try {
+                                    ServerPlayer player = context.getSource().getPlayerOrException();
+                                    String name = context.getArgument("name", String.class);
+                                    String phrase = context.getArgument("phrase", String.class);
+                                    String entityDataFile = context.getArgument("entityDataFile", String.class);
+
+                                    PlayerSpell ps = new PlayerSpell(name, phrase, entityDataFile);
+                                    PlayerManager.getInstance().addSpell(player, ps);
+
+                                    context.getSource().sendSuccess(() ->
+                                        Component.literal("Added spell: " + name + " (" + phrase + ")"), false);
+
+                                    return 1;
+                                } catch (CommandSyntaxException e) {
+                                    context.getSource().sendFailure(Component.literal("Command error: " + e.getMessage()));
+                                    return 0;
+                                } catch (IllegalArgumentException e) {
+                                    context.getSource().sendFailure(Component.literal("Invalid spell: " + e.getMessage()));
+                                    return 0;
+                                }
+                            })
+                        )
+                    )
+                )
             )
         );
     }
-} 
+}

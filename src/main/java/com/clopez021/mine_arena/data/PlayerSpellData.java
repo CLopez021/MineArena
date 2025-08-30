@@ -15,7 +15,8 @@ import java.util.*;
 public class PlayerSpellData extends SavedData {
     private static final String DATA_NAME = "mine_arena_player_spells";
     
-    // Player data maps
+    // Player data maps (on-disk: list of PlayerSpell per player)
+    // playerId -> List<PlayerSpell>
     private final Map<String, List<PlayerSpell>> playerSpells = new HashMap<>();
     private final Map<String, String> playerLanguages = new HashMap<>();
     
@@ -43,7 +44,16 @@ public class PlayerSpellData extends SavedData {
     
     /**
      * Loads data from NBT.
-     * 
+     *
+     * Lifecycle: Called by Minecraft when the SavedData factory resolves this
+     * instance via `computeIfAbsent` in `get(...)` below. This happens when the
+     * overworld data storage initializes (world load) or the first time this
+     * data is accessed in a session. If no prior data exists, the default
+     * constructor is used.
+     *
+     * Format: for each player, a ListTag of CompoundTags with keys
+     *   { name, phrase, entityDataFile }.
+     *
      * @param tag The NBT tag to load from
      * @param registries The registry lookup
      * @return A new PlayerSpellData instance
@@ -51,22 +61,27 @@ public class PlayerSpellData extends SavedData {
     public static PlayerSpellData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerSpellData data = new PlayerSpellData();
         
-        // Load spell data as list of compound entries {spell, file}
+        // Load spells (current format only)
         if (tag.contains("PlayerSpells", Tag.TAG_COMPOUND)) {
-            CompoundTag spellsTag = tag.getCompound("PlayerSpells");
-            for (String playerId : spellsTag.getAllKeys()) {
-                ListTag spellList = spellsTag.getList(playerId, Tag.TAG_COMPOUND);
-                List<PlayerSpell> spells = new ArrayList<>();
-                for (Tag t : spellList) {
-                    if (t instanceof CompoundTag ct) {
-                        String spell = ct.getString("spell");
-                        String file = ct.getString("file");
-                        if (spell != null && !spell.isBlank() && file != null && !file.isBlank()) {
-                            spells.add(new PlayerSpell(spell, file));
+            CompoundTag spellsRoot = tag.getCompound("PlayerSpells");
+            for (String playerId : spellsRoot.getAllKeys()) {
+                Tag playerTag = spellsRoot.get(playerId);
+                List<PlayerSpell> list = new ArrayList<>();
+                if (playerTag instanceof ListTag spellList) {
+                    for (Tag t : spellList) {
+                        if (t instanceof CompoundTag ct) {
+                            String name = ct.getString("name");
+                            String phrase = ct.getString("phrase");
+                            String entityDataFile = ct.getString("entityDataFile");
+                            if (isNonEmpty(name) && isNonEmpty(phrase) && isNonEmpty(entityDataFile)) {
+                                try {
+                                    list.add(new PlayerSpell(name, phrase, entityDataFile));
+                                } catch (IllegalArgumentException ignored) { }
+                            }
                         }
                     }
                 }
-                data.playerSpells.put(playerId, spells);
+                data.playerSpells.put(playerId, list);
             }
         }
         
@@ -84,26 +99,36 @@ public class PlayerSpellData extends SavedData {
     
     /**
      * Saves data to NBT.
-     * 
+     *
+     * Lifecycle: Called by Minecraft when the world saves if this data has been
+     * marked dirty via `setDirty()`. We call `setDirty()` in mutators like
+     * `setSpells` and `setLanguage` to ensure persistence.
+     *
+     * Whatever we output in save is the same one that is read in load.
+     * Format:
+     * - Writes the new compact format: for each player, a CompoundTag mapping
+     *   `phrase -> file`.
+     *
      * @param tag The NBT tag to save to
      * @param registries The registry lookup
      * @return The modified NBT tag
      */
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        // Save spell data as list of compound entries {spell, file}
-        CompoundTag spellsTag = new CompoundTag();
+        // Save spell data as list of { name, phrase, entityDataFile } per player
+        CompoundTag spellsRoot = new CompoundTag();
         for (Map.Entry<String, List<PlayerSpell>> entry : playerSpells.entrySet()) {
-            ListTag spellList = new ListTag();
+            ListTag listTag = new ListTag();
             for (PlayerSpell ps : entry.getValue()) {
                 CompoundTag ct = new CompoundTag();
-                ct.putString("spell", ps.spell());
-                ct.putString("file", ps.file());
-                spellList.add(ct);
+                ct.putString("name", ps.name());
+                ct.putString("phrase", ps.phrase());
+                ct.putString("entityDataFile", ps.entityDataFile());
+                listTag.add(ct);
             }
-            spellsTag.put(entry.getKey(), spellList);
+            spellsRoot.put(entry.getKey(), listTag);
         }
-        tag.put("PlayerSpells", spellsTag);
+        tag.put("PlayerSpells", spellsRoot);
         
         // Save language data
         CompoundTag languagesTag = new CompoundTag();
@@ -116,13 +141,18 @@ public class PlayerSpellData extends SavedData {
     }
     
     /**
-     * Gets the spell list for a player.
-     * 
+     * Gets the spells for a player keyed by phrase.
+     *
      * @param playerId Player UUID as string
-     * @return List of spells, or default if none configured
+     * @return Map of phrase -> PlayerSpell, or empty map if none configured
      */
-    public List<PlayerSpell> getSpells(String playerId) {
-        return new ArrayList<>(playerSpells.getOrDefault(playerId, DEFAULT_SPELLS));
+    public Map<String, PlayerSpell> getSpells(String playerId) {
+        List<PlayerSpell> list = playerSpells.getOrDefault(playerId, DEFAULT_SPELLS);
+        Map<String, PlayerSpell> map = new HashMap<>();
+        for (PlayerSpell ps : list) {
+            map.put(ps.phrase(), ps);
+        }
+        return map;
     }
     
     /**
@@ -136,14 +166,18 @@ public class PlayerSpellData extends SavedData {
     }
     
     /**
-     * Sets the spell list for a player.
-     * 
+     * Sets the spells for a player keyed by phrase.
+     *
      * @param playerId Player UUID as string
-     * @param spells List of spells
+     * @param spells Map of phrase -> PlayerSpell
      */
-    public void setSpells(String playerId, List<PlayerSpell> spells) {
-        playerSpells.put(playerId, new ArrayList<>(spells));
+    public void setSpells(String playerId, Map<String, PlayerSpell> spells) {
+        playerSpells.put(playerId, new ArrayList<>(spells.values()));
         setDirty();
+    }
+
+    private static boolean isNonEmpty(String s) {
+        return s != null && !s.isBlank();
     }
     
     /**

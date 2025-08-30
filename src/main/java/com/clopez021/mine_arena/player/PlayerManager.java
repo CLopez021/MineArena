@@ -76,10 +76,22 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to set spells for
      * @param spells List of spell phrases
      */
-    public void setSpells(ServerPlayer serverPlayer, List<com.clopez021.mine_arena.data.PlayerSpell> spells) {
+    public void setSpells(ServerPlayer serverPlayer, java.util.Map<String, com.clopez021.mine_arena.data.PlayerSpell> spells) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
             player.setSpells(spells);
+        }
+    }
+
+    // Backward-compatible overload: accept list and convert to phrase-keyed map
+    public void setSpells(ServerPlayer serverPlayer, java.util.List<com.clopez021.mine_arena.data.PlayerSpell> spells) {
+        Player player = getPlayer(serverPlayer);
+        if (player != null) {
+            java.util.Map<String, com.clopez021.mine_arena.data.PlayerSpell> map = new java.util.HashMap<>();
+            for (com.clopez021.mine_arena.data.PlayerSpell ps : spells) {
+                map.put(ps.phrase(), ps);
+            }
+            player.setSpells(map);
         }
     }
     
@@ -102,10 +114,20 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to add spell for
      * @param spell The spell phrase to add
      */
-    public void addSpell(ServerPlayer serverPlayer, String spell, String file) {
+    public void addSpell(ServerPlayer serverPlayer, String phrase, String entityDataFile) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
-            player.addSpell(spell, file);
+            player.addSpell(phrase, entityDataFile);
+        }
+    }
+
+    /**
+     * Adds a spell by full PlayerSpell object.
+     */
+    public void addSpell(ServerPlayer serverPlayer, com.clopez021.mine_arena.data.PlayerSpell spell) {
+        Player player = getPlayer(serverPlayer);
+        if (player != null) {
+            player.addSpell(spell);
         }
     }
     
