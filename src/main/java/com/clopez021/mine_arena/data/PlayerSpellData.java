@@ -3,11 +3,9 @@ package com.clopez021.mine_arena.data;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.util.datafix.DataFixTypes;
 import java.util.*;
 
 /**
@@ -18,11 +16,11 @@ public class PlayerSpellData extends SavedData {
     private static final String DATA_NAME = "mine_arena_player_spells";
     
     // Player data maps
-    private final Map<String, List<String>> playerSpells = new HashMap<>();
+    private final Map<String, List<PlayerSpell>> playerSpells = new HashMap<>();
     private final Map<String, String> playerLanguages = new HashMap<>();
     
     // Default values
-    private static final List<String> DEFAULT_SPELLS = List.of();
+    private static final List<PlayerSpell> DEFAULT_SPELLS = List.of();
     private static final String DEFAULT_LANGUAGE = "en-US";
     
     public PlayerSpellData() {
@@ -53,14 +51,20 @@ public class PlayerSpellData extends SavedData {
     public static PlayerSpellData load(CompoundTag tag, HolderLookup.Provider registries) {
         PlayerSpellData data = new PlayerSpellData();
         
-        // Load spell data
+        // Load spell data as list of compound entries {spell, file}
         if (tag.contains("PlayerSpells", Tag.TAG_COMPOUND)) {
             CompoundTag spellsTag = tag.getCompound("PlayerSpells");
             for (String playerId : spellsTag.getAllKeys()) {
-                ListTag spellList = spellsTag.getList(playerId, Tag.TAG_STRING);
-                List<String> spells = new ArrayList<>();
-                for (Tag spellTag : spellList) {
-                    spells.add(spellTag.getAsString());
+                ListTag spellList = spellsTag.getList(playerId, Tag.TAG_COMPOUND);
+                List<PlayerSpell> spells = new ArrayList<>();
+                for (Tag t : spellList) {
+                    if (t instanceof CompoundTag ct) {
+                        String spell = ct.getString("spell");
+                        String file = ct.getString("file");
+                        if (spell != null && !spell.isBlank() && file != null && !file.isBlank()) {
+                            spells.add(new PlayerSpell(spell, file));
+                        }
+                    }
                 }
                 data.playerSpells.put(playerId, spells);
             }
@@ -87,12 +91,15 @@ public class PlayerSpellData extends SavedData {
      */
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        // Save spell data
+        // Save spell data as list of compound entries {spell, file}
         CompoundTag spellsTag = new CompoundTag();
-        for (Map.Entry<String, List<String>> entry : playerSpells.entrySet()) {
+        for (Map.Entry<String, List<PlayerSpell>> entry : playerSpells.entrySet()) {
             ListTag spellList = new ListTag();
-            for (String spell : entry.getValue()) {
-                spellList.add(StringTag.valueOf(spell));
+            for (PlayerSpell ps : entry.getValue()) {
+                CompoundTag ct = new CompoundTag();
+                ct.putString("spell", ps.spell());
+                ct.putString("file", ps.file());
+                spellList.add(ct);
             }
             spellsTag.put(entry.getKey(), spellList);
         }
@@ -114,7 +121,7 @@ public class PlayerSpellData extends SavedData {
      * @param playerId Player UUID as string
      * @return List of spells, or default if none configured
      */
-    public List<String> getSpells(String playerId) {
+    public List<PlayerSpell> getSpells(String playerId) {
         return new ArrayList<>(playerSpells.getOrDefault(playerId, DEFAULT_SPELLS));
     }
     
@@ -134,7 +141,7 @@ public class PlayerSpellData extends SavedData {
      * @param playerId Player UUID as string
      * @param spells List of spells
      */
-    public void setSpells(String playerId, List<String> spells) {
+    public void setSpells(String playerId, List<PlayerSpell> spells) {
         playerSpells.put(playerId, new ArrayList<>(spells));
         setDirty();
     }

@@ -1,12 +1,14 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.data.PlayerSpellData;
+import com.clopez021.mine_arena.data.PlayerSpell;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Player model that encapsulates player-specific data and behavior.
@@ -14,12 +16,12 @@ import java.util.UUID;
  */
 public class Player {
     private final UUID uuid;
-    private final List<String> spells;
+    private final List<PlayerSpell> spells;
     private String language;
     private ServerPlayer serverPlayer; // Reference to update speech recognition
     
     // Default values
-    private static final List<String> DEFAULT_SPELLS = List.of();
+    private static final List<PlayerSpell> DEFAULT_SPELLS = List.of();
     private static final String DEFAULT_LANGUAGE = "en-US";
     
     public Player(ServerPlayer serverPlayer) {
@@ -38,7 +40,7 @@ public class Player {
     }
     
     // Setters with auto-save and speech recognition updates
-    public void setSpells(List<String> spells) {
+    public void setSpells(List<PlayerSpell> spells) {
         this.spells.clear();
         this.spells.addAll(spells);
         saveData();
@@ -52,8 +54,13 @@ public class Player {
     }
     
     // Spell management with auto-save and speech recognition updates
-    public void addSpell(String spell) {
-        if (!spells.contains(spell)) {
+    public void addSpell(String spell, String file) {
+        addSpell(new PlayerSpell(spell, file));
+    }
+
+    public void addSpell(PlayerSpell spell) {
+        boolean exists = spells.stream().anyMatch(s -> s.spell().equals(spell.spell()));
+        if (!exists) {
             spells.add(spell);
             saveData();
             updateSpeechRecognition();
@@ -61,7 +68,7 @@ public class Player {
     }
     
     public boolean removeSpell(String spell) {
-        boolean removed = spells.remove(spell);
+        boolean removed = spells.removeIf(s -> s.spell().equals(spell));
         if (removed) {
             saveData();
             updateSpeechRecognition();
@@ -75,7 +82,7 @@ public class Player {
             try {
                 PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
                 String playerIdStr = uuid.toString();
-                List<String> savedSpells = data.getSpells(playerIdStr);
+                List<PlayerSpell> savedSpells = data.getSpells(playerIdStr);
                 String savedLanguage = data.getLanguage(playerIdStr);
                 
                 this.spells.clear();
@@ -104,7 +111,8 @@ public class Player {
     // Speech recognition management
     public void startVoiceRecognition() {
         if (serverPlayer != null) {
-            SpeechRecognitionManager.startVoiceRecognition(serverPlayer, spells, language);
+            List<String> phrases = spells.stream().map(PlayerSpell::spell).collect(Collectors.toList());
+            SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phrases, language);
         }
     }
     
@@ -116,7 +124,8 @@ public class Player {
     
     private void updateSpeechRecognition() {
         if (serverPlayer != null && SpeechRecognitionManager.isVoiceRecognitionActive(serverPlayer)) {
-            SpeechRecognitionManager.updateConfiguration(serverPlayer, language, spells);
+            List<String> phrases = spells.stream().map(PlayerSpell::spell).collect(Collectors.toList());
+            SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phrases);
         }
     }
     

@@ -76,7 +76,7 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to set spells for
      * @param spells List of spell phrases
      */
-    public void setSpells(ServerPlayer serverPlayer, List<String> spells) {
+    public void setSpells(ServerPlayer serverPlayer, List<com.clopez021.mine_arena.data.PlayerSpell> spells) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
             player.setSpells(spells);
@@ -102,10 +102,10 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to add spell for
      * @param spell The spell phrase to add
      */
-    public void addSpell(ServerPlayer serverPlayer, String spell) {
+    public void addSpell(ServerPlayer serverPlayer, String spell, String file) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
-            player.addSpell(spell);
+            player.addSpell(spell, file);
         }
     }
     
