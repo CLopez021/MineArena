@@ -1,5 +1,6 @@
 package com.clopez021.mine_arena.player;
 
+import com.clopez021.mine_arena.data.PlayerSpell;
 import com.clopez021.mine_arena.speech_recognition.SpeechCommand;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -76,10 +77,11 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to set spells for
      * @param spells List of spell phrases
      */
-    public void setSpells(ServerPlayer serverPlayer, List<String> spells) {
+    // Bulk add spells to a player (merges by phrase)
+    public void addSpells(ServerPlayer serverPlayer, java.util.Collection<PlayerSpell> spells) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
-            player.setSpells(spells);
+            player.addSpells(spells);
         }
     }
     
@@ -102,7 +104,10 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to add spell for
      * @param spell The spell phrase to add
      */
-    public void addSpell(ServerPlayer serverPlayer, String spell) {
+    /**
+     * Adds a spell by full PlayerSpell object.
+     */
+    public void addSpell(ServerPlayer serverPlayer, PlayerSpell spell) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
             player.addSpell(spell);
