@@ -32,4 +32,11 @@ public record PlayerSpell(String name, String phrase, String entityDataFile) {
             throw new IllegalArgumentException("entityDataFile must not contain path traversal '..'");
         }
     }
+
+    /**
+     * Returns the stored file path as a relative Path object.
+     */
+    public java.nio.file.Path asRelativePath() {
+        return java.nio.file.Path.of(entityDataFile);
+    }
 }

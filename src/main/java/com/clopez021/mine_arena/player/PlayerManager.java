@@ -1,5 +1,6 @@
 package com.clopez021.mine_arena.player;
 
+import com.clopez021.mine_arena.data.PlayerSpell;
 import com.clopez021.mine_arena.speech_recognition.SpeechCommand;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -76,22 +77,11 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to set spells for
      * @param spells List of spell phrases
      */
-    public void setSpells(ServerPlayer serverPlayer, java.util.Map<String, com.clopez021.mine_arena.data.PlayerSpell> spells) {
+    // Bulk add spells to a player (merges by phrase)
+    public void addSpells(ServerPlayer serverPlayer, java.util.Collection<PlayerSpell> spells) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
-            player.setSpells(spells);
-        }
-    }
-
-    // Backward-compatible overload: accept list and convert to phrase-keyed map
-    public void setSpells(ServerPlayer serverPlayer, java.util.List<com.clopez021.mine_arena.data.PlayerSpell> spells) {
-        Player player = getPlayer(serverPlayer);
-        if (player != null) {
-            java.util.Map<String, com.clopez021.mine_arena.data.PlayerSpell> map = new java.util.HashMap<>();
-            for (com.clopez021.mine_arena.data.PlayerSpell ps : spells) {
-                map.put(ps.phrase(), ps);
-            }
-            player.setSpells(map);
+            player.addSpells(spells);
         }
     }
     
@@ -114,17 +104,10 @@ public class PlayerManager {
      * @param serverPlayer The ServerPlayer to add spell for
      * @param spell The spell phrase to add
      */
-    public void addSpell(ServerPlayer serverPlayer, String phrase, String entityDataFile) {
-        Player player = getPlayer(serverPlayer);
-        if (player != null) {
-            player.addSpell(phrase, entityDataFile);
-        }
-    }
-
     /**
      * Adds a spell by full PlayerSpell object.
      */
-    public void addSpell(ServerPlayer serverPlayer, com.clopez021.mine_arena.data.PlayerSpell spell) {
+    public void addSpell(ServerPlayer serverPlayer, PlayerSpell spell) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
             player.addSpell(spell);

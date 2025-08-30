@@ -6,6 +6,7 @@ import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,12 +42,17 @@ public class Player {
         return uuid;
     }
     
-    // Setters with auto-save and speech recognition updates
-    public void setSpells(Map<String, PlayerSpell> spells) {
-        this.spells.clear();
-        this.spells.putAll(spells);
-        saveData();
-        updateSpeechRecognition();
+    // Bulk-add with auto-save and speech recognition updates
+    public void addSpells(Collection<PlayerSpell> spells) {
+        boolean changed = false;
+        for (PlayerSpell ps : spells) {
+            PlayerSpell prev = this.spells.put(ps.phrase(), ps);
+            if (prev == null || !prev.equals(ps)) changed = true;
+        }
+        if (changed) {
+            saveData();
+            updateSpeechRecognition();
+        }
     }
     
     public void setLanguage(String language) {
@@ -56,11 +62,6 @@ public class Player {
     }
     
     // Spell management with auto-save and speech recognition updates
-    public void addSpell(String phrase, String entityDataFile) {
-        // Default display name to phrase for convenience when not provided explicitly
-        addSpell(new PlayerSpell(phrase, phrase, entityDataFile));
-    }
-
     public void addSpell(PlayerSpell spell) {
         String key = spell.phrase();
         if (!spells.containsKey(key)) {
