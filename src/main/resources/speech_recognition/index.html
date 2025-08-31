@@ -306,7 +306,7 @@
             if (matchedPhrase) {
               const entry = spells.find(s => s.phrase === matchedPhrase);
               const spellName = entry ? entry.name : matchedPhrase;
-              send({ type: "spellCast", spell: spellName });
+              send({ type: "spellCast", spellName });
             }
           }
         }

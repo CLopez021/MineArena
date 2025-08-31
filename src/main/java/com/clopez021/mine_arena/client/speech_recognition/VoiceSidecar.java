@@ -121,11 +121,11 @@ public final class VoiceSidecar {
 			String type = msg.get("type").getAsString();
 			
 			if ("spellCast".equals(type)) {
-				// Parse the spell cast message
-				String spell = msg.get("spell").getAsString();
+                // Parse the spell cast message (spell name)
+                String spellName = msg.get("spellName").getAsString();
 
 				UUID playerId = getCurrentPlayerId();
-				SpeechCommand command = new SpeechCommand(playerId, spell);
+                SpeechCommand command = new SpeechCommand(playerId, spellName);
 				handleSpeechCommand(command);
 			}
 		} catch (Exception e) {
@@ -150,10 +150,10 @@ public final class VoiceSidecar {
 	}
 
 	private void handleSpeechCommand(SpeechCommand command) {
-		// Always forward to server via packet
-		PacketHandler.INSTANCE.send(new RecognizedSpeechPacket(
-				command.getSpell()
-		), net.minecraftforge.network.PacketDistributor.SERVER.noArg());
+            // Always forward to server via packet
+            PacketHandler.INSTANCE.send(new RecognizedSpeechPacket(
+                    command.getSpellName()
+            ), net.minecraftforge.network.PacketDistributor.SERVER.noArg());
 	}
 
 	private static int pickFreePort() throws IOException {

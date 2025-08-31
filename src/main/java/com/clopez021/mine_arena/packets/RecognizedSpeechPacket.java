@@ -8,22 +8,22 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.network.CustomPayloadEvent;
 
 /**
- * Client -> Server: Carry recognized speech result.
+ * Client -> Server: Carry recognized speech result (spell name).
  */
 public class RecognizedSpeechPacket {
-	private final String spell;
+	private final String spellName;
 
-	public RecognizedSpeechPacket(String spell) {
-		this.spell = spell;
+	public RecognizedSpeechPacket(String spellName) {
+		this.spellName = spellName;
 	}
 
 	public void encode(FriendlyByteBuf buf) {
-		buf.writeUtf(spell != null ? spell : "");
+		buf.writeUtf(spellName != null ? spellName : "");
 	}
 
 	public static RecognizedSpeechPacket decode(FriendlyByteBuf buf) {
-		String spell = buf.readUtf();
-		return new RecognizedSpeechPacket(spell);
+		String spellName = buf.readUtf();
+		return new RecognizedSpeechPacket(spellName);
 	}
 
 	public void handle(CustomPayloadEvent.Context ctx) {
@@ -31,7 +31,7 @@ public class RecognizedSpeechPacket {
 		if (player == null) return;
 		ctx.enqueueWork(() -> {
 			// Create simplified SpeechCommand and delegate to PlayerManager
-			SpeechCommand command = new SpeechCommand(player.getUUID(), spell);
+			SpeechCommand command = new SpeechCommand(player.getUUID(), spellName);
 			PlayerManager.getInstance().handleSpeechCommand(player, command);
 		});
 		ctx.setPacketHandled(true);

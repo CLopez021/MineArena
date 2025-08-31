@@ -4,14 +4,15 @@ import java.util.UUID;
 
 /**
  * Represents a recognized speech command from the Web Speech API.
+ * Contains the originating playerId and the recognized spellName.
  */
 public class SpeechCommand {
     private final UUID playerId;
-    private final String spell;
+    private final String spellName;
     
-    public SpeechCommand(UUID playerId, String spell) {
+    public SpeechCommand(UUID playerId, String spellName) {
         this.playerId = playerId;
-        this.spell = spell;
+        this.spellName = spellName;
     }
     
     /**
@@ -22,14 +23,14 @@ public class SpeechCommand {
     }
     
     /**
-     * Gets the canonical spell phrase that was matched.
+     * Gets the recognized spell name.
      */
-    public String getSpell() {
-        return spell;
+    public String getSpellName() {
+        return spellName;
     }
     
     @Override
     public String toString() {
-        return String.format("SpeechCommand{playerId=%s, spell='%s'}", playerId, spell);
+        return String.format("SpeechCommand{playerId=%s, spellName='%s'}", playerId, spellName);
     }
 }

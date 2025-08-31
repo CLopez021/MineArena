@@ -72,12 +72,11 @@ public class PlayerManager {
 
     
     /**
-     * Sets the spell list for a player.
-     * 
-     * @param serverPlayer The ServerPlayer to set spells for
-     * @param spells List of spell phrases
+     * Bulk add spells to a player (merge by spell name).
+     *
+     * @param serverPlayer The ServerPlayer to add spells for
+     * @param spells Collection of PlayerSpell objects
      */
-    // Bulk add spells to a player (merges by phrase)
     public void addSpells(ServerPlayer serverPlayer, java.util.Collection<PlayerSpell> spells) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
@@ -98,15 +97,7 @@ public class PlayerManager {
         }
     }
     
-    /**
-     * Adds a spell to a player's recognition list.
-     * 
-     * @param serverPlayer The ServerPlayer to add spell for
-     * @param spell The spell phrase to add
-     */
-    /**
-     * Adds a spell by full PlayerSpell object.
-     */
+    /** Adds a single spell by PlayerSpell object. */
     public void addSpell(ServerPlayer serverPlayer, PlayerSpell spell) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
@@ -161,14 +152,14 @@ public class PlayerManager {
         Player player = getPlayer(serverPlayer);
         if (player == null) return;
         
-        String spell = command.getSpell();
+        String spellName = command.getSpellName();
         
         // Output to console for debugging
         System.out.printf("[Voice] Player %s cast spell: %s%n", 
-            serverPlayer.getName().getString(), spell);
+            serverPlayer.getName().getString(), spellName);
         
         // Output to Minecraft chat
-        String chatMessage = String.format("🎤 Spell Cast: %s", spell);
+        String chatMessage = String.format("🎤 Spell Cast: %s", spellName);
         serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal(chatMessage));
         
         // TODO: Add spell-specific command handling here
