@@ -20,5 +20,7 @@ public class PacketHandler {
 
         INSTANCE.messageBuilder(VoiceSidecarConfigPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT).encoder(VoiceSidecarConfigPacket::encode).decoder(VoiceSidecarConfigPacket::decode).consumerMainThread(VoiceSidecarConfigPacket::handle).add();
         INSTANCE.messageBuilder(RecognizedSpeechPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(RecognizedSpeechPacket::encode).decoder(RecognizedSpeechPacket::decode).consumerMainThread(RecognizedSpeechPacket::handle).add();
+        INSTANCE.messageBuilder(SpellCompletePacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT).encoder(SpellCompletePacket::encode).decoder(SpellCompletePacket::decode).consumerMainThread(SpellCompletePacket::handle).add();
+        INSTANCE.messageBuilder(WandSubmitPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER).encoder(WandSubmitPacket::encode).decoder(WandSubmitPacket::decode).consumerMainThread(WandSubmitPacket::handle).add();
     }
 }
