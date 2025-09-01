@@ -11,7 +11,7 @@ public class ModItems {
     public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, MineArena.MOD_ID);
 
     public static final RegistryObject<Item> WAND = ITEMS.register("wand",
-            () -> new Item(new Item.Properties().stacksTo(1)));
+            () -> new WandItem(new Item.Properties().stacksTo(1)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

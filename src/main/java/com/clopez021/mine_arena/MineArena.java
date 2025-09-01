@@ -11,6 +11,8 @@ import com.clopez021.mine_arena.voicechat.RecorderManager;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
+import com.clopez021.mine_arena.client.SpellEntityRenderer;
+import com.clopez021.mine_arena.player.PlayerManager;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -73,7 +75,7 @@ public class MineArena {
         // Clean up any active recordings when server stops
         RecorderManager.stopAllRecordings();
         // Clean up player management and speech recognition instances
-        com.clopez021.mine_arena.player.PlayerManager.shutdownAll();
+        PlayerManager.shutdownAll();
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
@@ -81,13 +83,13 @@ public class MineArena {
     public static class ClientModEvents {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
-            		EntityRenderers.register(com.clopez021.mine_arena.entity.ModEntities.SPELL_ENTITY.get(), com.clopez021.mine_arena.client.SpellEntityRenderer::new);
+            EntityRenderers.register(ModEntities.SPELL_ENTITY.get(), SpellEntityRenderer::new);
         }
     }
 
     private void addCreative(BuildCreativeModeTabContentsEvent event) {
         if (event.getTabKey() == CreativeModeTabs.COMBAT || event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
-            event.accept(com.clopez021.mine_arena.items.ModItems.WAND);
+            event.accept(ModItems.WAND);
         }
     }
 }
