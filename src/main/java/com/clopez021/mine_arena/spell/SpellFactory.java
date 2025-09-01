@@ -9,9 +9,6 @@ import net.minecraftforge.network.PacketDistributor;
 public class SpellFactory {
 
     public static void createSpell(ServerPlayer player, String spellDescription, String castPhrase) {
-        // For now, just log to chat and simulate 10s processing
-        player.sendSystemMessage(Component.literal("Casting spell: [" + spellDescription + ", " + castPhrase + "]"));
-
         // Simulate async work and then notify client
         Thread t = new Thread(() -> {
             try {
