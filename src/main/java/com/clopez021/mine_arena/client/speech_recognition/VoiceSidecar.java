@@ -42,7 +42,7 @@ public final class VoiceSidecar {
 		return instance;
 	}
 
-	public void start(List<String> initialSpells, String lang) throws Exception {
+    public void start(Map<String, String> phraseToName, String lang) throws Exception {
 		if (isRunning) return;
 
 		wsPort = pickFreePort();
@@ -60,8 +60,8 @@ public final class VoiceSidecar {
 		String url = "http://127.0.0.1:" + httpPort + "/index.html?wsPort=" + wsPort + "&playerId=" + playerId;
 		VoiceSidecarUi.promptAndOpen(url);
 
-		// Push initial config
-		sendConfig(lang, initialSpells);
+        // Push initial config
+        sendConfig(lang, phraseToName);
 
 		isRunning = true;
 	}
@@ -75,21 +75,26 @@ public final class VoiceSidecar {
 		isRunning = false;
 	}
 
-	public void sendConfig(String lang, List<String> spells) {
-		if (!isRunning || ws == null) return;
+    public void sendConfig(String lang, Map<String, String> phraseToName) {
+        if (!isRunning || ws == null) return;
 
 		UUID playerId = getCurrentPlayerId();
 		JsonObject cfg = new JsonObject();
 		cfg.addProperty("type", "config");
 		cfg.addProperty("playerId", playerId.toString());
-		if (lang != null) cfg.addProperty("lang", lang);
-		if (spells != null) {
-			JsonArray arr = new JsonArray();
-			spells.forEach(arr::add);
-			cfg.add("spells", arr);
-		}
-		ws.broadcast(gson.toJson(cfg));
-	}
+        if (lang != null) cfg.addProperty("lang", lang);
+        if (phraseToName != null) {
+            JsonArray arr = new JsonArray();
+            for (Map.Entry<String, String> e : phraseToName.entrySet()) {
+                JsonObject o = new JsonObject();
+                o.addProperty("phrase", e.getKey());
+                o.addProperty("name", e.getValue());
+                arr.add(o);
+            }
+            cfg.add("spells", arr);
+        }
+        ws.broadcast(gson.toJson(cfg));
+    }
 
 	public void sendStart() {
 		if (!isRunning || ws == null) return;
@@ -116,11 +121,11 @@ public final class VoiceSidecar {
 			String type = msg.get("type").getAsString();
 			
 			if ("spellCast".equals(type)) {
-				// Parse the spell cast message
-				String spell = msg.get("spell").getAsString();
+                // Parse the spell cast message (spell name)
+                String spellName = msg.get("spellName").getAsString();
 
 				UUID playerId = getCurrentPlayerId();
-				SpeechCommand command = new SpeechCommand(playerId, spell);
+                SpeechCommand command = new SpeechCommand(playerId, spellName);
 				handleSpeechCommand(command);
 			}
 		} catch (Exception e) {
@@ -145,10 +150,10 @@ public final class VoiceSidecar {
 	}
 
 	private void handleSpeechCommand(SpeechCommand command) {
-		// Always forward to server via packet
-		PacketHandler.INSTANCE.send(new RecognizedSpeechPacket(
-				command.getSpell()
-		), net.minecraftforge.network.PacketDistributor.SERVER.noArg());
+            // Always forward to server via packet
+            PacketHandler.INSTANCE.send(new RecognizedSpeechPacket(
+                    command.getSpellName()
+            ), net.minecraftforge.network.PacketDistributor.SERVER.noArg());
 	}
 
 	private static int pickFreePort() throws IOException {
