@@ -305,8 +305,11 @@
             const matchedPhrase = matchSpell(heard, phrases, alts);
             if (matchedPhrase) {
               const entry = spells.find(s => s.phrase === matchedPhrase);
-              const spellName = entry ? entry.name : matchedPhrase;
-              send({ type: "spellCast", spellName });
+              let spellName = "";
+              if (entry) {
+                spellName = entry.name;
+                send({ type: "spellCast", spellName });
+              }
             }
           }
         }
