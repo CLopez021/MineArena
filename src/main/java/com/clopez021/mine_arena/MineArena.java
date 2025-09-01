@@ -55,6 +55,9 @@ public class MineArena {
         ModEntities.register(modEventBus);
         PacketHandler.init();
 
+        // Add items to creative tabs
+        modEventBus.addListener(this::addCreative);
+
         // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
         context.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
         context.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
@@ -79,6 +82,12 @@ public class MineArena {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             		EntityRenderers.register(com.clopez021.mine_arena.entity.ModEntities.SPELL_ENTITY.get(), com.clopez021.mine_arena.client.SpellEntityRenderer::new);
+        }
+    }
+
+    private void addCreative(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.COMBAT || event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
+            event.accept(com.clopez021.mine_arena.items.ModItems.WAND);
         }
     }
 }

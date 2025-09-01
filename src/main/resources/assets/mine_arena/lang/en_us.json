@@ -1,14 +1,3 @@
 {
-    "item.mine_arena.model_hammer": "Model Hammer",
-
-    "key.category.mine_arena.mine_arena": "Mine Arena",
-    "key.mine_arena.place": "Place",
-    "key.mine_arena.undo": "Undo",
-    "key.mine_arena.scale": "Scale",
-    "key.mine_arena.rotate": "Rotate",
-    "key.mine_arena.translate": "Move",
-    "key.mine_arena.x_axis": "X-Axis",
-    "key.mine_arena.y_axis": "Y-Axis",
-    "key.mine_arena.z_axis": "Z-Axis",
-    "key.mine_arena.toggle_view": "Toggle View"
+  "item.mine_arena.wand": "Wand"
 }
