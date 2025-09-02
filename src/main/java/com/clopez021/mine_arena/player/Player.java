@@ -1,9 +1,12 @@
 package com.clopez021.mine_arena.player;
 
-import com.clopez021.mine_arena.data.PlayerSpellData;
-import com.clopez021.mine_arena.data.PlayerSpell;
+import com.clopez021.mine_arena.spell.PlayerSpell;
+import com.clopez021.mine_arena.spell.SpellEntityData;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,7 +36,7 @@ public class Player {
         this.language = DEFAULT_LANGUAGE;
         this.serverPlayer = serverPlayer;
         
-        // Load data from SavedData
+        // Load data from per-player persistent NBT
         loadData();
     }
     
@@ -82,21 +85,42 @@ public class Player {
     
     // Data persistence
     /**
-     * Loads this player's data from SavedData.
-     * Called during Player construction. The underlying SavedData instance
-     * is resolved via computeIfAbsent on first access per world load.
+     * Loads this player's data from the player's persistent NBT data.
+     * Stored under root key "mine_arena" with keys:
+     * - Spells: ListTag of Compound { name, phrase, entityData }
+     * - Language: String
      */
     private void loadData() {
         if (serverPlayer != null) {
             try {
-                PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
-                String playerIdStr = uuid.toString();
-                Map<String, PlayerSpell> savedByName = data.getSpells(playerIdStr);
-                String savedLanguage = data.getLanguage(playerIdStr);
-                
+                CompoundTag root = serverPlayer.getPersistentData().getCompound("mine_arena");
+
+                // Load spells
                 this.spells.clear();
-                this.spells.putAll(savedByName);
-                this.language = savedLanguage;
+                if (root.contains("Spells", Tag.TAG_LIST)) {
+                    ListTag list = root.getList("Spells", Tag.TAG_COMPOUND);
+                    for (Tag t : list) {
+                        if (t instanceof CompoundTag ct) {
+                            String name = ct.getString("name");
+                            String phrase = ct.getString("phrase");
+                            SpellEntityData entityData = null;
+                            if (ct.contains("entityData", Tag.TAG_COMPOUND)) {
+                                entityData = SpellEntityData.fromNBT(ct.getCompound("entityData"));
+                            }
+                            if (!name.isBlank() && !phrase.isBlank()) {
+                                try {
+                                    PlayerSpell ps = new PlayerSpell(name, phrase, entityData != null ? entityData : SpellEntityData.empty());
+                                    this.spells.put(ps.name(), ps);
+                                } catch (IllegalArgumentException ignored) {}
+                            }
+                        }
+                    }
+                }
+
+                // Load language
+                if (root.contains("Language", Tag.TAG_STRING)) {
+                    this.language = root.getString("Language");
+                }
             } catch (Exception e) {
                 System.err.println("Failed to load player data: " + e.getMessage());
                 // Keep defaults
@@ -105,17 +129,30 @@ public class Player {
     }
 
     /**
-     * Persists this player's data to SavedData and marks it dirty.
-     * Minecraft calls SavedData#save during world saves if dirty.
+     * Persists this player's data to the player's persistent NBT data.
      */
     public void saveData() {
         if (serverPlayer != null) {
             try {
-                PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
-                String playerIdStr = uuid.toString();
-                // Persist name-keyed map (PlayerSpellData stores as a list internally)
-                data.setSpells(playerIdStr, spells);
-                data.setLanguage(playerIdStr, language);
+                CompoundTag persistent = serverPlayer.getPersistentData();
+                CompoundTag root = persistent.getCompound("mine_arena");
+
+                // Save spells
+                ListTag list = new ListTag();
+                for (PlayerSpell ps : spells.values()) {
+                    CompoundTag ct = new CompoundTag();
+                    ct.putString("name", ps.name());
+                    ct.putString("phrase", ps.phrase());
+                    ct.put("entityData", ps.data().toNBT());
+                    list.add(ct);
+                }
+                root.put("Spells", list);
+
+                // Save language
+                root.putString("Language", language);
+
+                // Write back to player's persistent data
+                persistent.put("mine_arena", root);
             } catch (Exception e) {
                 System.err.println("Failed to save player data: " + e.getMessage());
             }

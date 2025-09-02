@@ -1,6 +1,6 @@
 package com.clopez021.mine_arena.player;
 
-import com.clopez021.mine_arena.data.PlayerSpell;
+import com.clopez021.mine_arena.spell.PlayerSpell;
 import com.clopez021.mine_arena.speech_recognition.SpeechCommand;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
