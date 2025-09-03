@@ -1,6 +1,6 @@
 package com.clopez021.mine_arena.player;
 
-import com.clopez021.mine_arena.spell.PlayerSpell;
+import com.clopez021.mine_arena.spell.PlayerSpellConfig;
 import com.clopez021.mine_arena.spell.SpellEntityData;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -21,13 +21,13 @@ import java.util.UUID;
  */
 public class Player {
     private final UUID uuid;
-    // name -> PlayerSpell (runtime lookup by name)
-    private final Map<String, PlayerSpell> spells;
+    // name -> PlayerSpellConfig (runtime lookup by name)
+    private final Map<String, PlayerSpellConfig> spells;
     private String language;
     private ServerPlayer serverPlayer; // Reference to update speech recognition
     
     // Default values
-    private static final Map<String, PlayerSpell> DEFAULT_SPELLS = Map.of();
+    private static final Map<String, PlayerSpellConfig> DEFAULT_SPELLS = Map.of();
     private static final String DEFAULT_LANGUAGE = "en-US";
     
     public Player(ServerPlayer serverPlayer) {
@@ -46,10 +46,10 @@ public class Player {
     }
     
     // Bulk-add with auto-save and speech recognition updates
-    public void addSpells(Collection<PlayerSpell> spells) {
+    public void addSpells(Collection<PlayerSpellConfig> spells) {
         boolean changed = false;
-        for (PlayerSpell ps : spells) {
-            PlayerSpell prev = this.spells.put(ps.name(), ps);
+        for (PlayerSpellConfig ps : spells) {
+            PlayerSpellConfig prev = this.spells.put(ps.name(), ps);
             if (prev == null || !prev.equals(ps)) changed = true;
         }
         if (changed) {
@@ -65,7 +65,7 @@ public class Player {
     }
     
     // Spell management with auto-save and speech recognition updates
-    public void addSpell(PlayerSpell spell) {
+    public void addSpell(PlayerSpellConfig spell) {
         String key = spell.name();
         if (!spells.containsKey(key)) {
             spells.put(key, spell);
@@ -101,18 +101,12 @@ public class Player {
                     ListTag list = root.getList("Spells", Tag.TAG_COMPOUND);
                     for (Tag t : list) {
                         if (t instanceof CompoundTag ct) {
-                            String name = ct.getString("name");
-                            String phrase = ct.getString("phrase");
-                            SpellEntityData entityData = null;
-                            if (ct.contains("entityData", Tag.TAG_COMPOUND)) {
-                                entityData = SpellEntityData.fromNBT(ct.getCompound("entityData"));
-                            }
-                            if (!name.isBlank() && !phrase.isBlank()) {
-                                try {
-                                    PlayerSpell ps = new PlayerSpell(name, phrase, entityData != null ? entityData : SpellEntityData.empty());
+                            try {
+                                PlayerSpellConfig ps = PlayerSpellConfig.fromNBT(ct);
+                                if (!ps.name().isBlank() && !ps.phrase().isBlank()) {
                                     this.spells.put(ps.name(), ps);
-                                } catch (IllegalArgumentException ignored) {}
-                            }
+                                }
+                            } catch (IllegalArgumentException ignored) {}
                         }
                     }
                 }
@@ -139,12 +133,8 @@ public class Player {
 
                 // Save spells
                 ListTag list = new ListTag();
-                for (PlayerSpell ps : spells.values()) {
-                    CompoundTag ct = new CompoundTag();
-                    ct.putString("name", ps.name());
-                    ct.putString("phrase", ps.phrase());
-                    ct.put("entityData", ps.data().toNBT());
-                    list.add(ct);
+                for (PlayerSpellConfig ps : spells.values()) {
+                    list.add(ps.toNBT());
                 }
                 root.put("Spells", list);
 
@@ -163,7 +153,7 @@ public class Player {
     public void startVoiceRecognition() {
         if (serverPlayer != null) {
             Map<String, String> phraseToName = new HashMap<>();
-            for (PlayerSpell ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
             SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phraseToName, language);
         }
     }
@@ -177,7 +167,7 @@ public class Player {
     private void updateSpeechRecognition() {
         if (serverPlayer != null && SpeechRecognitionManager.isVoiceRecognitionActive(serverPlayer)) {
             Map<String, String> phraseToName = new HashMap<>();
-            for (PlayerSpell ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
             SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phraseToName);
         }
     }

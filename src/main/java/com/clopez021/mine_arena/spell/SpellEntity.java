@@ -207,15 +207,15 @@ public class SpellEntity extends Entity {
 	}
 
 	/**
-	 * Initialize from SpellEntityInitData (server-side only).
+	 * Initialize from SpellEntityConfig (server-side only).
 	 */
-	public void initializeServer(SpellEntityInitData data) {
+	public void initializeServer(SpellEntityConfig data) {
 		if (level().isClientSide) {
 			throw new IllegalStateException("initializeServer() can only be called on the server side!");
 		}
 		
-		setMicroScaleServer(data.microScale);
-		setBlocksServer(data.blocks);
+        setMicroScaleServer(data.microScale());
+        setBlocksServer(data.blocks());
 		recalcBoundsFromBlocks();
 		refreshDimensions(); // now uses our new spans
 	}
