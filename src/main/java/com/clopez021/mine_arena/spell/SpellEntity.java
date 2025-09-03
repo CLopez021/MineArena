@@ -1,17 +1,15 @@
 package com.clopez021.mine_arena.spell;
 
+import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehavior;
+import com.clopez021.mine_arena.spell.behavior.onCollision.OnCollisionBehaviors;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.EntityDimensions;
@@ -21,32 +19,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class SpellEntity extends Entity {
-	// ---- NBT key constants ----
-	private static final String NBT_BLOCKS_ROOT = "B";
-	private static final String NBT_BLOCK_ENTRY_POS = "p";
-	private static final String NBT_BLOCK_ENTRY_BLOCK_ID = "b";
-	private static final String NBT_POS_X = "x";
-	private static final String NBT_POS_Y = "y";
-	private static final String NBT_POS_Z = "z";
-	private static final String NBT_BLOCKS_SAVE = "blocks_nbt";
-	private static final String NBT_MICRO_SCALE = "microScale";
+    // ---- Synced key (entire config) ----
+    private static final EntityDataAccessor<CompoundTag> DATA_CONFIG =
+        SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.COMPOUND_TAG);
 
-	// ---- Synced keys ----
-	private static final EntityDataAccessor<Float> DATA_MICRO =
-		SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.FLOAT);
+    // Local caches (handy for math/render)
+    public final Vector3f minCorner = new Vector3f();
 
-	// The block map lives in one CompoundTag
-	private static final EntityDataAccessor<CompoundTag> DATA_BLOCKS =
-		SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.COMPOUND_TAG);
+	// Authoritative config (single source of truth)
+	private SpellEntityConfig config = SpellEntityConfig.empty();
 
-	// Local caches (handy for math/render)
-	public float microScale = 1f / 16f;
-	public final Vector3f minCorner = new Vector3f();
-	public final Map<BlockPos, BlockState> blocks = new HashMap<>();
+    // Collision behavior
+    private transient CollisionBehavior onCollision = OnCollisionBehaviors.byKey(OnCollisionBehaviors.DEFAULT_KEY);
+	private boolean collisionTriggered = false;
 	
 	// Dynamic dimensions
 	private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
-	public float centerLocalX, centerLocalZ;
+    public float centerLocalX, centerLocalZ;
 
 	public SpellEntity(EntityType<? extends Entity> type, Level level) {
 		super(type, level);
@@ -55,53 +44,45 @@ public class SpellEntity extends Entity {
 
 	@Override
 	protected void defineSynchedData(SynchedEntityData.Builder b) {
-		b.define(DATA_MICRO, 1f / 16f);
-		b.define(DATA_BLOCKS, new CompoundTag());
+		b.define(DATA_CONFIG, new CompoundTag());
 	}
 
 	// ---------------- Internal apply helpers (no side checks) ----------------
 
-	private void applyMicroScale(float value) {
-		this.microScale = value;
-		this.entityData.set(DATA_MICRO, value);
-	}
+    private void pushConfigToSyncedData() {
+        this.entityData.set(DATA_CONFIG, this.config.toNBT());
+    }
 
-	private void applyBlocks(Map<BlockPos, BlockState> map) {
-		this.blocks.clear();
-		this.blocks.putAll(map);
+    // Expose config-backed runtime state without duplicating storage
+    public SpellEntityConfig getConfig() { return this.config; }
+    public Map<BlockPos, BlockState> getBlocks() { return this.config.getBlocks(); }
+    public float getMicroScale() { return this.config.getMicroScale(); }
+    public String getOnCollisionKey() { return this.config.getOnCollisionKey(); }
 
-		CompoundTag root = new CompoundTag();
-		ListTag list = new ListTag();
-		for (var e : map.entrySet()) {
-			CompoundTag t = new CompoundTag();
-			CompoundTag pos = new CompoundTag();
-			pos.putInt(NBT_POS_X, e.getKey().getX());
-			pos.putInt(NBT_POS_Y, e.getKey().getY());
-			pos.putInt(NBT_POS_Z, e.getKey().getZ());
-			t.put(NBT_BLOCK_ENTRY_POS, pos);
-			t.putInt(NBT_BLOCK_ENTRY_BLOCK_ID, BuiltInRegistries.BLOCK.getId(e.getValue().getBlock()));
-			list.add(t);
-		}
-		root.put(NBT_BLOCKS_ROOT, list);
-		this.entityData.set(DATA_BLOCKS, root);
-	}
+    
 
 	// ---------------- Server-side setters ----------------
 
-	public void setMicroScaleServer(float value) {
-		if (!level().isClientSide) {
-			applyMicroScale(value);
-			refreshDimensions();
-		}
-	}
+    public void setMicroScaleServer(float value) {
+        if (!level().isClientSide) {
+            // Mutate authoritative config and sync
+            this.config.setMicroScale(value);
+            pushConfigToSyncedData();
+            recalcBoundsFromBlocks();
+            refreshDimensions();
+        }
+    }
 
 	/** Pack your map -> NBT and set once. Auto-broadcasts to all trackers. */
-	public void setBlocksServer(Map<BlockPos, BlockState> map) {
-		if (!level().isClientSide) {
-			applyBlocks(map);
-			// If diff streaming/broadcast needed, do it here.
-		}
-	}
+    public void setBlocksServer(Map<BlockPos, BlockState> map) {
+        if (!level().isClientSide) {
+            this.config.setBlocks(map);
+            // If diff streaming/broadcast needed, do it here.
+            pushConfigToSyncedData();
+            recalcBoundsFromBlocks();
+            refreshDimensions();
+        }
+    }
 
 	// --------------- Client-side: react to updates ---------------
 
@@ -109,57 +90,29 @@ public class SpellEntity extends Entity {
 	public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
 		super.onSyncedDataUpdated(key);
 
-		if (key == DATA_MICRO) {
-			this.microScale = this.entityData.get(DATA_MICRO);
-			recalcBoundsFromBlocks();
-			refreshDimensions();
-		} else if (key == DATA_BLOCKS) {
-			Map<BlockPos, BlockState> map = rebuildBlocksFromData();
-			this.blocks.clear();
-			this.blocks.putAll(map);
-			recalcBoundsFromBlocks();
-			refreshDimensions();
-		}
-	}
+        if (key == DATA_CONFIG) {
+            CompoundTag cfgTag = this.entityData.get(DATA_CONFIG);
+            this.config = SpellEntityConfig.fromNBT(cfgTag);
+            recalcBoundsFromBlocks();
+            refreshDimensions();
+        }
+    }
 
-	private Map<BlockPos, BlockState> rebuildBlocksFromData() {
-		CompoundTag root = this.entityData.get(DATA_BLOCKS);
-		Map<BlockPos, BlockState> map = new HashMap<>();
-		if (root == null || !root.contains(NBT_BLOCKS_ROOT, Tag.TAG_LIST)) return map;
-
-		ListTag list = root.getList(NBT_BLOCKS_ROOT, Tag.TAG_COMPOUND);
-		for (int i = 0; i < list.size(); i++) {
-			CompoundTag entry = list.getCompound(i);
-			CompoundTag posTag = entry.getCompound(NBT_BLOCK_ENTRY_POS);
-			BlockPos pos = new BlockPos(posTag.getInt(NBT_POS_X), posTag.getInt(NBT_POS_Y), posTag.getInt(NBT_POS_Z));
-			int id = entry.getInt(NBT_BLOCK_ENTRY_BLOCK_ID);
-			Block block = BuiltInRegistries.BLOCK.byId(id);
-			BlockState st = block.defaultBlockState();
-			map.put(pos, st);
-		}
-		return map;
-	}
+    
 
 	// ----------------- Persistence (server only) -----------------
-
-	@Override
+    @Override
 	protected void addAdditionalSaveData(CompoundTag tag) {
-		tag.putFloat(NBT_MICRO_SCALE, this.microScale);
-		tag.put(NBT_BLOCKS_SAVE, this.entityData.get(DATA_BLOCKS).copy());
+		// Delegate to SpellEntityConfig for consistent NBT structure
+		tag.merge(this.config.toNBT());
 	}
 
-	@Override
-	protected void readAdditionalSaveData(CompoundTag tag) {
-		if (level().isClientSide) return; // client doesn't load saves
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        if (level().isClientSide) return; // client doesn't load saves
 
-		if (tag.contains(NBT_MICRO_SCALE)) {
-			applyMicroScale(tag.getFloat(NBT_MICRO_SCALE));
-		}
-
-		if (tag.contains(NBT_BLOCKS_SAVE, Tag.TAG_COMPOUND)) {
-			this.entityData.set(DATA_BLOCKS, tag.getCompound(NBT_BLOCKS_SAVE).copy());
-			applyBlocks(rebuildBlocksFromData());
-		}
+		// Use SpellEntityConfig's parser and apply as authoritative state
+		applyConfigServer(SpellEntityConfig.fromNBT(tag));
 	}
 
 	// ------------ Dynamic dimensions (canonical approach) ------------
@@ -173,11 +126,13 @@ public class SpellEntity extends Entity {
 	}
 	
 	private void recalcBoundsFromBlocks() {
-		if (blocks.isEmpty()) { 
-			spanX = spanY = spanZ = 0.5f; 
-			centerLocalX = centerLocalZ = 0f;
-			return; 
-		}
+        Map<BlockPos, BlockState> blocks = this.config.getBlocks();
+        float microScale = this.config.getMicroScale();
+        if (blocks.isEmpty()) { 
+            spanX = spanY = spanZ = 0.5f; 
+            centerLocalX = centerLocalZ = 0f;
+            return; 
+        }
 
 		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
 		int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
@@ -191,13 +146,13 @@ public class SpellEntity extends Entity {
 			maxZ = Math.max(maxZ, p.getZ() + 1);
 		}
 
-		spanX = (maxX - minX) * microScale;
-		spanY = (maxY - minY) * microScale;
-		spanZ = (maxZ - minZ) * microScale;
+        spanX = (maxX - minX) * microScale;
+        spanY = (maxY - minY) * microScale;
+        spanZ = (maxZ - minZ) * microScale;
 
 		// local center for rendering alignment
-		centerLocalX = ((minX + maxX) * 0.5f) * microScale;
-		centerLocalZ = ((minZ + maxZ) * 0.5f) * microScale;
+        centerLocalX = ((minX + maxX) * 0.5f) * microScale;
+        centerLocalZ = ((minZ + maxZ) * 0.5f) * microScale;
 
 		// keep minCorner cache synced
 		this.minCorner.set(minX, minY, minZ);
@@ -206,6 +161,48 @@ public class SpellEntity extends Entity {
 		System.out.println("Center: centerLocalX=" + centerLocalX + ", centerLocalZ=" + centerLocalZ);
 	}
 
+    /** Apply the given config as the authoritative state (server-side only). */
+    private void applyConfigServer(SpellEntityConfig cfg) {
+        if (level().isClientSide) return;
+        if (cfg == null) cfg = SpellEntityConfig.empty();
+        this.config = cfg;
+        // Apply to synced data and local caches
+        setOnCollisionByKeyServer(cfg.getOnCollisionKey());
+        pushConfigToSyncedData();
+        recalcBoundsFromBlocks();
+        refreshDimensions();
+    }
+
+    // ----------------- Collision handling -----------------
+
+    /** Server-side: set behavior by key (whitelist). Defaults to 'explode'. */
+    public void setOnCollisionByKeyServer(String key) {
+        if (!level().isClientSide) {
+            String k = (key == null || key.isEmpty()) ? OnCollisionBehaviors.DEFAULT_KEY : key;
+            this.onCollision = OnCollisionBehaviors.byKey(k);
+            this.config.setOnCollisionKey(k);
+        }
+    }
+
+    /** Invoke the selected on-collision behavior immediately (server-side). */
+    public void triggerCollision() {
+        if (!level().isClientSide && !collisionTriggered && this.onCollision != null) {
+            collisionTriggered = true;
+            this.onCollision.handle(this);
+        }
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        // Simple auto-trigger: if we touched a surface or collided, fire once.
+        if (!level().isClientSide) {
+            if ((this.onGround() || this.horizontalCollision || this.verticalCollision) && !collisionTriggered) {
+                triggerCollision();
+            }
+        }
+    }
+
 	/**
 	 * Initialize from SpellEntityConfig (server-side only).
 	 */
@@ -213,10 +210,7 @@ public class SpellEntity extends Entity {
 		if (level().isClientSide) {
 			throw new IllegalStateException("initializeServer() can only be called on the server side!");
 		}
-		
-        setMicroScaleServer(data.microScale());
-        setBlocksServer(data.blocks());
-		recalcBoundsFromBlocks();
-		refreshDimensions(); // now uses our new spans
+
+        applyConfigServer(data);
 	}
 } 

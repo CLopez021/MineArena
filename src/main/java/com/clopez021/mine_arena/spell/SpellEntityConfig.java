@@ -11,12 +11,35 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Configuration payload for initializing a SpellEntity.
- * JSON helpers removed; NBT helpers retained for sync/persistence symmetry.
+ * Mutable configuration payload for initializing and updating a SpellEntity.
+ * Provides NBT helpers for save/load.
  */
-public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale) {
+public class SpellEntityConfig {
+    private Map<BlockPos, BlockState> blocks;
+    private float microScale;
+    private String onCollisionKey;
 
-    public static SpellEntityConfig empty() { return new SpellEntityConfig(Map.of(), 1.0f); }
+    public SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale, String onCollisionKey) {
+        this.blocks = blocks != null ? blocks : Map.of();
+        this.microScale = microScale;
+        this.onCollisionKey = (onCollisionKey == null || onCollisionKey.isEmpty()) ? "explode" : onCollisionKey;
+    }
+
+    public SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale) {
+        this(blocks, microScale, "explode");
+    }
+
+    public static SpellEntityConfig empty() { return new SpellEntityConfig(Map.of(), 1.0f, "explode"); }
+
+    // Standard getters
+    public Map<BlockPos, BlockState> getBlocks() { return blocks; }
+    public float getMicroScale() { return microScale; }
+    public String getOnCollisionKey() { return onCollisionKey; }
+
+    // Mutable setters (pydantic-like model)
+    public void setBlocks(Map<BlockPos, BlockState> blocks) { this.blocks = blocks != null ? blocks : Map.of(); }
+    public void setMicroScale(float microScale) { this.microScale = microScale; }
+    public void setOnCollisionKey(String key) { this.onCollisionKey = (key == null || key.isEmpty()) ? "explode" : key; }
 
     public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
@@ -31,6 +54,9 @@ public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microSca
         }
         tag.put("blocks", blocksList);
         tag.putFloat("microScale", microScale);
+        if (onCollisionKey != null && !onCollisionKey.isEmpty()) {
+            tag.putString("onCollisionKey", onCollisionKey);
+        }
         return tag;
     }
 
@@ -48,6 +74,7 @@ public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microSca
             }
         }
         float microScale = tag.contains("microScale", Tag.TAG_FLOAT) ? tag.getFloat("microScale") : 1.0f;
-        return new SpellEntityConfig(blocks, microScale);
+        String onCollisionKey = tag.contains("onCollisionKey", Tag.TAG_STRING) ? tag.getString("onCollisionKey") : "explode";
+        return new SpellEntityConfig(blocks, microScale, onCollisionKey);
     }
 }

@@ -25,16 +25,17 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 
 		pose.pushPose();
 		// center the model on entity position using computed center
-		pose.translate(
-			-entity.centerLocalX,                    // center the model on entity X
-			-(entity.minCorner.y * entity.microScale), // minY at the entity feet
-			-entity.centerLocalZ                     // center the model on entity Z
-		);
+        float micro = entity.getMicroScale();
+        pose.translate(
+            -entity.centerLocalX,                    // center the model on entity X
+            -(entity.minCorner.y * micro),           // minY at the entity feet
+            -entity.centerLocalZ                     // center the model on entity Z
+        );
 		// scale blocks by microScale so each unit cube becomes microScale^3 in world units
-		pose.scale(entity.microScale, entity.microScale, entity.microScale);
+        pose.scale(micro, micro, micro);
 
 		// draw each block at its local integer offset
-		for (var entry : entity.blocks.entrySet()) {
+        for (var entry : entity.getBlocks().entrySet()) {
 			var localPos = entry.getKey();
 			BlockState state = entry.getValue();
 			ResourceLocation blockId = BuiltInRegistries.BLOCK.getKey(state.getBlock());
