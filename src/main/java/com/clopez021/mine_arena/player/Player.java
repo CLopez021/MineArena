@@ -1,9 +1,11 @@
 package com.clopez021.mine_arena.player;
 
-import com.clopez021.mine_arena.data.PlayerSpellData;
-import com.clopez021.mine_arena.data.PlayerSpell;
+import com.clopez021.mine_arena.spell.PlayerSpellConfig;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,13 +20,13 @@ import java.util.UUID;
  */
 public class Player {
     private final UUID uuid;
-    // name -> PlayerSpell (runtime lookup by name)
-    private final Map<String, PlayerSpell> spells;
+    // name -> PlayerSpellConfig (runtime lookup by name)
+    private final Map<String, PlayerSpellConfig> spells;
     private String language;
     private ServerPlayer serverPlayer; // Reference to update speech recognition
     
     // Default values
-    private static final Map<String, PlayerSpell> DEFAULT_SPELLS = Map.of();
+    private static final Map<String, PlayerSpellConfig> DEFAULT_SPELLS = Map.of();
     private static final String DEFAULT_LANGUAGE = "en-US";
     
     public Player(ServerPlayer serverPlayer) {
@@ -33,7 +35,7 @@ public class Player {
         this.language = DEFAULT_LANGUAGE;
         this.serverPlayer = serverPlayer;
         
-        // Load data from SavedData
+        // Load data from per-player persistent NBT
         loadData();
     }
     
@@ -43,10 +45,10 @@ public class Player {
     }
     
     // Bulk-add with auto-save and speech recognition updates
-    public void addSpells(Collection<PlayerSpell> spells) {
+    public void addSpells(Collection<PlayerSpellConfig> spells) {
         boolean changed = false;
-        for (PlayerSpell ps : spells) {
-            PlayerSpell prev = this.spells.put(ps.name(), ps);
+        for (PlayerSpellConfig ps : spells) {
+            PlayerSpellConfig prev = this.spells.put(ps.name(), ps);
             if (prev == null || !prev.equals(ps)) changed = true;
         }
         if (changed) {
@@ -62,7 +64,7 @@ public class Player {
     }
     
     // Spell management with auto-save and speech recognition updates
-    public void addSpell(PlayerSpell spell) {
+    public void addSpell(PlayerSpellConfig spell) {
         String key = spell.name();
         if (!spells.containsKey(key)) {
             spells.put(key, spell);
@@ -82,21 +84,36 @@ public class Player {
     
     // Data persistence
     /**
-     * Loads this player's data from SavedData.
-     * Called during Player construction. The underlying SavedData instance
-     * is resolved via computeIfAbsent on first access per world load.
+     * Loads this player's data from the player's persistent NBT data.
+     * Stored under root key "mine_arena" with keys:
+     * - Spells: ListTag of Compound { name, phrase, entityData }
+     * - Language: String
      */
     private void loadData() {
         if (serverPlayer != null) {
             try {
-                PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
-                String playerIdStr = uuid.toString();
-                Map<String, PlayerSpell> savedByName = data.getSpells(playerIdStr);
-                String savedLanguage = data.getLanguage(playerIdStr);
-                
+                CompoundTag root = serverPlayer.getPersistentData().getCompound("mine_arena");
+
+                // Load spells
                 this.spells.clear();
-                this.spells.putAll(savedByName);
-                this.language = savedLanguage;
+                if (root.contains("Spells", Tag.TAG_LIST)) {
+                    ListTag list = root.getList("Spells", Tag.TAG_COMPOUND);
+                    for (Tag t : list) {
+                        if (t instanceof CompoundTag ct) {
+                            try {
+                                PlayerSpellConfig ps = PlayerSpellConfig.fromNBT(ct);
+                                if (!ps.name().isBlank() && !ps.phrase().isBlank()) {
+                                    this.spells.put(ps.name(), ps);
+                                }
+                            } catch (IllegalArgumentException ignored) {}
+                        }
+                    }
+                }
+
+                // Load language
+                if (root.contains("Language", Tag.TAG_STRING)) {
+                    this.language = root.getString("Language");
+                }
             } catch (Exception e) {
                 System.err.println("Failed to load player data: " + e.getMessage());
                 // Keep defaults
@@ -105,17 +122,26 @@ public class Player {
     }
 
     /**
-     * Persists this player's data to SavedData and marks it dirty.
-     * Minecraft calls SavedData#save during world saves if dirty.
+     * Persists this player's data to the player's persistent NBT data.
      */
     public void saveData() {
         if (serverPlayer != null) {
             try {
-                PlayerSpellData data = PlayerSpellData.get(serverPlayer.getServer());
-                String playerIdStr = uuid.toString();
-                // Persist name-keyed map (PlayerSpellData stores as a list internally)
-                data.setSpells(playerIdStr, spells);
-                data.setLanguage(playerIdStr, language);
+                CompoundTag persistent = serverPlayer.getPersistentData();
+                CompoundTag root = persistent.getCompound("mine_arena");
+
+                // Save spells
+                ListTag list = new ListTag();
+                for (PlayerSpellConfig ps : spells.values()) {
+                    list.add(ps.toNBT());
+                }
+                root.put("Spells", list);
+
+                // Save language
+                root.putString("Language", language);
+
+                // Write back to player's persistent data
+                persistent.put("mine_arena", root);
             } catch (Exception e) {
                 System.err.println("Failed to save player data: " + e.getMessage());
             }
@@ -126,7 +152,7 @@ public class Player {
     public void startVoiceRecognition() {
         if (serverPlayer != null) {
             Map<String, String> phraseToName = new HashMap<>();
-            for (PlayerSpell ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
             SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phraseToName, language);
         }
     }
@@ -140,7 +166,7 @@ public class Player {
     private void updateSpeechRecognition() {
         if (serverPlayer != null && SpeechRecognitionManager.isVoiceRecognitionActive(serverPlayer)) {
             Map<String, String> phraseToName = new HashMap<>();
-            for (PlayerSpell ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
             SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phraseToName);
         }
     }

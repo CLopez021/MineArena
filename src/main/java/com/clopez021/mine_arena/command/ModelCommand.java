@@ -2,7 +2,7 @@ package com.clopez021.mine_arena.command;
 
 import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.spell.SpellEntity;
-import com.clopez021.mine_arena.spell.SpellEntityInitData;
+import com.clopez021.mine_arena.spell.SpellEntityConfig;
 import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.models.util.Point;
 
@@ -80,7 +80,7 @@ public class ModelCommand {
 		Map<BlockPos, BlockState> blocks = buildVoxels(MineArena.model);
 		float microScale = 1f / 16f;
 		
-		var initData = new SpellEntityInitData(blocks, microScale);
+		var initData = new SpellEntityConfig(blocks, microScale);
 		e.initializeServer(initData);
 		level.addFreshEntity(e);
 		
