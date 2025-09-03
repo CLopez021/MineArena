@@ -1,5 +1,4 @@
 package com.clopez021.mine_arena.spell;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -16,6 +15,8 @@ import java.util.Map;
  * JSON helpers removed; NBT helpers retained for sync/persistence symmetry.
  */
 public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale) {
+
+    public static SpellEntityConfig empty() { return new SpellEntityConfig(Map.of(), 1.0f); }
 
     public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();

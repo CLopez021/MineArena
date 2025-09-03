@@ -1,7 +1,6 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
-import com.clopez021.mine_arena.spell.SpellEntityData;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.nbt.CompoundTag;

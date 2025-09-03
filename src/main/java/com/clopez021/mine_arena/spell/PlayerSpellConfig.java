@@ -1,21 +1,12 @@
 package com.clopez021.mine_arena.spell;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 
 /**
- * PlayerSpellConfig embeds SpellEntityData directly (no file indirection).
+ * PlayerSpellConfig now embeds SpellEntityConfig (no file indirection).
  */
-public record PlayerSpellConfig(String name, String phrase, SpellEntityData data) {
-    public static final Codec<PlayerSpellConfig> CODEC = RecordCodecBuilder.create(i ->
-        i.group(
-            Codec.STRING.fieldOf("name").forGetter(PlayerSpellConfig::name),
-            Codec.STRING.fieldOf("phrase").forGetter(PlayerSpellConfig::phrase),
-            SpellEntityData.CODEC.fieldOf("data").forGetter(PlayerSpellConfig::data)
-        ).apply(i, PlayerSpellConfig::new)
-    );
+public record PlayerSpellConfig(String name, String phrase, SpellEntityConfig config) {
 
     public PlayerSpellConfig {
         if (name == null || name.isBlank()) {
@@ -24,36 +15,30 @@ public record PlayerSpellConfig(String name, String phrase, SpellEntityData data
         if (phrase == null || phrase.isBlank()) {
             throw new IllegalArgumentException("phrase must be non-empty");
         }
-        if (data == null) {
-            throw new IllegalArgumentException("data must be non-null");
+        if (config == null) {
+            throw new IllegalArgumentException("config must be non-null");
         }
     }
 
-    /**
-     * Serialize to NBT using SpellEntityInitData helpers for the nested data.
-     */
+    /** Serialize to NBT using SpellEntityConfig helpers for the nested data. */
     public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
         tag.putString("name", name);
         tag.putString("phrase", phrase);
-        SpellEntityConfig spellEntity = new SpellEntityConfig(data.blocks(), data.microScale());
-        tag.put("entityData", spellEntity.toNBT());
+        tag.put("entityData", config.toNBT());
         return tag;
     }
 
-    /**
-     * Deserialize from NBT using SpellEntityInitData helpers for the nested data.
-     */
+    /** Deserialize from NBT using SpellEntityConfig helpers for the nested data. */
     public static PlayerSpellConfig fromNBT(CompoundTag tag) {
         String name = tag.getString("name");
         String phrase = tag.getString("phrase");
-        SpellEntityData data;
+        SpellEntityConfig cfg;
         if (tag.contains("entityData", Tag.TAG_COMPOUND)) {
-            SpellEntityConfig init = SpellEntityConfig.fromNBT(tag.getCompound("entityData"));
-            data = new SpellEntityData(init.blocks(), init.microScale());
+            cfg = SpellEntityConfig.fromNBT(tag.getCompound("entityData"));
         } else {
-            data = SpellEntityData.empty();
+            cfg = SpellEntityConfig.empty();
         }
-        return new PlayerSpellConfig(name, phrase, data);
+        return new PlayerSpellConfig(name, phrase, cfg);
     }
 }

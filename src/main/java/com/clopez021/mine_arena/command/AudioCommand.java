@@ -1,7 +1,7 @@
 package com.clopez021.mine_arena.command;
 
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
-import com.clopez021.mine_arena.spell.SpellEntityData;
+import com.clopez021.mine_arena.spell.SpellEntityConfig;
 import com.clopez021.mine_arena.player.PlayerManager;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -38,7 +38,7 @@ public class AudioCommand {
                                 String phrase = context.getArgument("phrase", String.class);
 
                                 // Placeholder entity data for now; will be filled by UI/workflow
-                                PlayerSpellConfig ps = new PlayerSpellConfig(name, phrase, SpellEntityData.empty());
+                                PlayerSpellConfig ps = new PlayerSpellConfig(name, phrase, SpellEntityConfig.empty());
                                 PlayerManager.getInstance().addSpell(player, ps);
 
                                 context.getSource().sendSuccess(() ->
