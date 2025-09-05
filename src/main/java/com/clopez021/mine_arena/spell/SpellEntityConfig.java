@@ -1,4 +1,5 @@
 package com.clopez021.mine_arena.spell;
+import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -11,13 +12,37 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Configuration payload for initializing a SpellEntity.
- * JSON helpers removed; NBT helpers retained for sync/persistence symmetry.
+ * Mutable configuration payload for initializing and updating a SpellEntity.
+ * Provides NBT helpers for save/load.
  */
-public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale) {
+public class SpellEntityConfig extends BaseConfig {
+    private Map<BlockPos, BlockState> blocks;
+    private float microScale;
+    private CollisionBehaviorConfig behavior = new CollisionBehaviorConfig();
 
-    public static SpellEntityConfig empty() { return new SpellEntityConfig(Map.of(), 1.0f); }
+    public SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale, String onCollisionKey) {
+        this.blocks = blocks != null ? blocks : Map.of();
+        this.microScale = microScale;
+        this.behavior.setName(onCollisionKey);
+    }
 
+    public SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale) {
+        this(blocks, microScale, "explode");
+    }
+
+    public static SpellEntityConfig empty() { return new SpellEntityConfig(Map.of(), 1.0f, "explode"); }
+
+    // Standard getters
+    public Map<BlockPos, BlockState> getBlocks() { return blocks; }
+    public float getMicroScale() { return microScale; }
+    public CollisionBehaviorConfig getBehavior() { return behavior; }
+
+    // Mutable setters (pydantic-like model)
+    public void setBlocks(Map<BlockPos, BlockState> blocks) { this.blocks = blocks != null ? blocks : Map.of(); }
+    public void setMicroScale(float microScale) { this.microScale = microScale; }
+    public void setBehavior(CollisionBehaviorConfig behavior) { this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig(); }
+
+    @Override
     public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
         ListTag blocksList = new ListTag();
@@ -31,6 +56,7 @@ public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microSca
         }
         tag.put("blocks", blocksList);
         tag.putFloat("microScale", microScale);
+        tag.put("behavior", behavior.toNBT());
         return tag;
     }
 
@@ -48,6 +74,11 @@ public record SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microSca
             }
         }
         float microScale = tag.contains("microScale", Tag.TAG_FLOAT) ? tag.getFloat("microScale") : 1.0f;
-        return new SpellEntityConfig(blocks, microScale);
+        CollisionBehaviorConfig behavior = tag.contains("behavior", Tag.TAG_COMPOUND)
+                ? CollisionBehaviorConfig.fromNBT(tag.getCompound("behavior"))
+                : new CollisionBehaviorConfig();
+        SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior.getName());
+        cfg.setBehavior(behavior);
+        return cfg;
     }
 }

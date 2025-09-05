@@ -84,8 +84,8 @@ public class ModelCommand {
 		e.initializeServer(initData);
 		level.addFreshEntity(e);
 		
-		source.sendSystemMessage(Component.literal("Spawned spell entity with blocks=" + e.blocks.size()));
-		return 1;
-	}
+        source.sendSystemMessage(Component.literal("Spawned spell entity with blocks=" + e.getBlocks().size()));
+        return 1;
+    }
 
 }
