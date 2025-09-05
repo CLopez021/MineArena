@@ -1,6 +1,5 @@
 package com.clopez021.mine_arena.spell;
 
-import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehavior;
 import com.clopez021.mine_arena.spell.behavior.onCollision.OnCollisionBehaviors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
@@ -17,6 +16,7 @@ import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 
 public class SpellEntity extends Entity {
     // ---- Synced key (entire config) ----
@@ -29,8 +29,9 @@ public class SpellEntity extends Entity {
 	// Authoritative config (single source of truth)
 	private SpellEntityConfig config = SpellEntityConfig.empty();
 
-    // Collision behavior
-    private transient CollisionBehavior onCollision = OnCollisionBehaviors.byKey(OnCollisionBehaviors.DEFAULT_KEY);
+    // Collision behavior (description + handler), resolved from registry by key
+    private transient String onCollisionDescription = OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).description();
+    private transient Consumer<SpellEntity> onCollisionBehavior = OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).handler();
 	private boolean collisionTriggered = false;
 	
 	// Dynamic dimensions
@@ -57,7 +58,8 @@ public class SpellEntity extends Entity {
     public SpellEntityConfig getConfig() { return this.config; }
     public Map<BlockPos, BlockState> getBlocks() { return this.config.getBlocks(); }
     public float getMicroScale() { return this.config.getMicroScale(); }
-    public String getOnCollisionKey() { return this.config.getOnCollisionKey(); }
+    public String getOnCollisionKey() { return this.config.getBehavior().getName(); }
+    public String getOnCollisionDescription() { return this.onCollisionDescription; }
 
     
 
@@ -93,6 +95,9 @@ public class SpellEntity extends Entity {
         if (key == DATA_CONFIG) {
             CompoundTag cfgTag = this.entityData.get(DATA_CONFIG);
             this.config = SpellEntityConfig.fromNBT(cfgTag);
+            var def = OnCollisionBehaviors.definitionFor(this.config.getBehavior().getName());
+            this.onCollisionDescription = def.description();
+            this.onCollisionBehavior = def.handler();
             recalcBoundsFromBlocks();
             refreshDimensions();
         }
@@ -167,7 +172,7 @@ public class SpellEntity extends Entity {
         if (cfg == null) cfg = SpellEntityConfig.empty();
         this.config = cfg;
         // Apply to synced data and local caches
-        setOnCollisionByKeyServer(cfg.getOnCollisionKey());
+        setOnCollisionByKeyServer(cfg.getBehavior().getName());
         pushConfigToSyncedData();
         recalcBoundsFromBlocks();
         refreshDimensions();
@@ -175,20 +180,22 @@ public class SpellEntity extends Entity {
 
     // ----------------- Collision handling -----------------
 
-    /** Server-side: set behavior by key (whitelist). Defaults to 'explode'. */
-    public void setOnCollisionByKeyServer(String key) {
-        if (!level().isClientSide) {
-            String k = (key == null || key.isEmpty()) ? OnCollisionBehaviors.DEFAULT_KEY : key;
-            this.onCollision = OnCollisionBehaviors.byKey(k);
-            this.config.setOnCollisionKey(k);
+    /** Invoke the selected on-collision behavior immediately (server-side). */
+    public void triggerCollision() {
+        if (!level().isClientSide && !collisionTriggered && this.onCollisionBehavior != null) {
+            collisionTriggered = true;
+            this.onCollisionBehavior.accept(this);
         }
     }
 
-    /** Invoke the selected on-collision behavior immediately (server-side). */
-    public void triggerCollision() {
-        if (!level().isClientSide && !collisionTriggered && this.onCollision != null) {
-            collisionTriggered = true;
-            this.onCollision.handle(this);
+    /** Server-side: set behavior by key using the registry. */
+    public void setOnCollisionByKeyServer(String key) {
+        if (!level().isClientSide) {
+            String k = (key == null || key.isEmpty()) ? OnCollisionBehaviors.DEFAULT_KEY : key;
+            var def = OnCollisionBehaviors.definitionFor(k);
+            this.onCollisionDescription = def.description();
+            this.onCollisionBehavior = def.handler();
+            this.config.getBehavior().setName(k);
         }
     }
 

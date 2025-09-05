@@ -1,4 +1,5 @@
 package com.clopez021.mine_arena.spell;
+import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -14,15 +15,15 @@ import java.util.Map;
  * Mutable configuration payload for initializing and updating a SpellEntity.
  * Provides NBT helpers for save/load.
  */
-public class SpellEntityConfig {
+public class SpellEntityConfig extends BaseConfig {
     private Map<BlockPos, BlockState> blocks;
     private float microScale;
-    private String onCollisionKey;
+    private CollisionBehaviorConfig behavior = new CollisionBehaviorConfig();
 
     public SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale, String onCollisionKey) {
         this.blocks = blocks != null ? blocks : Map.of();
         this.microScale = microScale;
-        this.onCollisionKey = (onCollisionKey == null || onCollisionKey.isEmpty()) ? "explode" : onCollisionKey;
+        this.behavior.setName(onCollisionKey);
     }
 
     public SpellEntityConfig(Map<BlockPos, BlockState> blocks, float microScale) {
@@ -34,13 +35,14 @@ public class SpellEntityConfig {
     // Standard getters
     public Map<BlockPos, BlockState> getBlocks() { return blocks; }
     public float getMicroScale() { return microScale; }
-    public String getOnCollisionKey() { return onCollisionKey; }
+    public CollisionBehaviorConfig getBehavior() { return behavior; }
 
     // Mutable setters (pydantic-like model)
     public void setBlocks(Map<BlockPos, BlockState> blocks) { this.blocks = blocks != null ? blocks : Map.of(); }
     public void setMicroScale(float microScale) { this.microScale = microScale; }
-    public void setOnCollisionKey(String key) { this.onCollisionKey = (key == null || key.isEmpty()) ? "explode" : key; }
+    public void setBehavior(CollisionBehaviorConfig behavior) { this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig(); }
 
+    @Override
     public CompoundTag toNBT() {
         CompoundTag tag = new CompoundTag();
         ListTag blocksList = new ListTag();
@@ -54,9 +56,7 @@ public class SpellEntityConfig {
         }
         tag.put("blocks", blocksList);
         tag.putFloat("microScale", microScale);
-        if (onCollisionKey != null && !onCollisionKey.isEmpty()) {
-            tag.putString("onCollisionKey", onCollisionKey);
-        }
+        tag.put("behavior", behavior.toNBT());
         return tag;
     }
 
@@ -74,7 +74,11 @@ public class SpellEntityConfig {
             }
         }
         float microScale = tag.contains("microScale", Tag.TAG_FLOAT) ? tag.getFloat("microScale") : 1.0f;
-        String onCollisionKey = tag.contains("onCollisionKey", Tag.TAG_STRING) ? tag.getString("onCollisionKey") : "explode";
-        return new SpellEntityConfig(blocks, microScale, onCollisionKey);
+        CollisionBehaviorConfig behavior = tag.contains("behavior", Tag.TAG_COMPOUND)
+                ? CollisionBehaviorConfig.fromNBT(tag.getCompound("behavior"))
+                : new CollisionBehaviorConfig();
+        SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior.getName());
+        cfg.setBehavior(behavior);
+        return cfg;
     }
 }
