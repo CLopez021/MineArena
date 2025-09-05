@@ -16,7 +16,6 @@ import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class SpellEntity extends Entity {
     // ---- Synced key (entire config) ----
@@ -29,10 +28,9 @@ public class SpellEntity extends Entity {
 	// Authoritative config (single source of truth)
 	private SpellEntityConfig config = SpellEntityConfig.empty();
 
-    // Collision behavior (description + handler), resolved from registry by key
-    private transient String onCollisionDescription = OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).description();
-    private transient Consumer<SpellEntity> onCollisionBehavior = OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).handler();
-	private boolean collisionTriggered = false;
+    // Behavior description/handler live in config.getBehavior()
+    private boolean collisionTriggered = false;
+    private boolean isColliding = false;
 	
 	// Dynamic dimensions
 	private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
@@ -54,37 +52,23 @@ public class SpellEntity extends Entity {
         this.entityData.set(DATA_CONFIG, this.config.toNBT());
     }
 
+    // Apply derived runtime state from current config and refresh size
+    private void applyDerivedFromConfig() {
+        recalcBoundsFromBlocks();
+        refreshDimensions();
+    }
+
     // Expose config-backed runtime state without duplicating storage
     public SpellEntityConfig getConfig() { return this.config; }
     public Map<BlockPos, BlockState> getBlocks() { return this.config.getBlocks(); }
     public float getMicroScale() { return this.config.getMicroScale(); }
-    public String getOnCollisionKey() { return this.config.getBehavior().getName(); }
-    public String getOnCollisionDescription() { return this.onCollisionDescription; }
-
-    
 
 	// ---------------- Server-side setters ----------------
 
-    public void setMicroScaleServer(float value) {
-        if (!level().isClientSide) {
-            // Mutate authoritative config and sync
-            this.config.setMicroScale(value);
-            pushConfigToSyncedData();
-            recalcBoundsFromBlocks();
-            refreshDimensions();
-        }
-    }
+    // Removed granular setters; prefer applying a full config via applyConfigServer
 
 	/** Pack your map -> NBT and set once. Auto-broadcasts to all trackers. */
-    public void setBlocksServer(Map<BlockPos, BlockState> map) {
-        if (!level().isClientSide) {
-            this.config.setBlocks(map);
-            // If diff streaming/broadcast needed, do it here.
-            pushConfigToSyncedData();
-            recalcBoundsFromBlocks();
-            refreshDimensions();
-        }
-    }
+    // Removed granular setters; prefer applying a full config via applyConfigServer
 
 	// --------------- Client-side: react to updates ---------------
 
@@ -95,11 +79,7 @@ public class SpellEntity extends Entity {
         if (key == DATA_CONFIG) {
             CompoundTag cfgTag = this.entityData.get(DATA_CONFIG);
             this.config = SpellEntityConfig.fromNBT(cfgTag);
-            var def = OnCollisionBehaviors.definitionFor(this.config.getBehavior().getName());
-            this.onCollisionDescription = def.description();
-            this.onCollisionBehavior = def.handler();
-            recalcBoundsFromBlocks();
-            refreshDimensions();
+            applyDerivedFromConfig();
         }
     }
 
@@ -170,42 +150,37 @@ public class SpellEntity extends Entity {
     private void applyConfigServer(SpellEntityConfig cfg) {
         if (level().isClientSide) return;
         if (cfg == null) cfg = SpellEntityConfig.empty();
-        this.config = cfg;
         // Apply to synced data and local caches
-        setOnCollisionByKeyServer(cfg.getBehavior().getName());
+        this.config = cfg;
+        applyDerivedFromConfig();
         pushConfigToSyncedData();
-        recalcBoundsFromBlocks();
-        refreshDimensions();
     }
 
     // ----------------- Collision handling -----------------
 
     /** Invoke the selected on-collision behavior immediately (server-side). */
     public void triggerCollision() {
-        if (!level().isClientSide && !collisionTriggered && this.onCollisionBehavior != null) {
+        if (!level().isClientSide && !collisionTriggered && this.config.getBehavior().getHandler() != null) {
             collisionTriggered = true;
-            this.onCollisionBehavior.accept(this);
+            this.config.getBehavior().getHandler().accept(this);
         }
     }
 
-    /** Server-side: set behavior by key using the registry. */
-    public void setOnCollisionByKeyServer(String key) {
-        if (!level().isClientSide) {
-            String k = (key == null || key.isEmpty()) ? OnCollisionBehaviors.DEFAULT_KEY : key;
-            var def = OnCollisionBehaviors.definitionFor(k);
-            this.onCollisionDescription = def.description();
-            this.onCollisionBehavior = def.handler();
-            this.config.getBehavior().setName(k);
-        }
-    }
 
     @Override
     public void tick() {
         super.tick();
-        // Simple auto-trigger: if we touched a surface or collided, fire once.
+        // Trigger when we collide; end collision state once no longer colliding.
         if (!level().isClientSide) {
-            if ((this.onGround() || this.horizontalCollision || this.verticalCollision) && !collisionTriggered) {
-                triggerCollision();
+            boolean collidingNow = this.onGround() || this.horizontalCollision || this.verticalCollision;
+            if (collidingNow) {
+                if (!collisionTriggered) {
+                    triggerCollision();
+                }
+                isColliding = true;
+            } else if (isColliding) {
+                // Collision ended this tick
+                isColliding = false;
             }
         }
     }

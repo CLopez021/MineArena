@@ -22,7 +22,9 @@ public final class OnCollisionBehaviors {
         Level level = e.level();
         float radius = Math.max(0.1f, e.getConfig().getBehavior().getRadius());
         level.explode(e, e.getX(), e.getY(), e.getZ(), radius, Level.ExplosionInteraction.BLOCK);
-        e.discard();
+        if (e.getConfig().getBehavior().getShouldDespawn()) {
+            e.discard();
+        }
     }
 
     static {
