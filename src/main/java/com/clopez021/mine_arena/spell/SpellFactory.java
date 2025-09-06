@@ -37,8 +37,12 @@ public class SpellFactory {
     }
 
     // Step 3: Provide movement/misc params (hardcoded for now)
-    private static float microScale() { return 10f; }
-    private static float speed() { return 2f; }
+    private static float microScale() { return .4f; }
+
+    //Slow: 0.2–0.5 blocks/tick (4–10 bps)
+    //Medium: 0.8–1.2 blocks/tick (16–24 bps)
+    //Fast: 1.5 blocks/tick (~30 bps)
+    private static float speed() { return .8f; }
     private static SpellEntityConfig.MovementDirection direction() { return SpellEntityConfig.MovementDirection.FORWARD; }
 
     /**
@@ -52,7 +56,7 @@ public class SpellFactory {
         CollisionBehaviorConfig behavior = buildCollisionBehaviorConfig();
 
         // 3) Movement and misc
-        return new SpellEntityConfig(
+        SpellEntityConfig cfg = new SpellEntityConfig(
             blocks,
             microScale(),
             behavior,
@@ -60,6 +64,25 @@ public class SpellFactory {
             speed(),
             player != null ? player.getUUID() : null
         );
+
+        // Capture a fixed direction vector at cast time based on enum
+        if (player != null) {
+            switch (direction()) {
+                case UP -> cfg.setMovementDirectionVector(0, 1, 0);
+                case DOWN -> cfg.setMovementDirectionVector(0, -1, 0);
+                case FORWARD -> {
+                    Vec3 look = player.getLookAngle();
+                    cfg.setMovementDirectionVector(look);
+                }
+                case BACKWARD -> {
+                    Vec3 look = player.getLookAngle();
+                    cfg.setMovementDirectionVector((float)-look.x, (float)-look.y, (float)-look.z);
+                }
+                default -> cfg.setMovementDirectionVector(0, 0, 0);
+            }
+        }
+
+        return cfg;
     }
 
     /**

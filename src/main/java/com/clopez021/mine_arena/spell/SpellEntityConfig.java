@@ -7,6 +7,9 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.server.ServerLifecycleHooks;
+import net.minecraft.server.level.ServerPlayer;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,6 +28,8 @@ public class SpellEntityConfig extends BaseConfig {
     private MovementDirection movementDirection = MovementDirection.NONE;
     private float movementSpeed = 0.0f;
     private UUID ownerPlayerId; // player this spell corresponds to
+    // Captured direction vector at cast time (normalized or zero)
+    private float dirX = 0f, dirY = 0f, dirZ = 0f;
 
     // Single canonical constructor
     public SpellEntityConfig(
@@ -41,6 +46,25 @@ public class SpellEntityConfig extends BaseConfig {
         this.movementDirection = direction != null ? direction : MovementDirection.NONE;
         this.movementSpeed = speed;
         this.ownerPlayerId = ownerPlayerId;
+
+        // Resolve player's look on the server using the stored owner UUID
+        Vec3 look = Vec3.ZERO;
+        try {
+            var server = ServerLifecycleHooks.getCurrentServer();
+            if (server != null && this.ownerPlayerId != null) {
+                ServerPlayer p = server.getPlayerList().getPlayer(this.ownerPlayerId);
+                if (p != null) look = p.getLookAngle();
+            }
+        } catch (Exception ignored) {}
+
+        // Capture and store a fixed direction vector at cast time based on enum
+        switch (this.movementDirection) {
+            case UP -> setMovementDirectionVector(0, 1, 0);
+            case DOWN -> setMovementDirectionVector(0, -1, 0);
+            case FORWARD -> setMovementDirectionVector(look);
+            case BACKWARD -> setMovementDirectionVector((float)-look.x, (float)-look.y,(float) -look.z);
+            default -> setMovementDirectionVector(0, 0, 0);
+        }
     }
 
     public static SpellEntityConfig empty() {
@@ -54,6 +78,7 @@ public class SpellEntityConfig extends BaseConfig {
     public MovementDirection getMovementDirection() { return movementDirection; }
     public float getMovementSpeed() { return movementSpeed; }
     public UUID getOwnerPlayerId() { return ownerPlayerId; }
+    public Vec3 getDirectionVector() { return new Vec3(dirX, dirY, dirZ); }
 
     // Mutable setters (pydantic-like model)
     public void setBlocks(Map<BlockPos, BlockState> blocks) { this.blocks = blocks != null ? blocks : Map.of(); }
@@ -62,6 +87,13 @@ public class SpellEntityConfig extends BaseConfig {
     public void setMovementDirection(MovementDirection movementDirection) { this.movementDirection = movementDirection != null ? movementDirection : MovementDirection.NONE; }
     public void setMovementSpeed(float movementSpeed) { this.movementSpeed = movementSpeed; }
     public void setOwnerPlayerId(UUID ownerPlayerId) { this.ownerPlayerId = ownerPlayerId; }
+    public void setMovementDirectionVector(float x, float y, float z) {
+        this.dirX = x; this.dirY = y; this.dirZ = z;
+    }
+    public void setMovementDirectionVector(Vec3 v) {
+        if (v == null) { setMovementDirectionVector(0,0,0); return; }
+        this.dirX = (float) v.x; this.dirY = (float) v.y; this.dirZ = (float) v.z;
+    }
 
     // Note: all other constructors removed to keep a single entry point
 
@@ -83,6 +115,9 @@ public class SpellEntityConfig extends BaseConfig {
         tag.putString("movementDirection", movementDirection.name());
         tag.putFloat("movementSpeed", movementSpeed);
         tag.putUUID("ownerPlayerId", ownerPlayerId);
+        tag.putFloat("dirX", dirX);
+        tag.putFloat("dirY", dirY);
+        tag.putFloat("dirZ", dirZ);
         return tag;
     }
 
@@ -124,6 +159,10 @@ public class SpellEntityConfig extends BaseConfig {
         } catch (Throwable ignored) {}
 
         SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, direction, speed, ownerId);
+        // Direction vector (optional for older saves)
+        if (tag.contains("dirX", Tag.TAG_FLOAT)) cfg.dirX = tag.getFloat("dirX");
+        if (tag.contains("dirY", Tag.TAG_FLOAT)) cfg.dirY = tag.getFloat("dirY");
+        if (tag.contains("dirZ", Tag.TAG_FLOAT)) cfg.dirZ = tag.getFloat("dirZ");
         cfg.setBehavior(behavior);
         return cfg;
     }

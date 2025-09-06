@@ -40,10 +40,12 @@ public class SpellEntity extends Entity {
 	private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
     public float centerLocalX, centerLocalZ;
 
-	public SpellEntity(EntityType<? extends Entity> type, Level level) {
-		super(type, level);
-		this.noPhysics = false;
-	}
+    public SpellEntity(EntityType<? extends Entity> type, Level level) {
+        super(type, level);
+        this.noPhysics = false;
+        // Spells are actively steered; disable gravity to avoid desync and sudden drops
+        this.setNoGravity(true);
+    }
 
 	@Override
 	protected void defineSynchedData(SynchedEntityData.Builder b) {
@@ -174,30 +176,22 @@ public class SpellEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        // Server: apply movement based on config, then handle collisions
+
         if (!level().isClientSide) {
-            // Apply configured movement each tick
+            // Compute desired motion each tick
             float speed = Math.max(0f, this.config.getMovementSpeed());
             var dir = this.config.getMovementDirection();
+            Vec3 v = this.config.getDirectionVector();
+            Vec3 motion = Vec3.ZERO;
             if (speed > 0f && dir != null && dir != SpellEntityConfig.MovementDirection.NONE) {
-                Vec3 v;
-                switch (dir) {
-                    case UP -> v = new Vec3(0, 1, 0);
-                    case DOWN -> v = new Vec3(0, -1, 0);
-                    case BACKWARD -> {
-                        Vec3 f = getOwnerLookOrSelf();
-                        v = new Vec3(-f.x, -f.y, -f.z);
-                    }
-                    case FORWARD -> {
-                        Vec3 f = getOwnerLookOrSelf();
-                        v = new Vec3(f.x, f.y, f.z);
-                    }
-                    default -> v = Vec3.ZERO;
-                }
-                Vec3 motion = v.normalize().scale(speed);
-                this.setDeltaMovement(motion);
-                this.move(MoverType.SELF, motion);
+                motion = v.lengthSqr() > 0 ? v.normalize().scale(speed) : Vec3.ZERO;
             }
+
+            this.setDeltaMovement(motion);
+            if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
+
+            // Move using vanilla pipeline for proper networking/interpolation
+            this.move(MoverType.SELF, this.getDeltaMovement());
 
             // Trigger when we collide; end collision state once no longer colliding.
             boolean collidingNow = this.onGround() || this.horizontalCollision || this.verticalCollision;
