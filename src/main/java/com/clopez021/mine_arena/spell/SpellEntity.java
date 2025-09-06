@@ -15,7 +15,7 @@ import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
@@ -217,7 +217,7 @@ public class SpellEntity extends Entity {
         try {
             var ownerId = this.config.getOwnerPlayerId();
             if (ownerId != null && this.level() instanceof ServerLevel sl) {
-                ServerPlayer p = sl.getPlayerByUUID(ownerId);
+                Player p = sl.getPlayerByUUID(ownerId);
                 if (p != null) return p.getLookAngle();
             }
         } catch (Exception ignored) {}

@@ -30,21 +30,21 @@ public class SpellEntityConfig extends BaseConfig {
     public SpellEntityConfig(
             Map<BlockPos, BlockState> blocks,
             float microScale,
-            String onCollisionKey,
+            CollisionBehaviorConfig behavior,
             MovementDirection direction,
             float speed,
             UUID ownerPlayerId
     ) {
         this.blocks = blocks != null ? blocks : Map.of();
         this.microScale = microScale;
-        this.behavior.setName(onCollisionKey);
+        this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
         this.movementDirection = direction != null ? direction : MovementDirection.NONE;
         this.movementSpeed = speed;
         this.ownerPlayerId = ownerPlayerId;
     }
 
     public static SpellEntityConfig empty() {
-        return new SpellEntityConfig(Map.of(), 1.0f, "", MovementDirection.NONE, 0.0f, null);
+        return new SpellEntityConfig(Map.of(), 1.0f, new CollisionBehaviorConfig(), MovementDirection.NONE, 0.0f, null);
     }
 
     // Standard getters
@@ -123,7 +123,7 @@ public class SpellEntityConfig extends BaseConfig {
             }
         } catch (Throwable ignored) {}
 
-        SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior.getName(), direction, speed, ownerId);
+        SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, direction, speed, ownerId);
         cfg.setBehavior(behavior);
         return cfg;
     }

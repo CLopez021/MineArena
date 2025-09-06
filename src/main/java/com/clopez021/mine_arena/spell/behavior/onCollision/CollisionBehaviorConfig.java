@@ -39,6 +39,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
     public void setRadius(float radius) { this.radius = radius; }
     public void setDamage(float damage) { this.damage = damage; }
     public void setShouldDespawn(boolean shouldDespawn) { this.shouldDespawn = shouldDespawn; }
+    public boolean getShouldDespawn() { return shouldDespawn; }
 
     private void updateDerived() {
         var def = OnCollisionBehaviors.definitionFor(this.name);

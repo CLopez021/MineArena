@@ -87,10 +87,10 @@ public class ModelCommand {
         var initData = new SpellEntityConfig(
             blocks,
             microScale,
-            "explode",
+            new com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig("explode", 10f, 5f, true),
             com.clopez021.mine_arena.spell.SpellEntityConfig.MovementDirection.NONE,
             0.0f,
-            source.getPlayerOrException().getUUID()
+            source.getPlayer().getUUID()
         );
 		e.initializeServer(initData);
 		level.addFreshEntity(e);
