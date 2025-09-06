@@ -1,11 +1,18 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
+import com.clopez021.mine_arena.spell.SpellEntity;
+import com.clopez021.mine_arena.spell.SpellEntityConfig;
+import com.clopez021.mine_arena.entity.ModEntities;
+import com.clopez021.mine_arena.packets.PacketHandler;
+import com.clopez021.mine_arena.packets.SpellCompletePacket;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,11 +73,11 @@ public class Player {
     // Spell management with auto-save and speech recognition updates
     public void addSpell(PlayerSpellConfig spell) {
         String key = spell.name();
-        if (!spells.containsKey(key)) {
-            spells.put(key, spell);
-            saveData();
-            updateSpeechRecognition();
-        }
+        System.out.println("Adding spell1 " + key + " for " + serverPlayer.getName().getString());
+        System.out.println("Adding spell " + key + " for " + serverPlayer.getName().getString());
+        spells.put(key, spell);
+        saveData();
+        updateSpeechRecognition();
     }
     
     public boolean removeSpell(String name) {
@@ -97,6 +104,7 @@ public class Player {
                 // Load spells
                 this.spells.clear();
                 if (root.contains("Spells", Tag.TAG_LIST)) {
+                    System.out.println("Loading spells");
                     ListTag list = root.getList("Spells", Tag.TAG_COMPOUND);
                     for (Tag t : list) {
                         if (t instanceof CompoundTag ct) {
@@ -153,6 +161,7 @@ public class Player {
         if (serverPlayer != null) {
             Map<String, String> phraseToName = new HashMap<>();
             for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            System.out.println("Starting speech recognition for " + serverPlayer.getName().getString() + " with spells: " + phraseToName);
             SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phraseToName, language);
         }
     }
@@ -167,7 +176,51 @@ public class Player {
         if (serverPlayer != null && SpeechRecognitionManager.isVoiceRecognitionActive(serverPlayer)) {
             Map<String, String> phraseToName = new HashMap<>();
             for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
+            System.out.println("Updating speech recognition for " + serverPlayer.getName().getString() + " with spells: " + phraseToName);
             SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phraseToName);
         }
+    }
+
+    /**
+     * Spawn the spell entity for the given spell name using this player's saved config.
+     */
+    public void spawnSpell(String spellName) {
+        if (serverPlayer == null || serverPlayer.server == null) return;
+        if (spellName == null || spellName.isBlank()) return;
+
+        PlayerSpellConfig ps = spells.get(spellName);
+        if (ps == null) {
+            System.out.println("[Spell] No saved spell named '" + spellName + "' for " + serverPlayer.getName().getString());
+            return;
+        }
+
+        SpellEntityConfig base = ps.config();
+        // Rebuild config to capture current owner/look based on this player
+        SpellEntityConfig cfg = new SpellEntityConfig(
+                base.getBlocks(),
+                base.getMicroScale(),
+                base.getBehavior(),
+                base.getMovementDirection(),
+                base.getMovementSpeed(),
+                serverPlayer.getUUID()
+        );
+
+        serverPlayer.server.execute(() -> {
+            var level = serverPlayer.level();
+            var entityType = ModEntities.SPELL_ENTITY.get();
+            SpellEntity e = entityType.create(level);
+            if (e != null) {
+                Vec3 pos = serverPlayer.position();
+                e.setPos(pos.x, pos.y, pos.z);
+                e.setYRot(serverPlayer.getYRot());
+                e.setXRot(serverPlayer.getXRot());
+                e.initializeServer(cfg);
+                level.addFreshEntity(e);
+            }
+
+            if (serverPlayer.connection != null) {
+                PacketHandler.INSTANCE.send(new SpellCompletePacket(), PacketDistributor.PLAYER.with(serverPlayer));
+            }
+        });
     }
 }

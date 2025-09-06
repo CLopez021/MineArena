@@ -34,9 +34,7 @@ public class PlayerManager {
      * @return The PlayerManager instance
      */
     public static PlayerManager getInstance() {
-        System.out.println("Getting instance of PlayerManager");
         if (instance == null) {
-            System.out.println("Instance is null");
             synchronized (PlayerManager.class) {
                 if (instance == null) {
                     instance = new PlayerManager();
@@ -101,6 +99,7 @@ public class PlayerManager {
     public void addSpell(ServerPlayer serverPlayer, PlayerSpellConfig spell) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
+            System.out.println("Adding spell manager " + spell.name() + " for " + serverPlayer.getName().getString());
             player.addSpell(spell);
         }
     }
@@ -162,12 +161,8 @@ public class PlayerManager {
         String chatMessage = String.format("🎤 Spell Cast: %s", spellName);
         serverPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal(chatMessage));
         
-        // TODO: Add spell-specific command handling here
-        // This is where you would dispatch to different handlers based on the recognized spell
-        // For example:
-        // - Building commands ("place stone", "build wall")
-        // - Navigation commands ("go home", "teleport to spawn")
-        // - Inventory commands ("equip sword", "use potion")
+        // Spawn the player's saved spell entity using config
+        player.spawnSpell(spellName);
     }
     
 
@@ -213,7 +208,6 @@ public class PlayerManager {
         players.values().forEach(Player::stopVoiceRecognition);
         SpeechRecognitionManager.shutdownAll();
         players.clear();
-        System.out.println("Shut down all player management");
     }
     
     /**

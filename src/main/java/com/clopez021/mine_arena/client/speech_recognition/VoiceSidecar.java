@@ -34,6 +34,10 @@ public final class VoiceSidecar {
 	private int wsPort;
 	private boolean isRunning = false;
 
+	// Cache the latest configuration so we can send it when the client connects
+	private String lastLang = null;
+	private Map<String, String> lastPhraseToName = new HashMap<>();
+
 	private VoiceSidecar() {
 	}
 
@@ -43,6 +47,7 @@ public final class VoiceSidecar {
 	}
 
     public void start(Map<String, String> phraseToName, String lang) throws Exception {
+		System.out.println("VoiceSidecar start: " + phraseToName);
 		if (isRunning) return;
 
 		wsPort = pickFreePort();
@@ -60,8 +65,9 @@ public final class VoiceSidecar {
 		String url = "http://127.0.0.1:" + httpPort + "/index.html?wsPort=" + wsPort + "&playerId=" + playerId;
 		VoiceSidecarUi.promptAndOpen(url);
 
-        // Push initial config
-        sendConfig(lang, phraseToName);
+        // Cache initial config; the client will request it once ready
+        this.lastLang = lang;
+        this.lastPhraseToName = phraseToName != null ? new HashMap<>(phraseToName) : new HashMap<>();
 
 		isRunning = true;
 	}
@@ -76,6 +82,9 @@ public final class VoiceSidecar {
 	}
 
     public void sendConfig(String lang, Map<String, String> phraseToName) {
+        // Always cache latest config, even if not currently connected
+        this.lastLang = lang;
+        this.lastPhraseToName = phraseToName != null ? new HashMap<>(phraseToName) : new HashMap<>();
         if (!isRunning || ws == null) return;
 
 		UUID playerId = getCurrentPlayerId();
@@ -91,22 +100,13 @@ public final class VoiceSidecar {
                 o.addProperty("name", e.getValue());
                 arr.add(o);
             }
+			System.out.println("VoiceSidecar sendConfig spells: " + arr);
             cfg.add("spells", arr);
         }
         ws.broadcast(gson.toJson(cfg));
+		System.out.println("VoiceSidecar sendConfig broadcast: " + gson.toJson(cfg));
     }
 
-	public void sendStart() {
-		if (!isRunning || ws == null) return;
-		UUID playerId = getCurrentPlayerId();
-		ws.broadcast("{\"type\":\"start\",\"playerId\":\"" + playerId + "\"}");
-	}
-
-	public void sendStop() {
-		if (!isRunning || ws == null) return;
-		UUID playerId = getCurrentPlayerId();
-		ws.broadcast("{\"type\":\"stop\",\"playerId\":\"" + playerId + "\"}");
-	}
 
 	public boolean isRunning() { return isRunning; }
 
@@ -120,7 +120,10 @@ public final class VoiceSidecar {
 			JsonObject msg = JsonParser.parseString(message).getAsJsonObject();
 			String type = msg.get("type").getAsString();
 			
-			if ("spellCast".equals(type)) {
+			if ("ready".equals(type)) {
+                // Client page is ready; push the latest config now
+                sendConfig(lastLang, lastPhraseToName);
+			} else if ("spellCast".equals(type)) {
                 // Parse the spell cast message (spell name)
                 String spellName = msg.get("spellName").getAsString();
 

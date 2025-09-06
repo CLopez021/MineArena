@@ -20,6 +20,7 @@ public class VoiceSidecarConfigPacket {
     public VoiceSidecarConfigPacket(String lang, Map<String, String> phraseToName) {
         this.lang = lang;
         // defensive copy
+        System.out.println("VoiceSidecarConfigPacket: " + phraseToName);
         this.phraseToName = phraseToName != null ? new java.util.HashMap<>(phraseToName) : java.util.Map.of();
     }
 
@@ -41,6 +42,7 @@ public class VoiceSidecarConfigPacket {
             String name = buf.readUtf();
             if (phrase != null && !phrase.isBlank() && name != null && !name.isBlank()) m.put(phrase, name);
         }
+        System.out.println("VoiceSidecarConfigPacket decode: " + m);
         return new VoiceSidecarConfigPacket(lang, m);
     }
 
@@ -51,8 +53,10 @@ public class VoiceSidecarConfigPacket {
             try {
                 var sidecar = VoiceSidecar.getInstance();
                 if (!sidecar.isRunning()) {
+                    System.out.println("VoiceSidecarConfigPacket handle start: " + phraseToName);
                     sidecar.start(phraseToName, lang);
                 } else {
+                    System.out.println("VoiceSidecarConfigPacket handle sendConfig: " + phraseToName);
                     sidecar.sendConfig(lang, phraseToName);
                 }
             } catch (Exception e) {

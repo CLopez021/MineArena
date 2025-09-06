@@ -9,7 +9,6 @@ import com.clopez021.mine_arena.packets.SpellCompletePacket;
 import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
 import com.clopez021.mine_arena.player.PlayerManager;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -65,23 +64,6 @@ public class SpellFactory {
             player != null ? player.getUUID() : null
         );
 
-        // Capture a fixed direction vector at cast time based on enum
-        if (player != null) {
-            switch (direction()) {
-                case UP -> cfg.setMovementDirectionVector(0, 1, 0);
-                case DOWN -> cfg.setMovementDirectionVector(0, -1, 0);
-                case FORWARD -> {
-                    Vec3 look = player.getLookAngle();
-                    cfg.setMovementDirectionVector(look);
-                }
-                case BACKWARD -> {
-                    Vec3 look = player.getLookAngle();
-                    cfg.setMovementDirectionVector((float)-look.x, (float)-look.y, (float)-look.z);
-                }
-                default -> cfg.setMovementDirectionVector(0, 0, 0);
-            }
-        }
-
         return cfg;
     }
 
@@ -96,6 +78,7 @@ public class SpellFactory {
 
         // Save a reusable PlayerSpellConfig for this player
         PlayerSpellConfig reusable = new PlayerSpellConfig("fireball", castPhrase != null ? castPhrase : "fireball", cfg);
+        System.out.println("Adding spell " + reusable.name() + " for " + player.getName().getString());
         PlayerManager.getInstance().addSpell(player, reusable);
 
         // Spawn entity at player position and align orientation
