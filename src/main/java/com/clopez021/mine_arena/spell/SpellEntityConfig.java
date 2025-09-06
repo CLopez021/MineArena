@@ -37,14 +37,14 @@ public class SpellEntityConfig extends BaseConfig {
     ) {
         this.blocks = blocks != null ? blocks : Map.of();
         this.microScale = microScale;
-        this.behavior.setName(onCollisionKey == null || onCollisionKey.isEmpty() ? "explode" : onCollisionKey);
+        this.behavior.setName(onCollisionKey);
         this.movementDirection = direction != null ? direction : MovementDirection.NONE;
         this.movementSpeed = speed;
         this.ownerPlayerId = ownerPlayerId;
     }
 
     public static SpellEntityConfig empty() {
-        return new SpellEntityConfig(Map.of(), 1.0f, "explode", MovementDirection.NONE, 0.0f, null);
+        return new SpellEntityConfig(Map.of(), 1.0f, "", MovementDirection.NONE, 0.0f, null);
     }
 
     // Standard getters
@@ -82,14 +82,7 @@ public class SpellEntityConfig extends BaseConfig {
         tag.put("behavior", behavior.toNBT());
         tag.putString("movementDirection", movementDirection.name());
         tag.putFloat("movementSpeed", movementSpeed);
-        if (ownerPlayerId != null) {
-            try {
-                tag.putUUID("ownerPlayerId", ownerPlayerId);
-            } catch (Throwable t) {
-                // Fallback for environments lacking putUUID (shouldn't happen on modern MC)
-                tag.putString("ownerPlayerId", ownerPlayerId.toString());
-            }
-        }
+        tag.putUUID("ownerPlayerId", ownerPlayerId);
         return tag;
     }
 
@@ -127,8 +120,6 @@ public class SpellEntityConfig extends BaseConfig {
         try {
             if (tag.hasUUID("ownerPlayerId")) {
                 ownerId = tag.getUUID("ownerPlayerId");
-            } else if (tag.contains("ownerPlayerId", Tag.TAG_STRING)) {
-                ownerId = UUID.fromString(tag.getString("ownerPlayerId"));
             }
         } catch (Throwable ignored) {}
 
