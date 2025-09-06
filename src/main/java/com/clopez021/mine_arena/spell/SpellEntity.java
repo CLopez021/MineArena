@@ -12,6 +12,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.EntityDimensions;
+import net.minecraft.world.entity.MoverType;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import org.joml.Vector3f;
 
 import java.util.HashMap;
@@ -170,8 +174,32 @@ public class SpellEntity extends Entity {
     @Override
     public void tick() {
         super.tick();
-        // Trigger when we collide; end collision state once no longer colliding.
+        // Server: apply movement based on config, then handle collisions
         if (!level().isClientSide) {
+            // Apply configured movement each tick
+            float speed = Math.max(0f, this.config.getMovementSpeed());
+            var dir = this.config.getMovementDirection();
+            if (speed > 0f && dir != null && dir != SpellEntityConfig.MovementDirection.NONE) {
+                Vec3 v;
+                switch (dir) {
+                    case UP -> v = new Vec3(0, 1, 0);
+                    case DOWN -> v = new Vec3(0, -1, 0);
+                    case BACKWARD -> {
+                        Vec3 f = getOwnerLookOrSelf();
+                        v = new Vec3(-f.x, -f.y, -f.z);
+                    }
+                    case FORWARD -> {
+                        Vec3 f = getOwnerLookOrSelf();
+                        v = new Vec3(f.x, f.y, f.z);
+                    }
+                    default -> v = Vec3.ZERO;
+                }
+                Vec3 motion = v.normalize().scale(speed);
+                this.setDeltaMovement(motion);
+                this.move(MoverType.SELF, motion);
+            }
+
+            // Trigger when we collide; end collision state once no longer colliding.
             boolean collidingNow = this.onGround() || this.horizontalCollision || this.verticalCollision;
             if (collidingNow) {
                 if (!collisionTriggered) {
@@ -183,6 +211,17 @@ public class SpellEntity extends Entity {
                 isColliding = false;
             }
         }
+    }
+
+    private Vec3 getOwnerLookOrSelf() {
+        try {
+            var ownerId = this.config.getOwnerPlayerId();
+            if (ownerId != null && this.level() instanceof ServerLevel sl) {
+                ServerPlayer p = sl.getPlayerByUUID(ownerId);
+                if (p != null) return p.getLookAngle();
+            }
+        } catch (Exception ignored) {}
+        return this.getLookAngle();
     }
 
 	/**
