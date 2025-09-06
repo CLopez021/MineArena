@@ -73,8 +73,6 @@ public class Player {
     // Spell management with auto-save and speech recognition updates
     public void addSpell(PlayerSpellConfig spell) {
         String key = spell.name();
-        System.out.println("Adding spell1 " + key + " for " + serverPlayer.getName().getString());
-        System.out.println("Adding spell " + key + " for " + serverPlayer.getName().getString());
         spells.put(key, spell);
         saveData();
         updateSpeechRecognition();
@@ -104,7 +102,6 @@ public class Player {
                 // Load spells
                 this.spells.clear();
                 if (root.contains("Spells", Tag.TAG_LIST)) {
-                    System.out.println("Loading spells");
                     ListTag list = root.getList("Spells", Tag.TAG_COMPOUND);
                     for (Tag t : list) {
                         if (t instanceof CompoundTag ct) {
@@ -161,7 +158,6 @@ public class Player {
         if (serverPlayer != null) {
             Map<String, String> phraseToName = new HashMap<>();
             for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
-            System.out.println("Starting speech recognition for " + serverPlayer.getName().getString() + " with spells: " + phraseToName);
             SpeechRecognitionManager.startVoiceRecognition(serverPlayer, phraseToName, language);
         }
     }
@@ -176,7 +172,6 @@ public class Player {
         if (serverPlayer != null && SpeechRecognitionManager.isVoiceRecognitionActive(serverPlayer)) {
             Map<String, String> phraseToName = new HashMap<>();
             for (PlayerSpellConfig ps : spells.values()) phraseToName.put(ps.phrase(), ps.name());
-            System.out.println("Updating speech recognition for " + serverPlayer.getName().getString() + " with spells: " + phraseToName);
             SpeechRecognitionManager.updateConfiguration(serverPlayer, language, phraseToName);
         }
     }
@@ -190,7 +185,6 @@ public class Player {
 
         PlayerSpellConfig ps = spells.get(spellName);
         if (ps == null) {
-            System.out.println("[Spell] No saved spell named '" + spellName + "' for " + serverPlayer.getName().getString());
             return;
         }
 

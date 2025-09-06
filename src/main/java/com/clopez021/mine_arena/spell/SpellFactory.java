@@ -78,7 +78,6 @@ public class SpellFactory {
 
         // Save a reusable PlayerSpellConfig for this player
         PlayerSpellConfig reusable = new PlayerSpellConfig("fireball", castPhrase != null ? castPhrase : "fireball", cfg);
-        System.out.println("Adding spell " + reusable.name() + " for " + player.getName().getString());
         PlayerManager.getInstance().addSpell(player, reusable);
 
         // Spawn entity at player position and align orientation

@@ -99,7 +99,6 @@ public class PlayerManager {
     public void addSpell(ServerPlayer serverPlayer, PlayerSpellConfig spell) {
         Player player = getPlayer(serverPlayer);
         if (player != null) {
-            System.out.println("Adding spell manager " + spell.name() + " for " + serverPlayer.getName().getString());
             player.addSpell(spell);
         }
     }

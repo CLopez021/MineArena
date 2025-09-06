@@ -148,8 +148,6 @@ public class SpellEntity extends Entity {
 		// keep minCorner cache synced
 		this.minCorner.set(minX, minY, minZ);
 		
-		System.out.println("Recalculated bounds: spanX=" + spanX + ", spanY=" + spanY + ", spanZ=" + spanZ);
-		System.out.println("Center: centerLocalX=" + centerLocalX + ", centerLocalZ=" + centerLocalZ);
 	}
 
     /** Apply the given config as the authoritative state (server-side only). */

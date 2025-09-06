@@ -47,7 +47,6 @@ public final class VoiceSidecar {
 	}
 
     public void start(Map<String, String> phraseToName, String lang) throws Exception {
-		System.out.println("VoiceSidecar start: " + phraseToName);
 		if (isRunning) return;
 
 		wsPort = pickFreePort();
@@ -100,11 +99,9 @@ public final class VoiceSidecar {
                 o.addProperty("name", e.getValue());
                 arr.add(o);
             }
-			System.out.println("VoiceSidecar sendConfig spells: " + arr);
             cfg.add("spells", arr);
         }
         ws.broadcast(gson.toJson(cfg));
-		System.out.println("VoiceSidecar sendConfig broadcast: " + gson.toJson(cfg));
     }
 
 
