@@ -74,13 +74,24 @@ public class ModelCommand {
 		var entityType = ModEntities.SPELL_ENTITY.get();
 		SpellEntity e = entityType.create(level);
 		if (e == null) return 0;
-		e.setPos(pos.x, pos.y, pos.z);
+        e.setPos(pos.x, pos.y, pos.z);
+        // Align entity orientation with the command source so FORWARD/BACKWARD movement is relative to player
+        var rot = source.getRotation();
+        e.setYRot(rot.y);
+        e.setXRot(rot.x);
 		
 		// Build block map - entity will calculate bounds from blocks
 		Map<BlockPos, BlockState> blocks = buildVoxels(MineArena.model);
 		float microScale = 1f / 16f;
 		
-		var initData = new SpellEntityConfig(blocks, microScale);
+        var initData = new SpellEntityConfig(
+            blocks,
+            microScale,
+            "explode",
+            com.clopez021.mine_arena.spell.SpellEntityConfig.MovementDirection.NONE,
+            0.0f,
+            source.getPlayerOrException().getUUID()
+        );
 		e.initializeServer(initData);
 		level.addFreshEntity(e);
 		
