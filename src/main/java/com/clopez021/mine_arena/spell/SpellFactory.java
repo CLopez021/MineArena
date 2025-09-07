@@ -82,18 +82,6 @@ public class SpellFactory {
 
         // Spawn entity at player position and align orientation
         player.server.execute(() -> {
-            var level = player.level();
-            var entityType = ModEntities.SPELL_ENTITY.get();
-            SpellEntity e = entityType.create(level);
-            if (e != null) {
-                Vec3 pos = player.position();
-                e.setPos(pos.x, pos.y, pos.z);
-                e.setYRot(player.getYRot());
-                e.setXRot(player.getXRot());
-                e.initializeServer(cfg);
-                level.addFreshEntity(e);
-            }
-
             // Notify client that spell creation finished
             if (player.connection != null) {
                 PacketHandler.INSTANCE.send(new SpellCompletePacket(), PacketDistributor.PLAYER.with(player));
