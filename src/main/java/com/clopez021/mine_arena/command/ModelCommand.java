@@ -1,20 +1,14 @@
 package com.clopez021.mine_arena.command;
 
 import com.clopez021.mine_arena.MineArena;
-import com.clopez021.mine_arena.spell.SpellEntity;
-import com.clopez021.mine_arena.spell.SpellEntityConfig;
-import com.clopez021.mine_arena.entity.ModEntities;
-import com.clopez021.mine_arena.models.util.Point;
 
 import com.clopez021.mine_arena.command.arguments.ModelFileArgument;
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 
 import java.util.Map;
 
@@ -42,10 +36,7 @@ public class ModelCommand {
 					.then(argument("model_name", string()).executes(GenerateCommand::generateModel))
 				)
 			)
-			.then(literal("entity")
-				.executes(ModelCommand::spawnEntity)
-			)
-		);
+			);
 	}
 
 	public static Map<BlockPos, BlockState> buildVoxels(Model model) {
@@ -64,39 +55,6 @@ public class ModelCommand {
 		return 0;
 	}
 
-	private static int spawnEntity(CommandContext<CommandSourceStack> command) {
-		if (MineArena.model == null) return noModelLoaded(command);	
-
-		var source = command.getSource();
-		var level = source.getLevel();
-		Vec3 pos = source.getPosition();
-
-		var entityType = ModEntities.SPELL_ENTITY.get();
-		SpellEntity e = entityType.create(level);
-		if (e == null) return 0;
-        e.setPos(pos.x, pos.y, pos.z);
-        // Align entity orientation with the command source so FORWARD/BACKWARD movement is relative to player
-        var rot = source.getRotation();
-        e.setYRot(rot.y);
-        e.setXRot(rot.x);
-		
-		// Build block map - entity will calculate bounds from blocks
-		Map<BlockPos, BlockState> blocks = buildVoxels(MineArena.model);
-		float microScale = 1f / 16f;
-		
-        var initData = new SpellEntityConfig(
-            blocks,
-            microScale,
-            new com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig("explode", 10f, 5f, true),
-            com.clopez021.mine_arena.spell.SpellEntityConfig.MovementDirection.NONE,
-            0.0f,
-            source.getPlayer().getUUID()
-        );
-		e.initializeServer(initData);
-		level.addFreshEntity(e);
-		
-        source.sendSystemMessage(Component.literal("Spawned spell entity with blocks=" + e.getBlocks().size()));
-        return 1;
-    }
+    
 
 }
