@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import java.util.Map;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
+import static com.mojang.brigadier.arguments.BoolArgumentType.bool;
 import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
@@ -30,13 +31,20 @@ public class ModelCommand {
 		dispatcher.register(literal("model")
 			.then(literal("load").then(argument("filename", ModelFileArgument.modelFileArgument()).executes(LoadCommand::load)))
 			.then(literal("place").executes(PlaceCommand::place))
-			.then(literal("generate")
-				.then(literal("cancel").executes(GenerateCommand::cancelGeneration))
-				.then(argument("prompt", greedyString()).executes(GenerateCommand::generateModel)
-					.then(argument("model_name", string()).executes(GenerateCommand::generateModel))
-				)
-			)
-			);
+            .then(literal("generate")
+                .then(literal("cancel").executes(GenerateCommand::cancelGeneration))
+                // Use string() for prompt so additional args can follow
+                .then(argument("prompt", string()).executes(GenerateCommand::generateModel)
+                    // Prefer parsing save before model_name so "true/false" isn't captured as name
+                    .then(argument("save", bool()).executes(GenerateCommand::generateModel))
+                    // Optional model name
+                    .then(argument("model_name", string()).executes(GenerateCommand::generateModel)
+                        // Optional save flag after model name
+                        .then(argument("save", bool()).executes(GenerateCommand::generateModel))
+                    )
+                )
+            )
+            );
 	}
 
 	public static Map<BlockPos, BlockState> buildVoxels(Model model) {
