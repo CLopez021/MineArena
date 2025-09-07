@@ -13,6 +13,12 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import com.clopez021.mine_arena.client.SpellEntityRenderer;
 import com.clopez021.mine_arena.player.PlayerManager;
+import com.clopez021.mine_arena.spell.PlayerSpellConfig;
+import com.clopez021.mine_arena.spell.SpellEntityConfig;
+import com.clopez021.mine_arena.spell.SpellFactory;
+import com.clopez021.mine_arena.command.LoadCommand;
+import com.clopez021.mine_arena.command.ModelCommand;
+import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -33,6 +39,14 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.io.File;
+import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(MineArena.MOD_ID)
@@ -45,6 +59,9 @@ public class MineArena {
 
     // Directly reference a slf4j logger
     private static final Logger LOGGER = LogUtils.getLogger();
+
+    // Centralized default spells registry
+    private static final List<PlayerSpellConfig> DEFAULT_SPELLS = new ArrayList<>();
 
     public MineArena(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
@@ -68,6 +85,8 @@ public class MineArena {
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
     public void onServerStarting(ServerStartingEvent event) {
+        // Build default spells once per server start
+        createDefaultSpellsFunction();
     }
 
     @SubscribeEvent
@@ -76,6 +95,8 @@ public class MineArena {
         RecorderManager.stopAllRecordings();
         // Clean up player management and speech recognition instances
         PlayerManager.shutdownAll();
+        // Clear defaults to avoid stale state between dev runs
+        DEFAULT_SPELLS.clear();
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
@@ -91,5 +112,43 @@ public class MineArena {
         if (event.getTabKey() == CreativeModeTabs.COMBAT || event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES) {
             event.accept(ModItems.WAND);
         }
+    }
+
+    // ---- Default Spells API ----
+
+    /**
+     * Build and cache default spells for new players. Run at server start.
+     */
+    public static void createDefaultSpellsFunction() {
+        try {
+            DEFAULT_SPELLS.clear();
+
+            // Point directly at your source asset path during development
+            // Note: these paths must exist on disk; no synthetic fallback
+            File objFile = new File("src/main/resources/assets/mine_arena/models/fireball/A_Realistic_Fireball_0907060203_texture.obj");
+
+            try {
+                Model m = LoadCommand.loadModel(objFile);
+                Map<BlockPos, BlockState> blocks = ModelCommand.buildVoxels(m);
+                CollisionBehaviorConfig behavior = new CollisionBehaviorConfig("explode", 10f, 5f, true);
+                SpellEntityConfig cfg = new SpellEntityConfig(blocks, 0.4f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 0.9f);
+                DEFAULT_SPELLS.add(new PlayerSpellConfig("fireball", "fireball", cfg));
+                LOGGER.info("Loaded default spell model from {}", objFile.getPath());
+            } catch (Exception ex) {
+                // If model loading fails, do not add a default spell
+                LOGGER.warn("Failed to load default model from {}. No default spell added.", objFile.getPath(), ex);
+            }
+
+            LOGGER.info("MineArena default spells initialized: {}", DEFAULT_SPELLS.size());
+        } catch (Exception e) {
+            LOGGER.error("Failed to create default spells", e);
+        }
+    }
+
+    /**
+     * Returns an immutable view of the default spells to assign to players.
+     */
+    public static Collection<PlayerSpellConfig> getDefaultSpells() {
+        return Collections.unmodifiableList(DEFAULT_SPELLS);
     }
 }

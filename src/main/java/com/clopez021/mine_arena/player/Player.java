@@ -189,14 +189,13 @@ public class Player {
         }
 
         SpellEntityConfig base = ps.config();
-        // Rebuild config to capture current owner/look based on this player
+        // Rebuild config; direction derives lazily from player during entity tick
         SpellEntityConfig cfg = new SpellEntityConfig(
                 base.getBlocks(),
                 base.getMicroScale(),
                 base.getBehavior(),
                 base.getMovementDirection(),
-                base.getMovementSpeed(),
-                serverPlayer.getUUID()
+                base.getMovementSpeed()
         );
 
         serverPlayer.server.execute(() -> {
@@ -208,6 +207,7 @@ public class Player {
                 e.setPos(pos.x, pos.y, pos.z);
                 e.setYRot(serverPlayer.getYRot());
                 e.setXRot(serverPlayer.getXRot());
+                e.setOwnerPlayerId(serverPlayer.getUUID());
                 e.initializeServer(cfg);
                 level.addFreshEntity(e);
             }

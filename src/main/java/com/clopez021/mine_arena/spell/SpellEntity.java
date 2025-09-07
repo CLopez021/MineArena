@@ -20,6 +20,7 @@ import org.joml.Vector3f;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class SpellEntity extends Entity {
     // ---- Synced key (entire config) ----
@@ -46,6 +47,9 @@ public class SpellEntity extends Entity {
         // Spells are actively steered; disable gravity to avoid desync and sudden drops
         this.setNoGravity(true);
     }
+
+    private UUID ownerPlayerId;
+    public void setOwnerPlayerId(UUID id) { this.ownerPlayerId = id; }
 
 	@Override
 	protected void defineSynchedData(SynchedEntityData.Builder b) {
@@ -176,14 +180,10 @@ public class SpellEntity extends Entity {
         super.tick();
 
         if (!level().isClientSide) {
-            // Compute desired motion each tick
+            // Compute desired motion each tick from config-provided direction (per-player)
             float speed = Math.max(0f, this.config.getMovementSpeed());
-            var dir = this.config.getMovementDirection();
-            Vec3 v = this.config.getDirectionVector();
-            Vec3 motion = Vec3.ZERO;
-            if (speed > 0f && dir != null && dir != SpellEntityConfig.MovementDirection.NONE) {
-                motion = v.lengthSqr() > 0 ? v.normalize().scale(speed) : Vec3.ZERO;
-            }
+            Vec3 v = this.config.getDirection(ownerPlayerId);
+            Vec3 motion = (speed > 0f && v.lengthSqr() > 1e-6) ? v.normalize().scale(speed) : Vec3.ZERO;
 
             this.setDeltaMovement(motion);
             if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
@@ -203,17 +203,6 @@ public class SpellEntity extends Entity {
                 isColliding = false;
             }
         }
-    }
-
-    private Vec3 getOwnerLookOrSelf() {
-        try {
-            var ownerId = this.config.getOwnerPlayerId();
-            if (ownerId != null && this.level() instanceof ServerLevel sl) {
-                Player p = sl.getPlayerByUUID(ownerId);
-                if (p != null) return p.getLookAngle();
-            }
-        } catch (Exception ignored) {}
-        return this.getLookAngle();
     }
 
 	/**

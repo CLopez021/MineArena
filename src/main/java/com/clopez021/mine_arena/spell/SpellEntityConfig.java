@@ -27,8 +27,7 @@ public class SpellEntityConfig extends BaseConfig {
     public enum MovementDirection { FORWARD, BACKWARD, UP, DOWN, NONE }
     private MovementDirection movementDirection = MovementDirection.NONE;
     private float movementSpeed = 0.0f;
-    private UUID ownerPlayerId; // player this spell corresponds to
-    // Captured direction vector at cast time (normalized or zero)
+    // Cached direction vector once computed; persisted in NBT
     private float dirX = 0f, dirY = 0f, dirZ = 0f;
 
     // Single canonical constructor
@@ -37,38 +36,19 @@ public class SpellEntityConfig extends BaseConfig {
             float microScale,
             CollisionBehaviorConfig behavior,
             MovementDirection direction,
-            float speed,
-            UUID ownerPlayerId
+            float speed
     ) {
         this.blocks = blocks != null ? blocks : Map.of();
         this.microScale = microScale;
         this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
         this.movementDirection = direction != null ? direction : MovementDirection.NONE;
         this.movementSpeed = speed;
-        this.ownerPlayerId = ownerPlayerId;
 
-        // Resolve player's look on the server using the stored owner UUID
-        Vec3 look = Vec3.ZERO;
-        try {
-            var server = ServerLifecycleHooks.getCurrentServer();
-            if (server != null && this.ownerPlayerId != null) {
-                ServerPlayer p = server.getPlayerList().getPlayer(this.ownerPlayerId);
-                if (p != null) look = p.getLookAngle();
-            }
-        } catch (Exception ignored) {}
-
-        // Capture and store a fixed direction vector at cast time based on enum
-        switch (this.movementDirection) {
-            case UP -> setMovementDirectionVector(0, 1, 0);
-            case DOWN -> setMovementDirectionVector(0, -1, 0);
-            case FORWARD -> setMovementDirectionVector(look);
-            case BACKWARD -> setMovementDirectionVector((float)-look.x, (float)-look.y,(float) -look.z);
-            default -> setMovementDirectionVector(0, 0, 0);
-        }
+        // Direction vectors are derived lazily via getDirection(playerId)
     }
 
     public static SpellEntityConfig empty() {
-        return new SpellEntityConfig(Map.of(), 1.0f, new CollisionBehaviorConfig(), MovementDirection.NONE, 0.0f, null);
+        return new SpellEntityConfig(Map.of(), 1.0f, new CollisionBehaviorConfig(), MovementDirection.NONE, 0.0f);
     }
 
     // Standard getters
@@ -77,8 +57,43 @@ public class SpellEntityConfig extends BaseConfig {
     public CollisionBehaviorConfig getBehavior() { return behavior; }
     public MovementDirection getMovementDirection() { return movementDirection; }
     public float getMovementSpeed() { return movementSpeed; }
-    public UUID getOwnerPlayerId() { return ownerPlayerId; }
-    public Vec3 getDirectionVector() { return new Vec3(dirX, dirY, dirZ); }
+    /**
+     * Return a direction vector for this config, computed from player on first use and cached in dirX/Y/Z.
+     */
+    public Vec3 getDirection(java.util.UUID playerId) {
+        // If already cached, return it
+        if (dirX != 0f || dirY != 0f || dirZ != 0f) {
+            return new Vec3(dirX, dirY, dirZ);
+        }
+
+        Vec3 v;
+        if (movementDirection == MovementDirection.UP) {
+            v = new Vec3(0, 1, 0);
+        } else if (movementDirection == MovementDirection.DOWN) {
+            v = new Vec3(0, -1, 0);
+        } else if (movementDirection == MovementDirection.NONE) {
+            v = Vec3.ZERO;
+        } else {
+            // FORWARD/BACKWARD based on player's current look
+            Vec3 look = Vec3.ZERO;
+            if (playerId != null) {
+                try {
+                    var server = ServerLifecycleHooks.getCurrentServer();
+                    if (server != null) {
+                        ServerPlayer p = server.getPlayerList().getPlayer(playerId);
+                        if (p != null) look = p.getLookAngle();
+                    }
+                } catch (Exception ignored) {}
+            }
+            v = (movementDirection == MovementDirection.BACKWARD) ? new Vec3(-look.x, -look.y, -look.z) : look;
+        }
+
+        // Cache
+        this.dirX = (float) v.x;
+        this.dirY = (float) v.y;
+        this.dirZ = (float) v.z;
+        return v;
+    }
 
     // Mutable setters (pydantic-like model)
     public void setBlocks(Map<BlockPos, BlockState> blocks) { this.blocks = blocks != null ? blocks : Map.of(); }
@@ -86,14 +101,7 @@ public class SpellEntityConfig extends BaseConfig {
     public void setBehavior(CollisionBehaviorConfig behavior) { this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig(); }
     public void setMovementDirection(MovementDirection movementDirection) { this.movementDirection = movementDirection != null ? movementDirection : MovementDirection.NONE; }
     public void setMovementSpeed(float movementSpeed) { this.movementSpeed = movementSpeed; }
-    public void setOwnerPlayerId(UUID ownerPlayerId) { this.ownerPlayerId = ownerPlayerId; }
-    public void setMovementDirectionVector(float x, float y, float z) {
-        this.dirX = x; this.dirY = y; this.dirZ = z;
-    }
-    public void setMovementDirectionVector(Vec3 v) {
-        if (v == null) { setMovementDirectionVector(0,0,0); return; }
-        this.dirX = (float) v.x; this.dirY = (float) v.y; this.dirZ = (float) v.z;
-    }
+    // No explicit vector setters; direction derives from movementDirection and player look
 
     // Note: all other constructors removed to keep a single entry point
 
@@ -114,7 +122,6 @@ public class SpellEntityConfig extends BaseConfig {
         tag.put("behavior", behavior.toNBT());
         tag.putString("movementDirection", movementDirection.name());
         tag.putFloat("movementSpeed", movementSpeed);
-        tag.putUUID("ownerPlayerId", ownerPlayerId);
         tag.putFloat("dirX", dirX);
         tag.putFloat("dirY", dirY);
         tag.putFloat("dirZ", dirZ);
@@ -150,16 +157,7 @@ public class SpellEntityConfig extends BaseConfig {
         }
         float speed = tag.contains("movementSpeed", Tag.TAG_FLOAT) ? tag.getFloat("movementSpeed") : 0.0f;
 
-        // Owner player UUID if present
-        UUID ownerId = null;
-        try {
-            if (tag.hasUUID("ownerPlayerId")) {
-                ownerId = tag.getUUID("ownerPlayerId");
-            }
-        } catch (Throwable ignored) {}
-
-        SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, direction, speed, ownerId);
-        // Direction vector (optional for older saves)
+        SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, direction, speed);
         if (tag.contains("dirX", Tag.TAG_FLOAT)) cfg.dirX = tag.getFloat("dirX");
         if (tag.contains("dirY", Tag.TAG_FLOAT)) cfg.dirY = tag.getFloat("dirY");
         if (tag.contains("dirZ", Tag.TAG_FLOAT)) cfg.dirZ = tag.getFloat("dirZ");

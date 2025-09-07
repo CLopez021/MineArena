@@ -95,10 +95,16 @@ public class ObjModel extends Model {
     private String currentMaterial;
 
     /**
+     * Base directory of the input OBJ/MTL files for resolving relative paths.
+     */
+    private final File baseDir;
+
+    /**
      * @param file A file to the obj file.
      * @throws IOException The file could not be opened.
      */
     public ObjModel(File file) throws IOException {
+        this.baseDir = file.getParentFile();
         readMtl(file);
         currentMaterial = DEFAULT_MATERIAL;
         materialFaceMap.put(currentMaterial, new ArrayList<>());
@@ -171,8 +177,9 @@ public class ObjModel extends Model {
      */
     private void readMtl(File file) throws IOException {
         String objName = file.getName();
-        String mtlName = "models/" + objName.substring(0, objName.length() - 4) + ".mtl";
-        File mtlFile = new File(mtlName);
+        String baseName = objName.substring(0, objName.length() - 4);
+        // Only resolve MTL relative to the OBJ's directory
+        File mtlFile = new File(baseDir, baseName + ".mtl");
         if (!mtlFile.exists()) return;
 
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(mtlFile))) {
@@ -214,12 +221,11 @@ public class ObjModel extends Model {
      * @param line An array of strings representing a map_kd command.
      */
     private void readMapKd(String[] line) {
-        File texturePath = new File("models/" + line[1]);
-        if (texturePath.isFile())
+        // Resolve texture path strictly relative to the OBJ/MTL directory
+        File texturePath = new File(baseDir, line[1]);
+        if (texturePath.isFile()) {
             materialFileMap.put(currentMaterial, ObjModel.openTexture(texturePath));
-        texturePath = new File(line[1]);
-        if (texturePath.isFile())
-            materialFileMap.put(currentMaterial, ObjModel.openTexture(texturePath));
+        }
     }
 
     /**

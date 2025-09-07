@@ -60,8 +60,7 @@ public class SpellFactory {
             microScale(),
             behavior,
             direction(),
-            speed(),
-            player != null ? player.getUUID() : null
+            speed()
         );
 
         return cfg;
