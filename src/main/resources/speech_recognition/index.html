@@ -77,6 +77,8 @@
       // Auto-start speech recognition once connected
       startRecognition();
       setStatus("Connected");
+      // Notify sidecar that the page is ready to receive config
+      send({ type: "ready" });
     };
     
     ws.onmessage = (evt) => {
@@ -93,10 +95,6 @@
           spells = msg.spells.filter(s => s && typeof s.phrase === 'string' && typeof s.name === 'string');
           // No need to restart - just update the spell list
         }
-      } else if (msg["type"] === "start") {
-        startRecognition();
-      } else if (msg["type"] === "stop") {
-        stopRecognition();
       }
     };
     
@@ -263,18 +261,6 @@
     }
 
     return null;
-  }
-
-  function stopRecognition() { 
-    try { 
-      if (recog) {
-        recog.abort();
-      }
-    } catch (e) {
-      console.log("[Voice Debug] Error stopping recognition:", e);
-    } 
-    isListening = false;
-    setStatus("Stopped");
   }
 
   function startRecognition() {
