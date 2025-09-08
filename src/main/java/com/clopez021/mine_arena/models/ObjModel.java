@@ -6,6 +6,8 @@ import com.clopez021.mine_arena.models.util.Triangle;
 import com.clopez021.mine_arena.models.util.VectorColors;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.block.state.properties.Property;
 import org.joml.Vector3f;
 import org.joml.Vector4i;
 
@@ -41,6 +43,98 @@ public class ObjModel extends Model {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    /**
+     * Rotate a map of local block positions around the Y axis by the given yaw (in degrees),
+     * updating common facing/axis properties where present. Rotation is snapped to 90-degree
+     * quarter turns to preserve integer grid alignment.
+     *
+     * Positive yaw rotates clockwise when looking down from +Y (matches Minecraft yaw).
+     * Example quarter turns: 0 = no-op, 1 = +90, 2 = +180, 3 = +270.
+     *
+     * Note: This rotates blocks around the local origin (0,0,0). If your model is not
+     * centered on the origin, that's fine — SpellEntity recenters for rendering using
+     * its computed bounds. Call this when building SpellEntityConfig blocks to align
+     * the model to the player's current yaw at cast time.
+     */
+    public static Map<BlockPos, BlockState> rotateBlocks(Map<BlockPos, BlockState> blocks, float yawDegrees) {
+        int turns = Math.round(yawDegrees / 90f);
+        // Normalize to [0,3]
+        turns = ((turns % 4) + 4) % 4;
+
+        if (turns == 0 || blocks.isEmpty()) return new HashMap<>(blocks);
+
+        Map<BlockPos, BlockState> out = new HashMap<>(blocks.size());
+        for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {
+            BlockPos p = e.getKey();
+            BlockState state = e.getValue();
+
+            // Rotate position around Y axis, clockwise, in quarter turns.
+            int x = p.getX();
+            int y = p.getY();
+            int z = p.getZ();
+            int rx = x;
+            int rz = z;
+            for (int i = 0; i < turns; i++) {
+                // Clockwise rotation in Minecraft's XZ plane: (x, z) -> (-z, x)
+                int nx = -rz;
+                int nz = rx;
+                rx = nx;
+                rz = nz;
+            }
+
+            // Rotate common facing/axis properties if present
+            BlockState rotatedState = rotateCommonStateProps(state, turns);
+
+            out.put(new BlockPos(rx, y, rz), rotatedState);
+        }
+        return out;
+    }
+
+    private static BlockState rotateCommonStateProps(BlockState state, int quarterTurnsCW) {
+        if (quarterTurnsCW == 0) return state;
+
+        BlockState s = state;
+
+        // Handle FACING / HORIZONTAL_FACING
+        for (Property<?> prop : s.getProperties()) {
+            String name = prop.getName();
+            if ("facing".equals(name) || "horizontal_facing".equals(name)) {
+                @SuppressWarnings("unchecked")
+                Property<Direction> dirProp = (Property<Direction>) prop;
+                Direction d = s.getValue(dirProp);
+                if (d.getAxis().isHorizontal()) {
+                    s = s.setValue(dirProp, rotateHorizontalDirection(d, quarterTurnsCW));
+                }
+            }
+            // Handle AXIS (swap X<->Z for odd quarter turns)
+            else if ("axis".equals(name)) {
+                @SuppressWarnings("unchecked")
+                Property<Direction.Axis> axisProp = (Property<Direction.Axis>) prop;
+                Direction.Axis a = s.getValue(axisProp);
+                if (a.isHorizontal() && (quarterTurnsCW % 2 != 0)) {
+                    s = s.setValue(axisProp, a == Direction.Axis.X ? Direction.Axis.Z : Direction.Axis.X);
+                }
+            }
+        }
+        return s;
+    }
+
+    private static Direction rotateHorizontalDirection(Direction d, int quarterTurnsCW) {
+        int t = ((quarterTurnsCW % 4) + 4) % 4;
+        Direction out = d;
+        for (int i = 0; i < t; i++) {
+            // Clockwise: NORTH->EAST->SOUTH->WEST->NORTH
+            out = switch (out) {
+                case NORTH -> Direction.EAST;
+                case EAST -> Direction.SOUTH;
+                case SOUTH -> Direction.WEST;
+                case WEST -> Direction.NORTH;
+                default -> out; // Shouldn't occur for non-horizontal
+            };
+        }
+        return out;
     }
 
     /**

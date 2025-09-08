@@ -78,6 +78,7 @@ public class PlayerManager {
      * @param spells Collection of PlayerSpell objects
      */
     public void addSpells(ServerPlayer serverPlayer, java.util.Collection<PlayerSpellConfig> spells) {
+        System.out.println("addSpells: " + spells);
         Player player = getPlayer(serverPlayer);
         if (player != null) {
             player.addSpells(spells);

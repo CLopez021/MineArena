@@ -1,6 +1,7 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
+import com.clopez021.mine_arena.models.ObjModel;
 import com.clopez021.mine_arena.spell.SpellEntity;
 import com.clopez021.mine_arena.spell.SpellEntityConfig;
 import com.clopez021.mine_arena.entity.ModEntities;
@@ -53,6 +54,7 @@ public class Player {
     
     // Bulk-add with auto-save and speech recognition updates
     public void addSpells(Collection<PlayerSpellConfig> spells) {
+        System.out.println("addSpells: " + spells);
         boolean changed = false;
         for (PlayerSpellConfig ps : spells) {
             PlayerSpellConfig prev = this.spells.put(ps.name(), ps);
@@ -189,7 +191,7 @@ public class Player {
         }
 
         SpellEntityConfig base = ps.config();
-        // Rebuild config; direction derives lazily from player during entity tick
+        // Use neutral (unrotated) blocks; renderer applies yaw/pitch so the
         SpellEntityConfig cfg = new SpellEntityConfig(
                 base.getBlocks(),
                 base.getMicroScale(),
