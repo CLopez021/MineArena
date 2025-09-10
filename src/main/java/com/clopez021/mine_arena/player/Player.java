@@ -191,9 +191,10 @@ public class Player {
         }
 
         SpellEntityConfig base = ps.config();
-        // Use neutral (unrotated) blocks; renderer applies yaw/pitch so the
+        // Rotate blocks to match the player's yaw/pitch at cast time.
+        var rotatedBlocks = ObjModel.rotateBlocks3D(base.getBlocks(), serverPlayer.getYRot(), serverPlayer.getXRot());
         SpellEntityConfig cfg = new SpellEntityConfig(
-                base.getBlocks(),
+                rotatedBlocks,
                 base.getMicroScale(),
                 base.getBehavior(),
                 base.getMovementDirection(),
