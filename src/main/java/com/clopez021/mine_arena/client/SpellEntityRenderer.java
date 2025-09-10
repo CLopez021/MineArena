@@ -2,7 +2,6 @@ package com.clopez021.mine_arena.client;
 
 import com.clopez021.mine_arena.spell.SpellEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -25,13 +24,6 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 		super.render(entity, yaw, partialTicks, pose, buf, packedLight);
 
         pose.pushPose();
-
-        // Apply entity orientation so the model faces exactly where the player looked
-        float _yaw = entity.getYRot();   // horizontal
-        float pitch = entity.getXRot(); // vertical
-        // Minecraft render convention: negate yaw for correct facing in world space
-        pose.mulPose(Axis.YP.rotationDegrees(-_yaw));
-        pose.mulPose(Axis.XP.rotationDegrees(pitch));
 
         // Center the model on entity origin and scale to micro size
         float micro = entity.getMicroScale();

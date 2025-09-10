@@ -92,6 +92,154 @@ public class ObjModel extends Model {
         return out;
     }
 
+    /**
+     * Rotate a map of local block positions around Y (yaw) and X (pitch) axes by the given degrees.
+     * This mimics the renderer transform order: Y by -yaw, then X by +pitch.
+     * Positions are rotated as floats and then rounded to nearest integer cell; state facings/axis
+     * are updated by rotating their direction vectors and snapping to the nearest cardinal.
+     */
+    public static Map<BlockPos, BlockState> rotateBlocks3D(Map<BlockPos, BlockState> blocks, float yawDegrees, float pitchDegrees) {
+        if (blocks.isEmpty()) return new HashMap<>();
+
+        double yawRad = Math.toRadians(-yawDegrees);
+        double pitchRad = Math.toRadians(pitchDegrees);
+
+        Map<BlockPos, BlockState> out = new HashMap<>(blocks.size());
+        for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {
+            BlockPos p = e.getKey();
+            BlockState state = e.getValue();
+
+            // Rotate position around origin using Y(-yaw) then X(+pitch)
+            double x = p.getX();
+            double y = p.getY();
+            double z = p.getZ();
+
+            // Yaw
+            double cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
+            double x1 = x * cosY + z * sinY;
+            double y1 = y;
+            double z1 = -x * sinY + z * cosY;
+
+            // Pitch
+            double cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
+            double x2 = x1;
+            double y2 = y1 * cosP - z1 * sinP;
+            double z2 = y1 * sinP + z1 * cosP;
+
+            int rx = (int) Math.round(x2);
+            int ry = (int) Math.round(y2);
+            int rz = (int) Math.round(z2);
+
+            BlockState rotatedState = rotateStateYawPitch(state, yawRad, pitchRad);
+            out.put(new BlockPos(rx, ry, rz), rotatedState);
+        }
+        return out;
+    }
+
+    private static BlockState rotateStateYawPitch(BlockState state, double yawRad, double pitchRad) {
+        BlockState s = state;
+        for (Property<?> prop : s.getProperties()) {
+            String name = prop.getName();
+            if ("horizontal_facing".equals(name)) {
+                @SuppressWarnings("unchecked")
+                Property<Direction> dirProp = (Property<Direction>) prop;
+                Direction d = s.getValue(dirProp);
+                Direction nd = rotateHorizontalDirectionYaw(d, yawRad);
+                s = s.setValue(dirProp, nd);
+            } else if ("facing".equals(name)) {
+                @SuppressWarnings("unchecked")
+                Property<Direction> dirProp = (Property<Direction>) prop;
+                Direction d = s.getValue(dirProp);
+                Direction nd = rotateFacingYawPitch(d, yawRad, pitchRad);
+                s = s.setValue(dirProp, nd);
+            } else if ("axis".equals(name)) {
+                @SuppressWarnings("unchecked")
+                Property<Direction.Axis> axisProp = (Property<Direction.Axis>) prop;
+                Direction.Axis a = s.getValue(axisProp);
+                Direction.Axis na = rotateAxisYawPitch(a, yawRad, pitchRad);
+                s = s.setValue(axisProp, na);
+            }
+        }
+        return s;
+    }
+
+    private static Direction rotateHorizontalDirectionYaw(Direction d, double yawRad) {
+        // Only rotate within XZ plane using yaw
+        double x = 0, z = 0;
+        switch (d) {
+            case EAST -> x = 1;
+            case WEST -> x = -1;
+            case SOUTH -> z = 1;
+            case NORTH -> z = -1;
+            default -> { return d; }
+        }
+        double cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
+        double xr = x * cosY + z * sinY;
+        double zr = -x * sinY + z * cosY;
+        // Snap to nearest horizontal cardinal
+        if (Math.abs(xr) >= Math.abs(zr)) {
+            return xr >= 0 ? Direction.EAST : Direction.WEST;
+        } else {
+            return zr >= 0 ? Direction.SOUTH : Direction.NORTH;
+        }
+    }
+
+    private static Direction rotateFacingYawPitch(Direction d, double yawRad, double pitchRad) {
+        double x = 0, y = 0, z = 0;
+        switch (d) {
+            case EAST -> x = 1;
+            case WEST -> x = -1;
+            case UP -> y = 1;
+            case DOWN -> y = -1;
+            case SOUTH -> z = 1;
+            case NORTH -> z = -1;
+        }
+        // Yaw
+        double cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
+        double x1 = x * cosY + z * sinY;
+        double y1 = y;
+        double z1 = -x * sinY + z * cosY;
+        // Pitch
+        double cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
+        double x2 = x1;
+        double y2 = y1 * cosP - z1 * sinP;
+        double z2 = y1 * sinP + z1 * cosP;
+
+        // Snap to nearest axis direction
+        double ax = Math.abs(x2), ay = Math.abs(y2), az = Math.abs(z2);
+        if (ay >= ax && ay >= az) {
+            return y2 >= 0 ? Direction.UP : Direction.DOWN;
+        } else if (ax >= az) {
+            return x2 >= 0 ? Direction.EAST : Direction.WEST;
+        } else {
+            return z2 >= 0 ? Direction.SOUTH : Direction.NORTH;
+        }
+    }
+
+    private static Direction.Axis rotateAxisYawPitch(Direction.Axis a, double yawRad, double pitchRad) {
+        double x = 0, y = 0, z = 0;
+        switch (a) {
+            case X -> x = 1;
+            case Y -> y = 1;
+            case Z -> z = 1;
+        }
+        // Yaw
+        double cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
+        double x1 = x * cosY + z * sinY;
+        double y1 = y;
+        double z1 = -x * sinY + z * cosY;
+        // Pitch
+        double cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
+        double x2 = x1;
+        double y2 = y1 * cosP - z1 * sinP;
+        double z2 = y1 * sinP + z1 * cosP;
+
+        double ax = Math.abs(x2), ay = Math.abs(y2), az = Math.abs(z2);
+        if (ay >= ax && ay >= az) return Direction.Axis.Y;
+        if (ax >= az) return Direction.Axis.X;
+        return Direction.Axis.Z;
+    }
+
     private static BlockState rotateCommonStateProps(BlockState state, int quarterTurnsCW) {
         if (quarterTurnsCW == 0) return state;
 

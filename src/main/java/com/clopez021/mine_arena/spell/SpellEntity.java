@@ -158,8 +158,21 @@ public class SpellEntity extends Entity {
     private void applyConfigServer(SpellEntityConfig cfg) {
         if (level().isClientSide) return;
         if (cfg == null) cfg = SpellEntityConfig.empty();
+        // Rotate blocks to match this entity's current yaw/pitch so physics and rendering align.
+        // Use the neutral config as input; do not mutate caller's instance.
+        Map<BlockPos, BlockState> rotated = com.clopez021.mine_arena.models.ObjModel.rotateBlocks3D(
+                cfg.getBlocks(), this.getYRot(), this.getXRot());
+
+        SpellEntityConfig rotatedCfg = new SpellEntityConfig(
+                rotated,
+                cfg.getMicroScale(),
+                cfg.getBehavior(),
+                cfg.getMovementDirection(),
+                cfg.getMovementSpeed()
+        );
+
         // Apply to synced data and local caches
-        this.config = cfg;
+        this.config = rotatedCfg;
         applyDerivedFromConfig();
         pushConfigToSyncedData();
     }
