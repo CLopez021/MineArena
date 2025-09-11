@@ -1,8 +1,6 @@
 package com.clopez021.mine_arena.command;
 
 import com.clopez021.mine_arena.MineArena;
-
-import com.clopez021.mine_arena.command.arguments.ModelFileArgument;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import net.minecraft.commands.CommandSourceStack;
@@ -14,7 +12,6 @@ import java.util.Map;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static com.mojang.brigadier.arguments.BoolArgumentType.bool;
-import static com.mojang.brigadier.arguments.StringArgumentType.greedyString;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 import com.clopez021.mine_arena.models.Model;
@@ -29,7 +26,6 @@ public class ModelCommand {
 	 */
 	public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
 		dispatcher.register(literal("model")
-			.then(literal("load").then(argument("filename", ModelFileArgument.modelFileArgument()).executes(LoadCommand::load)))
 			.then(literal("place").executes(PlaceCommand::place))
             .then(literal("generate")
                 .then(literal("cancel").executes(GenerateCommand::cancelGeneration))

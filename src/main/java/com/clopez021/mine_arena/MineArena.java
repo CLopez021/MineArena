@@ -16,8 +16,8 @@ import com.clopez021.mine_arena.player.PlayerManager;
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
 import com.clopez021.mine_arena.spell.SpellEntityConfig;
 import com.clopez021.mine_arena.spell.SpellFactory;
-import com.clopez021.mine_arena.command.LoadCommand;
 import com.clopez021.mine_arena.command.ModelCommand;
+import com.clopez021.mine_arena.utils.ModelUtils;
 import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -38,8 +38,7 @@ import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+ 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -47,6 +46,7 @@ import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
+ 
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(MineArena.MOD_ID)
@@ -127,7 +127,7 @@ public class MineArena {
                 // Load assets from the mod's resources on the server side by extracting to models/
                 ResourceLocation dir = ResourceLocation.fromNamespaceAndPath(MOD_ID, "models/fireball");
                 String baseName = "fireball";
-                Model m = LoadCommand.loadModelFromResources(dir, baseName);
+                Model m = ModelUtils.loadModelFromResources(dir, baseName);
                 Map<BlockPos, BlockState> blocks = ModelCommand.buildVoxels(m);
                 CollisionBehaviorConfig behavior = new CollisionBehaviorConfig("explode", 10f, 5f, true);
                 SpellEntityConfig cfg = new SpellEntityConfig(blocks, 0.4f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 0.9f);
@@ -151,4 +151,6 @@ public class MineArena {
         System.out.println("getDefaultSpells: " + DEFAULT_SPELLS.size());
         return Collections.unmodifiableList(DEFAULT_SPELLS);
     }
+
+    
 }

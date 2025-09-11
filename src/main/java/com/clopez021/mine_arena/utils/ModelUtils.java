@@ -1,63 +1,25 @@
-package com.clopez021.mine_arena.command;
+package com.clopez021.mine_arena.utils;
 
-import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.models.Model;
 import com.clopez021.mine_arena.models.ObjModel;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import net.minecraft.client.Minecraft;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.packs.resources.Resource;
-import net.minecraft.server.packs.resources.ResourceManager;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.commons.io.FilenameUtils;
 import org.openjdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Handles logic dealing with loading a new Model through a command.
+ * Utilities for loading models from files and resources.
  */
-public class LoadCommand {
-    /**
-     * Attempts to load a Model from the file specified by the command.
-     * @param command The executed command.
-     * @return A 1 or 0 representing the success of the command.
-     */
-    protected static int load(CommandContext<CommandSourceStack> command) {
-        if (!Minecraft.getInstance().isSingleplayer()) {
-            command.getSource().sendFailure(Component.literal("Error: Models can only be loaded in single-player!"));
-            return 0;
-        }
-        try {
-            String fileName = StringArgumentType.getString(command, "filename");
-            MineArena.model = loadModel(new File("models/" + fileName));
-            command.getSource().sendSystemMessage(Component.literal(fileName + " loaded successfully."));
-            return 1;
-        } catch (Exception e) {
-            command.getSource().sendFailure(Component.literal("Error: The model could not be loaded."));
-            e.printStackTrace();
-            return 0;
-        }
-    }
+public final class ModelUtils {
+    private ModelUtils() {}
 
     /**
-     * @param file A File to a 3D model.
-     * @return A Model constructed from the file.
-     * @throws IOException The File could not be opened.
-     * @throws ValueException The File was not an OBJ file.
+     * Load a model from a file path.
+     * @param file file pointing to the model.
      */
     public static Model loadModel(File file) throws IOException, ValueException {
         String extension = FilenameUtils.getExtension(file.getName()).toLowerCase();
@@ -68,12 +30,10 @@ public class LoadCommand {
     }
 
     /**
-     * Server-side helper: copy OBJ/MTL/textures from assets (resource pack) into the local
-     * "models/" folder, then load with the existing file-based parser.
-     * Example directory: mine_arena:models/fireball, baseName: example_model
+     * Copy OBJ/MTL/textures from the classpath under assets into the local models/ folder, then load.
+     * Example directory: mine_arena:models/fireball, baseName: fireball
      */
     public static Model loadModelFromResources(ResourceLocation directory, String baseName) throws IOException, ValueException {
-        // Build classpath resource roots
         String root = "/assets/" + directory.getNamespace() + "/" + directory.getPath() + "/";
 
         // 1) Copy OBJ
@@ -98,9 +58,9 @@ public class LoadCommand {
     }
 
     private static void copyClasspathResource(String classpathPath, File out) throws IOException {
-        try (InputStream in = LoadCommand.class.getResourceAsStream(classpathPath)) {
+        try (InputStream in = ModelUtils.class.getResourceAsStream(classpathPath)) {
             if (in == null) throw new IOException("Resource not found: " + classpathPath);
-            out.getParentFile().mkdirs();
+            if (out.getParentFile() != null) out.getParentFile().mkdirs();
             try (FileOutputStream fos = new FileOutputStream(out)) {
                 in.transferTo(fos);
             }
@@ -109,9 +69,9 @@ public class LoadCommand {
 
     private static List<String> copyMtlAndCollectTexturesFromClasspath(String classpathPath, File out) throws IOException {
         List<String> textures = new ArrayList<>();
-        out.getParentFile().mkdirs();
+        if (out.getParentFile() != null) out.getParentFile().mkdirs();
         StringBuilder content = new StringBuilder();
-        try (InputStream in = LoadCommand.class.getResourceAsStream(classpathPath)) {
+        try (InputStream in = ModelUtils.class.getResourceAsStream(classpathPath)) {
             if (in == null) throw new IOException("Resource not found: " + classpathPath);
             try (BufferedReader br = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
                 String line;
@@ -130,3 +90,4 @@ public class LoadCommand {
         return textures;
     }
 }
+
