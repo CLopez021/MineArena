@@ -59,9 +59,15 @@ public class Meshy {
         String textureUrl = modelUrls[2];
         String modelName = refineTaskId;
         String textureName = "texture_0";
+        boolean saveFlag = false;
         try {
             modelName = StringArgumentType.getString(command, "model_name");
             textureName = modelName;
+        } catch (IllegalArgumentException ignored) {
+        }
+        // Optional save flag
+        try {
+            saveFlag = com.mojang.brigadier.arguments.BoolArgumentType.getBool(command, "save");
         } catch (IllegalArgumentException ignored) {
         }
 
@@ -69,6 +75,8 @@ public class Meshy {
         String mtlPath = "models/" + modelName + ".mtl";
         String texturePath = "models/" + textureName + ".png";
         try {
+            // Ensure models directory exists
+            Files.createDirectories(Paths.get("models"));
             downloadFile(objUrl, objPath);
             downloadFile(mtlUrl, mtlPath);
             downloadFile(textureUrl, texturePath);
@@ -76,13 +84,21 @@ public class Meshy {
             checkCancellation();
             MineArena.model = new ObjModel(new File(objPath));
             Objects.requireNonNull(command.getSource().getPlayer()).displayClientMessage(Component.literal("Generation Complete"), true);
-            Component message = Component.literal("Successfully generated a model for '" + prompt + "'.");
+            Component message;
+            if (saveFlag) {
+                message = Component.literal("Successfully generated and saved model '" + modelName + "' to models/.");
+            } else {
+                message = Component.literal("Successfully generated a model for '" + prompt + "'.");
+            }
             command.getSource().sendSystemMessage(message);
+            System.out.println("files: " + objPath + ", " + mtlPath + ", " + texturePath);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         } finally {
-            if (modelName.equals(refineTaskId)) {
+            // Delete downloaded files unless explicitly saved
+            if (!saveFlag) {
+                System.out.println("Deleting files: " + objPath + ", " + mtlPath + ", " + texturePath);
                 new File(objPath).delete();
                 new File(mtlPath).delete();
                 new File(texturePath).delete();
@@ -100,16 +116,17 @@ public class Meshy {
 
     public static String createPreviewTask(String prompt) {
         try (HttpClient client = HttpClient.newHttpClient()) {
-            String body = "{"
-                + "\"mode\":\"preview\","
-                + "\"prompt\":" + "\"" + prompt + "\","
-                + "\"ai_model\":" + "\"" + "meshy-4" + "\""
-                + "}";
+            // Build JSON safely to handle quotes and special characters in prompt
+            JsonObject obj = new JsonObject();
+            obj.addProperty("mode", "preview");
+            obj.addProperty("prompt", prompt);
+            obj.addProperty("ai_model", "meshy-4");
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
                 .header("Authorization", "Bearer " + meshyApiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(obj.toString()))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -172,15 +189,15 @@ public class Meshy {
 
     public static String createRefineTask(String previewTaskId) {
         try (HttpClient client = HttpClient.newHttpClient()) {
-            String body = "{"
-                + "\"mode\":\"refine\","
-                + "\"preview_task_id\":" + "\"" + previewTaskId + "\""
-                + "}";
+            JsonObject obj = new JsonObject();
+            obj.addProperty("mode", "refine");
+            obj.addProperty("preview_task_id", previewTaskId);
 
             HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.meshy.ai/openapi/v2/text-to-3d"))
                 .header("Authorization", "Bearer " + meshyApiKey)
-                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(obj.toString()))
                 .build();
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());

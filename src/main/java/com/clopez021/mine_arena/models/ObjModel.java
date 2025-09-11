@@ -43,6 +43,83 @@ public class ObjModel extends Model {
         }
     }
 
+    
+
+    /**
+     * Rotate a map of local block positions around Y (yaw) and X (pitch) axes by the given degrees.
+     * This mimics the renderer transform order: Y by -yaw, then X by +pitch.
+     * Positions are rotated as floats and then rounded to nearest integer cell; state facings/axis
+     * are updated by rotating their direction vectors and snapping to the nearest cardinal.
+     */
+    public static Map<BlockPos, BlockState> rotateBlocks3D(Map<BlockPos, BlockState> blocks, float yawDegrees, float pitchDegrees) {
+        if (blocks.isEmpty()) return new HashMap<>();
+
+        // Match in-game visuals: apply -yaw (clockwise when looking down from +Y)
+        // then pitch in the same sign as the player's XRot (down is +, up is -).
+        double yawRad = Math.toRadians(-yawDegrees);
+        double pitchRad = Math.toRadians(pitchDegrees);
+
+        // Compute bounds center to use as rotation pivot (prevents orbiting)
+        int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
+        int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
+        for (BlockPos p : blocks.keySet()) {
+            minX = Math.min(minX, p.getX());
+            minY = Math.min(minY, p.getY());
+            minZ = Math.min(minZ, p.getZ());
+            maxX = Math.max(maxX, p.getX() + 1);
+            maxY = Math.max(maxY, p.getY() + 1);
+            maxZ = Math.max(maxZ, p.getZ() + 1);
+        }
+        double cx = (minX + maxX) * 0.5; // center in continuous space
+        double cy = (minY + maxY) * 0.5;
+        double cz = (minZ + maxZ) * 0.5;
+
+        double cosY = Math.cos(yawRad), sinY = Math.sin(yawRad);
+        double cosP = Math.cos(pitchRad), sinP = Math.sin(pitchRad);
+
+        Map<BlockPos, BlockState> out = new HashMap<>(blocks.size());
+        for (Map.Entry<BlockPos, BlockState> e : blocks.entrySet()) {
+            BlockPos p = e.getKey();
+            BlockState state = e.getValue();
+
+            // Work with voxel centers to reduce rounding bias
+            double px = p.getX() + 0.5;
+            double py = p.getY() + 0.5;
+            double pz = p.getZ() + 0.5;
+
+            // Translate to pivot
+            double dx = px - cx;
+            double dy = py - cy;
+            double dz = pz - cz;
+
+            // Pitch first (about X)
+            double x1 = dx;
+            double y1 = dy * cosP - dz * sinP;
+            double z1 = dy * sinP + dz * cosP;
+
+            // Then yaw (about Y)
+            double x2 = x1 * cosY + z1 * sinY;
+            double y2 = y1;
+            double z2 = -x1 * sinY + z1 * cosY;
+
+            // Translate back from pivot
+            double xc = cx + x2;
+            double yc = cy + y2;
+            double zc = cz + z2;
+
+            // Map rotated center to integer cell (lower corner)
+            int rx = (int) Math.floor(xc);
+            int ry = (int) Math.floor(yc);
+            int rz = (int) Math.floor(zc);
+
+            out.put(new BlockPos(rx, ry, rz), state);
+        }
+        return out;
+    }
+
+
+    
+
     /**
      * @param img A BufferedImage representing a texture.
      * @param x A number 0-1 representing the horizontal position in the texture.
@@ -95,10 +172,16 @@ public class ObjModel extends Model {
     private String currentMaterial;
 
     /**
+     * Base directory of the input OBJ/MTL files for resolving relative paths.
+     */
+    private final File baseDir;
+
+    /**
      * @param file A file to the obj file.
      * @throws IOException The file could not be opened.
      */
     public ObjModel(File file) throws IOException {
+        this.baseDir = file.getParentFile();
         readMtl(file);
         currentMaterial = DEFAULT_MATERIAL;
         materialFaceMap.put(currentMaterial, new ArrayList<>());
@@ -171,8 +254,9 @@ public class ObjModel extends Model {
      */
     private void readMtl(File file) throws IOException {
         String objName = file.getName();
-        String mtlName = "models/" + objName.substring(0, objName.length() - 4) + ".mtl";
-        File mtlFile = new File(mtlName);
+        String baseName = objName.substring(0, objName.length() - 4);
+        // Only resolve MTL relative to the OBJ's directory
+        File mtlFile = new File(baseDir, baseName + ".mtl");
         if (!mtlFile.exists()) return;
 
         try (BufferedReader bufferedReader = new BufferedReader(new FileReader(mtlFile))) {
@@ -214,12 +298,11 @@ public class ObjModel extends Model {
      * @param line An array of strings representing a map_kd command.
      */
     private void readMapKd(String[] line) {
-        File texturePath = new File("models/" + line[1]);
-        if (texturePath.isFile())
+        // Resolve texture path strictly relative to the OBJ/MTL directory
+        File texturePath = new File(baseDir, line[1]);
+        if (texturePath.isFile()) {
             materialFileMap.put(currentMaterial, ObjModel.openTexture(texturePath));
-        texturePath = new File(line[1]);
-        if (texturePath.isFile())
-            materialFileMap.put(currentMaterial, ObjModel.openTexture(texturePath));
+        }
     }
 
     /**

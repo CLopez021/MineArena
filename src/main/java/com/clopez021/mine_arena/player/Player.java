@@ -1,6 +1,7 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
+import com.clopez021.mine_arena.models.ObjModel;
 import com.clopez021.mine_arena.spell.SpellEntity;
 import com.clopez021.mine_arena.spell.SpellEntityConfig;
 import com.clopez021.mine_arena.entity.ModEntities;
@@ -53,6 +54,7 @@ public class Player {
     
     // Bulk-add with auto-save and speech recognition updates
     public void addSpells(Collection<PlayerSpellConfig> spells) {
+        System.out.println("addSpells: " + spells);
         boolean changed = false;
         for (PlayerSpellConfig ps : spells) {
             PlayerSpellConfig prev = this.spells.put(ps.name(), ps);
@@ -189,14 +191,14 @@ public class Player {
         }
 
         SpellEntityConfig base = ps.config();
-        // Rebuild config to capture current owner/look based on this player
+        // Rotate blocks to match the player's yaw/pitch at cast time.
+        var rotatedBlocks = ObjModel.rotateBlocks3D(base.getBlocks(), serverPlayer.getYRot(), serverPlayer.getXRot());
         SpellEntityConfig cfg = new SpellEntityConfig(
-                base.getBlocks(),
+                rotatedBlocks,
                 base.getMicroScale(),
                 base.getBehavior(),
                 base.getMovementDirection(),
-                base.getMovementSpeed(),
-                serverPlayer.getUUID()
+                base.getMovementSpeed()
         );
 
         serverPlayer.server.execute(() -> {
@@ -208,6 +210,7 @@ public class Player {
                 e.setPos(pos.x, pos.y, pos.z);
                 e.setYRot(serverPlayer.getYRot());
                 e.setXRot(serverPlayer.getXRot());
+                e.setOwnerPlayerId(serverPlayer.getUUID());
                 e.initializeServer(cfg);
                 level.addFreshEntity(e);
             }

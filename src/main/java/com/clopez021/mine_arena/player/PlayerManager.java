@@ -1,8 +1,10 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
+import com.clopez021.mine_arena.spell.SpellEntityConfig;
 import com.clopez021.mine_arena.speech_recognition.SpeechCommand;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
+import com.clopez021.mine_arena.MineArena;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -76,6 +78,7 @@ public class PlayerManager {
      * @param spells Collection of PlayerSpell objects
      */
     public void addSpells(ServerPlayer serverPlayer, java.util.Collection<PlayerSpellConfig> spells) {
+        System.out.println("addSpells: " + spells);
         Player player = getPlayer(serverPlayer);
         if (player != null) {
             player.addSpells(spells);
@@ -179,6 +182,9 @@ public class PlayerManager {
             if (player == null) {
                 player = manager.createPlayer(serverPlayer);
             }
+
+            // Merge in default spells for new/returning players as-is (owner/look bound at cast time)
+            manager.addSpells(serverPlayer, MineArena.getDefaultSpells());
             
             // Auto-start voice recognition on login
             player.startVoiceRecognition();

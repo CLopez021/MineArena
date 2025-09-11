@@ -23,15 +23,15 @@ public class SpellEntityRenderer extends EntityRenderer<SpellEntity> {
 	public void render(SpellEntity entity, float yaw, float partialTicks, PoseStack pose, MultiBufferSource buf, int packedLight) {
 		super.render(entity, yaw, partialTicks, pose, buf, packedLight);
 
-		pose.pushPose();
-		// center the model on entity position using computed center
+        pose.pushPose();
+
+        // Center the model on entity origin and scale to micro size
         float micro = entity.getMicroScale();
         pose.translate(
             -entity.centerLocalX,                    // center the model on entity X
             -(entity.minCorner.y * micro),           // minY at the entity feet
             -entity.centerLocalZ                     // center the model on entity Z
         );
-		// scale blocks by microScale so each unit cube becomes microScale^3 in world units
         pose.scale(micro, micro, micro);
 
 		// draw each block at its local integer offset

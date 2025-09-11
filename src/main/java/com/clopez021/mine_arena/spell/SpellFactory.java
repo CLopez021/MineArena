@@ -1,7 +1,6 @@
 package com.clopez021.mine_arena.spell;
 
 import com.clopez021.mine_arena.command.ModelCommand;
-import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.models.Model;
 import com.clopez021.mine_arena.models.util.Triangle;
 import com.clopez021.mine_arena.packets.PacketHandler;
@@ -12,7 +11,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
 
 import java.util.ArrayList;
@@ -47,7 +45,7 @@ public class SpellFactory {
     /**
      * Build a complete SpellEntityConfig using the three-step pipeline above.
      */
-    public static SpellEntityConfig buildConfig(ServerPlayer player, String spellDescription, String castPhrase) {
+    public static SpellEntityConfig buildConfig(String spellDescription) {
         // 1) Generate blocks from prompt (test prompt: "a fireball")
         Map<BlockPos, BlockState> blocks = buildBlocksForPrompt("a fireball");
 
@@ -60,8 +58,7 @@ public class SpellFactory {
             microScale(),
             behavior,
             direction(),
-            speed(),
-            player != null ? player.getUUID() : null
+            speed()
         );
 
         return cfg;
@@ -74,7 +71,7 @@ public class SpellFactory {
         if (player == null || player.server == null) return;
 
         // Build config synchronously (all steps are local/test stubs)
-        SpellEntityConfig cfg = buildConfig(player, spellDescription, castPhrase);
+        SpellEntityConfig cfg = buildConfig(spellDescription);
 
         // Save a reusable PlayerSpellConfig for this player
         PlayerSpellConfig reusable = new PlayerSpellConfig("fireball", castPhrase != null ? castPhrase : "fireball", cfg);
