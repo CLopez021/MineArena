@@ -22,34 +22,37 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class SpellEntity extends Entity {
-    // ---- Synced key (entire config) ----
-    private static final EntityDataAccessor<CompoundTag> DATA_CONFIG =
-        SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.COMPOUND_TAG);
+import net.minecraft.world.level.block.Block;
+import com.clopez021.mine_arena.utils.Ids;
 
-    // Local caches (handy for math/render)
-    public final Vector3f minCorner = new Vector3f();
+public class SpellEntity extends Entity {
+	// ---- Synced key (entire config) ----
+	private static final EntityDataAccessor<CompoundTag> DATA_CONFIG =
+		SynchedEntityData.defineId(SpellEntity.class, EntityDataSerializers.COMPOUND_TAG);
+
+	// Local caches (handy for math/render)
+	public final Vector3f minCorner = new Vector3f();
 
 	// Authoritative config (single source of truth)
 	private SpellEntityConfig config = SpellEntityConfig.empty();
 
-    // Behavior description/handler live in config.getBehavior()
-    private boolean collisionTriggered = false;
-    private boolean isColliding = false;
+	// Behavior description/handler live in config.getBehavior()
+	private boolean collisionTriggered = false;
+	private boolean isColliding = false;
 	
 	// Dynamic dimensions
 	private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
-    public float centerLocalX, centerLocalZ;
+	public float centerLocalX, centerLocalZ;
 
-    public SpellEntity(EntityType<? extends Entity> type, Level level) {
-        super(type, level);
-        this.noPhysics = false;
-        // Spells are actively steered; disable gravity to avoid desync and sudden drops
-        this.setNoGravity(true);
-    }
+	public SpellEntity(EntityType<? extends Entity> type, Level level) {
+		super(type, level);
+		this.noPhysics = false;
+		// Spells are actively steered; disable gravity to avoid desync and sudden drops
+		this.setNoGravity(true);
+	}
 
-    private UUID ownerPlayerId;
-    public void setOwnerPlayerId(UUID id) { this.ownerPlayerId = id; }
+	private UUID ownerPlayerId;
+	public void setOwnerPlayerId(UUID id) { this.ownerPlayerId = id; }
 
 	@Override
 	protected void defineSynchedData(SynchedEntityData.Builder b) {
@@ -58,27 +61,27 @@ public class SpellEntity extends Entity {
 
 	// ---------------- Internal apply helpers (no side checks) ----------------
 
-    private void pushConfigToSyncedData() {
-        this.entityData.set(DATA_CONFIG, this.config.toNBT());
-    }
+	private void pushConfigToSyncedData() {
+		this.entityData.set(DATA_CONFIG, this.config.toNBT());
+	}
 
-    // Apply derived runtime state from current config and refresh size
-    private void applyDerivedFromConfig() {
-        recalcBoundsFromBlocks();
-        refreshDimensions();
-    }
+	// Apply derived runtime state from current config and refresh size
+	private void applyDerivedFromConfig() {
+		recalcBoundsFromBlocks();
+		refreshDimensions();
+	}
 
-    // Expose config-backed runtime state without duplicating storage
-    public SpellEntityConfig getConfig() { return this.config; }
-    public Map<BlockPos, BlockState> getBlocks() { return this.config.getBlocks(); }
-    public float getMicroScale() { return this.config.getMicroScale(); }
+	// Expose config-backed runtime state without duplicating storage
+	public SpellEntityConfig getConfig() { return this.config; }
+	public Map<BlockPos, BlockState> getBlocks() { return this.config.getBlocks(); }
+	public float getMicroScale() { return this.config.getMicroScale(); }
 
 	// ---------------- Server-side setters ----------------
 
-    // Removed granular setters; prefer applying a full config via applyConfigServer
+	// Removed granular setters; prefer applying a full config via applyConfigServer
 
 	/** Pack your map -> NBT and set once. Auto-broadcasts to all trackers. */
-    // Removed granular setters; prefer applying a full config via applyConfigServer
+	// Removed granular setters; prefer applying a full config via applyConfigServer
 
 	// --------------- Client-side: react to updates ---------------
 
@@ -86,25 +89,25 @@ public class SpellEntity extends Entity {
 	public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
 		super.onSyncedDataUpdated(key);
 
-        if (key == DATA_CONFIG) {
-            CompoundTag cfgTag = this.entityData.get(DATA_CONFIG);
-            this.config = SpellEntityConfig.fromNBT(cfgTag);
-            applyDerivedFromConfig();
-        }
-    }
+		if (key == DATA_CONFIG) {
+			CompoundTag cfgTag = this.entityData.get(DATA_CONFIG);
+			this.config = SpellEntityConfig.fromNBT(cfgTag);
+			applyDerivedFromConfig();
+		}
+	}
 
-    
+	
 
 	// ----------------- Persistence (server only) -----------------
-    @Override
+	@Override
 	protected void addAdditionalSaveData(CompoundTag tag) {
 		// Delegate to SpellEntityConfig for consistent NBT structure
 		tag.merge(this.config.toNBT());
 	}
 
-    @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
-        if (level().isClientSide) return; // client doesn't load saves
+	@Override
+	protected void readAdditionalSaveData(CompoundTag tag) {
+		if (level().isClientSide) return; // client doesn't load saves
 
 		// Use SpellEntityConfig's parser and apply as authoritative state
 		applyConfigServer(SpellEntityConfig.fromNBT(tag));
@@ -121,13 +124,13 @@ public class SpellEntity extends Entity {
 	}
 	
 	private void recalcBoundsFromBlocks() {
-        Map<BlockPos, BlockState> blocks = this.config.getBlocks();
-        float microScale = this.config.getMicroScale();
-        if (blocks.isEmpty()) { 
-            spanX = spanY = spanZ = 0.5f; 
-            centerLocalX = centerLocalZ = 0f;
-            return; 
-        }
+		Map<BlockPos, BlockState> blocks = this.config.getBlocks();
+		float microScale = this.config.getMicroScale();
+		if (blocks.isEmpty()) { 
+			spanX = spanY = spanZ = 0.5f; 
+			centerLocalX = centerLocalZ = 0f;
+			return; 
+		}
 
 		int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, minZ = Integer.MAX_VALUE;
 		int maxX = Integer.MIN_VALUE, maxY = Integer.MIN_VALUE, maxZ = Integer.MIN_VALUE;
@@ -141,69 +144,201 @@ public class SpellEntity extends Entity {
 			maxZ = Math.max(maxZ, p.getZ() + 1);
 		}
 
-        spanX = (maxX - minX) * microScale;
-        spanY = (maxY - minY) * microScale;
-        spanZ = (maxZ - minZ) * microScale;
+		spanX = (maxX - minX) * microScale;
+		spanY = (maxY - minY) * microScale;
+		spanZ = (maxZ - minZ) * microScale;
 
 		// local center for rendering alignment
-        centerLocalX = ((minX + maxX) * 0.5f) * microScale;
-        centerLocalZ = ((minZ + maxZ) * 0.5f) * microScale;
+		centerLocalX = ((minX + maxX) * 0.5f) * microScale;
+		centerLocalZ = ((minZ + maxZ) * 0.5f) * microScale;
 
 		// keep minCorner cache synced
 		this.minCorner.set(minX, minY, minZ);
 		
 	}
 
-    /** Apply the given config as the authoritative state (server-side only). */
-    private void applyConfigServer(SpellEntityConfig cfg) {
-        if (level().isClientSide) return;
-        if (cfg == null) cfg = SpellEntityConfig.empty();
-        // Blocks should already be rotated by the caster at spawn time
-        this.config = cfg;
-        applyDerivedFromConfig();
-        pushConfigToSyncedData();
-    }
+	/** Apply the given config as the authoritative state (server-side only). */
+	private void applyConfigServer(SpellEntityConfig cfg) {
+		if (level().isClientSide) return;
+		if (cfg == null) cfg = SpellEntityConfig.empty();
+		// Blocks should already be rotated by the caster at spawn time
+		this.config = cfg;
+		applyDerivedFromConfig();
+		pushConfigToSyncedData();
+	}
 
-    // ----------------- Collision handling -----------------
+	// ----------------- Collision handling -----------------
 
-    /** Invoke the selected on-collision behavior immediately (server-side). */
-    public void triggerCollision() {
-        if (!level().isClientSide && !collisionTriggered && this.config.getBehavior().getHandler() != null) {
-            collisionTriggered = true;
-            this.config.getBehavior().getHandler().accept(this);
-        }
-    }
+	/** Invoke the selected on-collision behavior immediately (server-side). */
+	public void triggerCollision() {
+		if (!level().isClientSide && !collisionTriggered && this.config.getBehavior().getHandler() != null) {
+			collisionTriggered = true;
+			// Perform spawn/place first to ensure behaviors like explode don't remove us before acting
+			spawnOrPlaceConfiguredOnImpact();
+			// Then run the configured behavior handler (e.g., explosion)
+			this.config.getBehavior().getHandler().accept(this);
+		}
+	}
+
+	private void spawnOrPlaceConfiguredOnImpact() {
+		if (this.level().isClientSide) return;
+		var behavior = this.config.getBehavior();
+		String id = behavior.getSpawnId();
+		int count = Math.max(0, behavior.getSpawnCount());
+		float radius = Math.max(0.0f, behavior.getRadius());
+		if (id == null || id.isEmpty() || count <= 0) return;
+
+		var access = this.level().registryAccess();
+
+		// 1) Tag: blocks
+		var blockTagOpt = Ids.resolveBlockTagStrict(access, id);
+		if (blockTagOpt.isPresent() && !blockTagOpt.get().isEmpty()) {
+			var blocks = blockTagOpt.get();
+			Level level = this.level();
+			for (int i = 0; i < count; i++) {
+				Block chosen = blocks.get(this.random.nextInt(blocks.size()));
+				BlockState state = chosen.defaultBlockState();
+				double angle = this.random.nextDouble() * Math.PI * 2.0;
+				double r = radius * Math.sqrt(this.random.nextDouble());
+				int x = (int)Math.floor(this.getX() + Math.cos(angle) * r);
+				int z = (int)Math.floor(this.getZ() + Math.sin(angle) * r);
+				int y = (int)Math.floor(this.getY());
+
+				BlockPos pos = new BlockPos(x, y, z);
+				int attempts = 6;
+				boolean placed = false;
+				for (int dy = 0; dy < attempts; dy++) {
+					BlockPos target = pos.above(dy);
+					if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
+						level.setBlock(target, state, 3);
+						placed = true;
+						break;
+					}
+				}
+				if (!placed) {
+					for (int dy = 1; dy <= attempts; dy++) {
+						BlockPos target = pos.below(dy);
+						if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
+							level.setBlock(target, state, 3);
+							break;
+						}
+					}
+				}
+			}
+			return;
+		}
+
+		// 2) Tag: entity types
+		var entityTagOpt = Ids.resolveEntityTypeTagStrict(access, id);
+		if (entityTagOpt.isPresent() && !entityTagOpt.get().isEmpty()) {
+			var types = entityTagOpt.get();
+			Level level = this.level();
+			for (int i = 0; i < count; i++) {
+				EntityType<?> chosen = types.get(this.random.nextInt(types.size()));
+				double angle = this.random.nextDouble() * Math.PI * 2.0;
+				double r = radius * Math.sqrt(this.random.nextDouble());
+				double dx = Math.cos(angle) * r;
+				double dz = Math.sin(angle) * r;
+				double x = this.getX() + dx;
+				double y = this.getY();
+				double z = this.getZ() + dz;
+				Entity spawned = chosen.create(level);
+				if (spawned != null) {
+					spawned.setPos(x, y, z);
+					level.addFreshEntity(spawned);
+				}
+			}
+			return;
+		}
+
+		// 3) Single id: block
+		var blockOpt = Ids.resolveBlockStrict(access, id);
+		if (blockOpt.isPresent()) {
+			Block block = blockOpt.get();
+			BlockState state = block.defaultBlockState();
+			Level level = this.level();
+			for (int i = 0; i < count; i++) {
+				double angle = this.random.nextDouble() * Math.PI * 2.0;
+				double r = radius * Math.sqrt(this.random.nextDouble());
+				int x = (int)Math.floor(this.getX() + Math.cos(angle) * r);
+				int z = (int)Math.floor(this.getZ() + Math.sin(angle) * r);
+				int y = (int)Math.floor(this.getY());
+				BlockPos pos = new BlockPos(x, y, z);
+				int attempts = 6;
+				boolean placed = false;
+				for (int dy = 0; dy < attempts; dy++) {
+					BlockPos target = pos.above(dy);
+					if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
+						level.setBlock(target, state, 3);
+						placed = true;
+						break;
+					}
+				}
+				if (!placed) {
+					for (int dy = 1; dy <= attempts; dy++) {
+						BlockPos target = pos.below(dy);
+						if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
+							level.setBlock(target, state, 3);
+							break;
+						}
+					}
+				}
+			}
+			return;
+		}
+
+		// 4) Single id: entity type
+		var entityOpt = Ids.resolveEntityTypeStrict(access, id);
+		if (entityOpt.isPresent()) {
+			EntityType<?> entityType = entityOpt.get();
+			Level level = this.level();
+			for (int i = 0; i < count; i++) {
+				double angle = this.random.nextDouble() * Math.PI * 2.0;
+				double r = radius * Math.sqrt(this.random.nextDouble());
+				double dx = Math.cos(angle) * r;
+				double dz = Math.sin(angle) * r;
+				double x = this.getX() + dx;
+				double y = this.getY();
+				double z = this.getZ() + dz;
+				Entity spawned = entityType.create(level);
+				if (spawned != null) {
+					spawned.setPos(x, y, z);
+					level.addFreshEntity(spawned);
+				}
+			}
+		}
+	}
 
 
     @Override
     public void tick() {
         super.tick();
 
-        if (!level().isClientSide) {
-            // Compute desired motion each tick from config-provided direction (per-player)
-            float speed = Math.max(0f, this.config.getMovementSpeed());
-            Vec3 v = this.config.getDirection(ownerPlayerId);
-            Vec3 motion = (speed > 0f && v.lengthSqr() > 1e-6) ? v.normalize().scale(speed) : Vec3.ZERO;
+		if (!level().isClientSide) {
+			// Compute desired motion each tick from config-provided direction (per-player)
+			float speed = Math.max(0f, this.config.getMovementSpeed());
+			Vec3 v = this.config.getDirection(ownerPlayerId);
+			Vec3 motion = (speed > 0f && v.lengthSqr() > 1e-6) ? v.normalize().scale(speed) : Vec3.ZERO;
 
-            this.setDeltaMovement(motion);
-            if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
+			this.setDeltaMovement(motion);
+			if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
 
-            // Move using vanilla pipeline for proper networking/interpolation
-            this.move(MoverType.SELF, this.getDeltaMovement());
+			// Move using vanilla pipeline for proper networking/interpolation
+			this.move(MoverType.SELF, this.getDeltaMovement());
 
-            // Trigger when we collide; end collision state once no longer colliding.
-            boolean collidingNow = this.onGround() || this.horizontalCollision || this.verticalCollision;
-            if (collidingNow) {
-                if (!collisionTriggered) {
-                    triggerCollision();
-                }
-                isColliding = true;
-            } else if (isColliding) {
-                // Collision ended this tick
-                isColliding = false;
-            }
-        }
-    }
+			// Trigger when we collide; end collision state once no longer colliding.
+			boolean collidingNow = this.onGround() || this.horizontalCollision || this.verticalCollision;
+			if (collidingNow) {
+				if (!collisionTriggered) {
+					triggerCollision();
+				}
+				isColliding = true;
+			} else if (isColliding) {
+				// Collision ended this tick
+				isColliding = false;
+			}
+		}
+	}
 
 	/**
 	 * Initialize from SpellEntityConfig (server-side only).
@@ -213,6 +348,6 @@ public class SpellEntity extends Entity {
 			throw new IllegalStateException("initializeServer() can only be called on the server side!");
 		}
 
-        applyConfigServer(data);
+		applyConfigServer(data);
 	}
 } 

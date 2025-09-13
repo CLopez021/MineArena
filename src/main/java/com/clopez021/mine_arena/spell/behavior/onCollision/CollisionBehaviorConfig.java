@@ -17,14 +17,19 @@ public class CollisionBehaviorConfig extends BaseConfig {
     private boolean shouldDespawn = true;
     private String description = OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).description();
     private Consumer<SpellEntity> handler = OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).handler();
+    // Unified id for either entity or block
+    private String spawnId = "";
+    private int spawnCount = 0;
 
     public CollisionBehaviorConfig() {}
 
-    public CollisionBehaviorConfig(String name, float radius, float damage, boolean shouldDespawn) {
+    public CollisionBehaviorConfig(String name, float radius, float damage, boolean shouldDespawn, String spawnEntityId, int spawnCount) {
         setName(name);
         this.radius = radius;
         this.damage = damage;
         this.shouldDespawn = shouldDespawn;
+        this.spawnId = spawnEntityId == null ? "" : spawnEntityId; // unified
+        this.spawnCount = Math.max(0, spawnCount); // unified
     }
 
     public String getName() { return name; }
@@ -41,6 +46,12 @@ public class CollisionBehaviorConfig extends BaseConfig {
     public void setShouldDespawn(boolean shouldDespawn) { this.shouldDespawn = shouldDespawn; }
     public boolean getShouldDespawn() { return shouldDespawn; }
 
+    // Unified accessors
+    public String getSpawnId() { return spawnId; }
+    public void setSpawnId(String spawnId) { this.spawnId = spawnId == null ? "" : spawnId; }
+    public int getSpawnCount() { return spawnCount; }
+    public void setSpawnCount(int spawnCount) { this.spawnCount = Math.max(0, spawnCount); }
+
     private void updateDerived() {
         var def = OnCollisionBehaviors.definitionFor(this.name);
         this.description = def.description();
@@ -54,6 +65,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
         tag.putFloat("radius", radius);
         tag.putFloat("damage", damage);
         tag.putBoolean("shouldDespawn", shouldDespawn);
+        if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
+        if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
         return tag;
     }
 
@@ -64,6 +77,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
         if (tag.contains("radius", Tag.TAG_FLOAT)) c.setRadius(tag.getFloat("radius"));
         if (tag.contains("damage", Tag.TAG_FLOAT)) c.setDamage(tag.getFloat("damage"));
         if (tag.contains("shouldDespawn", Tag.TAG_BYTE)) c.setShouldDespawn(tag.getBoolean("shouldDespawn"));
+        if (tag.contains("spawnId", Tag.TAG_STRING)) c.setSpawnId(tag.getString("spawnId"));
+        if (tag.contains("spawnCount", Tag.TAG_INT)) c.setSpawnCount(tag.getInt("spawnCount"));
         return c;
     }
 }
