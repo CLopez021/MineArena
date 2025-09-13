@@ -190,98 +190,52 @@ public class SpellEntity extends Entity {
 
 		var access = this.level().registryAccess();
 
-		// 1) Tag: blocks
-		var blockTagOpt = Ids.resolveBlockTagStrict(access, id);
-		if (blockTagOpt.isPresent() && !blockTagOpt.get().isEmpty()) {
-			var blocks = blockTagOpt.get();
-			Level level = this.level();
-			for (int i = 0; i < count; i++) {
-				Block chosen = blocks.get(this.random.nextInt(blocks.size()));
-				BlockState state = chosen.defaultBlockState();
-				double angle = this.random.nextDouble() * Math.PI * 2.0;
-				double r = radius * Math.sqrt(this.random.nextDouble());
-				int x = (int)Math.floor(this.getX() + Math.cos(angle) * r);
-				int z = (int)Math.floor(this.getZ() + Math.sin(angle) * r);
-				int y = (int)Math.floor(this.getY());
+		// // 1) Tag: blocks
+		// var blockTagOpt = Ids.resolveBlockTagStrict(access, id);
+		// if (blockTagOpt.isPresent() && !blockTagOpt.get().isEmpty()) {
+		// 	var blocks = blockTagOpt.get();
+		// 	Level level = this.level();
+		// 	for (int i = 0; i < count; i++) {
+		// 		Block chosen = blocks.get(this.random.nextInt(blocks.size()));
+		// 		BlockState state = chosen.defaultBlockState();
+		// 		BlockPos target = findPlacementSpot(level, radius, 6, state);
+		// 		if (target != null) {
+		// 			level.setBlock(target, state, 3);
+		// 		}
+		// 	}
+		// 	return;
+		// }
 
-				BlockPos pos = new BlockPos(x, y, z);
-				int attempts = 6;
-				boolean placed = false;
-				for (int dy = 0; dy < attempts; dy++) {
-					BlockPos target = pos.above(dy);
-					if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
-						level.setBlock(target, state, 3);
-						placed = true;
-						break;
-					}
-				}
-				if (!placed) {
-					for (int dy = 1; dy <= attempts; dy++) {
-						BlockPos target = pos.below(dy);
-						if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
-							level.setBlock(target, state, 3);
-							break;
-						}
-					}
-				}
-			}
-			return;
-		}
-
-		// 2) Tag: entity types
-		var entityTagOpt = Ids.resolveEntityTypeTagStrict(access, id);
-		if (entityTagOpt.isPresent() && !entityTagOpt.get().isEmpty()) {
-			var types = entityTagOpt.get();
-			Level level = this.level();
-			for (int i = 0; i < count; i++) {
-				EntityType<?> chosen = types.get(this.random.nextInt(types.size()));
-				double angle = this.random.nextDouble() * Math.PI * 2.0;
-				double r = radius * Math.sqrt(this.random.nextDouble());
-				double dx = Math.cos(angle) * r;
-				double dz = Math.sin(angle) * r;
-				double x = this.getX() + dx;
-				double y = this.getY();
-				double z = this.getZ() + dz;
-				Entity spawned = chosen.create(level);
-				if (spawned != null) {
-					spawned.setPos(x, y, z);
-					level.addFreshEntity(spawned);
-				}
-			}
-			return;
-		}
+		// // 2) Tag: entity types
+		// var entityTagOpt = Ids.resolveEntityTypeTagStrict(access, id);
+		// if (entityTagOpt.isPresent() && !entityTagOpt.get().isEmpty()) {
+		// 	var types = entityTagOpt.get();
+		// 	Level level = this.level();
+		// 	for (int i = 0; i < count; i++) {
+		// 		EntityType<?> chosen = types.get(this.random.nextInt(types.size()));
+		// 		BlockPos target = findPlacementSpot(level, radius, 6, null);
+		// 		if (target != null) {
+		// 			Entity spawned = chosen.create(level);
+		// 			if (spawned != null) {
+		// 				spawned.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
+		// 				level.addFreshEntity(spawned);
+		// 			}
+		// 		}
+		// 	}
+		// 	return;
+		// }
 
 		// 3) Single id: block
 		var blockOpt = Ids.resolveBlockStrict(access, id);
 		if (blockOpt.isPresent()) {
+            System.out.println("blockOpt: " + blockOpt.get());
 			Block block = blockOpt.get();
 			BlockState state = block.defaultBlockState();
 			Level level = this.level();
 			for (int i = 0; i < count; i++) {
-				double angle = this.random.nextDouble() * Math.PI * 2.0;
-				double r = radius * Math.sqrt(this.random.nextDouble());
-				int x = (int)Math.floor(this.getX() + Math.cos(angle) * r);
-				int z = (int)Math.floor(this.getZ() + Math.sin(angle) * r);
-				int y = (int)Math.floor(this.getY());
-				BlockPos pos = new BlockPos(x, y, z);
-				int attempts = 6;
-				boolean placed = false;
-				for (int dy = 0; dy < attempts; dy++) {
-					BlockPos target = pos.above(dy);
-					if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
-						level.setBlock(target, state, 3);
-						placed = true;
-						break;
-					}
-				}
-				if (!placed) {
-					for (int dy = 1; dy <= attempts; dy++) {
-						BlockPos target = pos.below(dy);
-						if (level.isEmptyBlock(target) && state.canSurvive(level, target)) {
-							level.setBlock(target, state, 3);
-							break;
-						}
-					}
+				BlockPos target = findPlacementSpot(level, radius, 6, state);
+				if (target != null) {
+					level.setBlock(target, state, 3);
 				}
 			}
 			return;
@@ -293,20 +247,42 @@ public class SpellEntity extends Entity {
 			EntityType<?> entityType = entityOpt.get();
 			Level level = this.level();
 			for (int i = 0; i < count; i++) {
-				double angle = this.random.nextDouble() * Math.PI * 2.0;
-				double r = radius * Math.sqrt(this.random.nextDouble());
-				double dx = Math.cos(angle) * r;
-				double dz = Math.sin(angle) * r;
-				double x = this.getX() + dx;
-				double y = this.getY();
-				double z = this.getZ() + dz;
-				Entity spawned = entityType.create(level);
-				if (spawned != null) {
-					spawned.setPos(x, y, z);
-					level.addFreshEntity(spawned);
+				BlockPos target = findPlacementSpot(level, radius, 6, null);
+				if (target != null) {
+					Entity spawned = entityType.create(level);
+					if (spawned != null) {
+						spawned.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
+						level.addFreshEntity(spawned);
+					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * Find a placement spot by sampling an offset within radius, then scanning upward first, then downward.
+	 * If a BlockState is provided, also require that it can survive at the target.
+	 */
+	private BlockPos findPlacementSpot(Level level, float radius, int attempts, @javax.annotation.Nullable BlockState state) {
+		double angle = this.random.nextDouble() * Math.PI * 2.0;
+		double r = radius * Math.sqrt(this.random.nextDouble());
+		int baseX = (int)Math.floor(this.getX() + Math.cos(angle) * r);
+		int baseZ = (int)Math.floor(this.getZ() + Math.sin(angle) * r);
+		int baseY = (int)Math.floor(this.getY());
+		BlockPos base = new BlockPos(baseX, baseY, baseZ);
+		for (int dy = 0; dy < attempts; dy++) {
+			BlockPos target = base.above(dy);
+			if (level.isEmptyBlock(target) && (state == null || state.canSurvive(level, target))) {
+				return target;
+			}
+		}
+		for (int dy = 1; dy <= attempts; dy++) {
+			BlockPos target = base.below(dy);
+			if (level.isEmptyBlock(target) && (state == null || state.canSurvive(level, target))) {
+				return target;
+			}
+		}
+		return null;
 	}
 
 
