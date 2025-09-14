@@ -1,7 +1,5 @@
 package com.clopez021.mine_arena;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.clopez021.mine_arena.command.arguments.ModCommandArguments;
 import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.items.ModItems;
@@ -15,7 +13,6 @@ import com.clopez021.mine_arena.client.SpellEntityRenderer;
 import com.clopez021.mine_arena.player.PlayerManager;
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
 import com.clopez021.mine_arena.spell.SpellEntityConfig;
-import com.clopez021.mine_arena.spell.SpellFactory;
 import com.clopez021.mine_arena.command.ModelCommand;
 import com.clopez021.mine_arena.utils.ModelUtils;
 import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
@@ -23,7 +20,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.AddReloadListenerEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -32,12 +28,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
  
 import java.util.ArrayList;
 import java.util.Collection;
@@ -129,8 +123,8 @@ public class MineArena {
                 String baseName = "fireball";
                 Model m = ModelUtils.loadModelFromResources(dir, baseName);
                 Map<BlockPos, BlockState> blocks = ModelCommand.buildVoxels(m);
-                CollisionBehaviorConfig behavior = new CollisionBehaviorConfig("explode", 10f, 5f, true);
-                SpellEntityConfig cfg = new SpellEntityConfig(blocks, 0.4f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 0.9f);
+                CollisionBehaviorConfig behavior = new CollisionBehaviorConfig("explode", 3f, 2f, true, "minecraft:fire", 10);
+                SpellEntityConfig cfg = new SpellEntityConfig(blocks, 0.05f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 1.0f);
                 DEFAULT_SPELLS.add(new PlayerSpellConfig("fireball", "fireball", cfg));
                 LOGGER.info("Loaded default spell model from resources {}/{}", dir, baseName);
             } catch (Exception ex) {
