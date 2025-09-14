@@ -18,6 +18,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
+import net.minecraft.world.phys.AABB;
+import java.util.List;
 
 public class SpellEntity extends Entity {
   // ---- Synced key (entire config) ----
@@ -30,9 +32,10 @@ public class SpellEntity extends Entity {
   // Authoritative config (single source of truth)
   private SpellEntityConfig config = SpellEntityConfig.empty();
 
-  // Behavior description/handler live in config.getBehavior()
+  // Behavior description/handler live in config.getCollisionBehavior()
   private boolean collisionTriggered = false;
   private boolean isColliding = false;
+  private boolean entityCollisionDetected = false;
 
   // Dynamic dimensions
   private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
@@ -175,16 +178,16 @@ public class SpellEntity extends Entity {
   public void triggerCollision() {
     if (!level().isClientSide
         && !collisionTriggered
-        && this.config.getBehavior().getHandler() != null) {
+        && this.config.getCollisionBehavior().getCollisionHandler() != null) {
       collisionTriggered = true;
-      this.config.getBehavior().getHandler().accept(this);
+      this.config.getCollisionBehavior().getCollisionHandler().accept(this);
       spawnOrPlaceConfiguredOnImpact();
     }
   }
 
   private void spawnOrPlaceConfiguredOnImpact() {
     if (this.level().isClientSide) return;
-    var behavior = this.config.getBehavior();
+    var behavior = this.config.getCollisionBehavior();
     String id = behavior.getSpawnId();
     int count = Math.max(0, behavior.getSpawnCount());
     float radius = Math.max(0.0f, behavior.getRadius());
@@ -268,8 +271,20 @@ public class SpellEntity extends Entity {
       // Move using vanilla pipeline for proper networking/interpolation
       this.move(MoverType.SELF, this.getDeltaMovement());
 
-      // Trigger when we collide; end collision state once no longer colliding.
-      boolean collidingNow = this.onGround() || this.horizontalCollision || this.verticalCollision;
+      // Enhanced collision detection: blocks OR entities
+      boolean blockCollision = this.onGround() || this.horizontalCollision || this.verticalCollision;
+      boolean entityCollision = this.entityCollisionDetected;
+      
+      // Additional entity collision check using AABB overlap
+      if (!entityCollision && !blockCollision) {
+        List<Entity> nearbyEntities = this.level().getEntities(this, this.getBoundingBox(), 
+            entity -> entity != this && 
+                     (this.ownerPlayerId == null || !entity.getUUID().equals(this.ownerPlayerId)));
+        entityCollision = !nearbyEntities.isEmpty();
+      }
+      
+      boolean collidingNow = blockCollision || entityCollision;
+      
       if (collidingNow) {
         if (!collisionTriggered) {
           triggerCollision();
@@ -279,6 +294,9 @@ public class SpellEntity extends Entity {
         // Collision ended this tick
         isColliding = false;
       }
+      
+      // Reset entity collision flag for next tick
+      this.entityCollisionDetected = false;
     }
   }
 

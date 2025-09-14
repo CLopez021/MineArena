@@ -67,7 +67,7 @@ public class SpellEntityConfig extends BaseConfig {
     return microScale;
   }
 
-  public CollisionBehaviorConfig getBehavior() {
+  public CollisionBehaviorConfig getCollisionBehavior() {
     return behavior;
   }
 

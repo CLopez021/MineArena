@@ -56,7 +56,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
     return description;
   }
 
-  public Consumer<SpellEntity> getHandler() {
+  public Consumer<SpellEntity> getCollisionHandler() {
     return handler;
   }
 

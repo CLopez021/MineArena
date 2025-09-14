@@ -19,9 +19,9 @@ public final class OnCollisionBehaviors {
   public static void explode(SpellEntity e) {
     if (e == null || e.level() == null || e.level().isClientSide) return;
     Level level = e.level();
-    float radius = Math.max(0.1f, e.getConfig().getBehavior().getRadius());
+    float radius = Math.max(0.1f, e.getConfig().getCollisionBehavior().getRadius());
     level.explode(e, e.getX(), e.getY(), e.getZ(), radius, Level.ExplosionInteraction.BLOCK);
-    if (e.getConfig().getBehavior().getShouldDespawn()) {
+    if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
       e.discard();
     }
   }
