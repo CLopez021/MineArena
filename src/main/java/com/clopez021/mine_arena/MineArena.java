@@ -123,8 +123,8 @@ public class MineArena {
                 String baseName = "fireball";
                 Model m = ModelUtils.loadModelFromResources(dir, baseName);
                 Map<BlockPos, BlockState> blocks = ModelCommand.buildVoxels(m);
-                CollisionBehaviorConfig behavior = new CollisionBehaviorConfig("explode", 10f, 5f, true, "minecraft:fire", 20);
-                SpellEntityConfig cfg = new SpellEntityConfig(blocks, 0.4f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 0.9f);
+                CollisionBehaviorConfig behavior = new CollisionBehaviorConfig("explode", 3f, 2f, true, "minecraft:fire", 10);
+                SpellEntityConfig cfg = new SpellEntityConfig(blocks, 0.05f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 1.0f);
                 DEFAULT_SPELLS.add(new PlayerSpellConfig("fireball", "fireball", cfg));
                 LOGGER.info("Loaded default spell model from resources {}/{}", dir, baseName);
             } catch (Exception ex) {
