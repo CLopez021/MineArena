@@ -11,16 +11,16 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.fml.DistExecutor;
 
 public class WandItem extends Item {
-    public WandItem(Properties properties) {
-        super(properties);
-    }
+  public WandItem(Properties properties) {
+    super(properties);
+  }
 
-    @Override
-    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
-        ItemStack stack = player.getItemInHand(hand);
-        if (level.isClientSide) {
-            DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> WandScreens.openWandScreen());
-        }
-        return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+  @Override
+  public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
+    ItemStack stack = player.getItemInHand(hand);
+    if (level.isClientSide) {
+      DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> WandScreens.openWandScreen());
     }
+    return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+  }
 }
