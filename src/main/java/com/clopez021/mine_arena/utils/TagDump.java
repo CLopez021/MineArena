@@ -13,7 +13,7 @@ import org.slf4j.Logger;
 
 public final class TagDump {
     private TagDump() {}
-
+    // TODO: Use these to dump all tags to context
     public static void dumpAllBlockTags(RegistryAccess access, Logger log) {
         if (access == null || log == null) return;
         Registry<Block> reg = access.registryOrThrow(Registries.BLOCK);

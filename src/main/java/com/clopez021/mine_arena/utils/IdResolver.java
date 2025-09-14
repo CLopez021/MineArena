@@ -15,8 +15,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
-public final class Ids {
-    private Ids() {}
+public final class IdResolver {
+    private IdResolver() {}
 
     private static final Logger LOGGER = LogUtils.getLogger();
 

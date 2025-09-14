@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import net.minecraft.world.level.block.Block;
-import com.clopez021.mine_arena.utils.Ids;
+import com.clopez021.mine_arena.utils.IdResolver;
 
 public class SpellEntity extends Entity {
 	// ---- Synced key (entire config) ----
@@ -188,7 +188,7 @@ public class SpellEntity extends Entity {
 
 		var access = this.level().registryAccess();
 		// 1) Single id: block
-		var blockOpt = Ids.resolveBlockStrict(access, id);
+		var blockOpt = IdResolver.resolveBlockStrict(access, id);
 		if (blockOpt.isPresent()) {
             System.out.println("blockOpt: " + blockOpt.get());
 			Block block = blockOpt.get();
@@ -204,7 +204,7 @@ public class SpellEntity extends Entity {
 		}
 
 		// 2) Single id: entity type
-		var entityOpt = Ids.resolveEntityTypeStrict(access, id);
+		var entityOpt = IdResolver.resolveEntityTypeStrict(access, id);
 		if (entityOpt.isPresent()) {
 			EntityType<?> entityType = entityOpt.get();
 			Level level = this.level();
