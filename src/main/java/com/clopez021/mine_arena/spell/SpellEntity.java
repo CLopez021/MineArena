@@ -173,10 +173,8 @@ public class SpellEntity extends Entity {
 	public void triggerCollision() {
 		if (!level().isClientSide && !collisionTriggered && this.config.getBehavior().getHandler() != null) {
 			collisionTriggered = true;
-			// Perform spawn/place first to ensure behaviors like explode don't remove us before acting
-			spawnOrPlaceConfiguredOnImpact();
-			// Then run the configured behavior handler (e.g., explosion)
 			this.config.getBehavior().getHandler().accept(this);
+            spawnOrPlaceConfiguredOnImpact();
 		}
 	}
 
@@ -189,43 +187,7 @@ public class SpellEntity extends Entity {
 		if (id == null || id.isEmpty() || count <= 0) return;
 
 		var access = this.level().registryAccess();
-
-		// // 1) Tag: blocks
-		// var blockTagOpt = Ids.resolveBlockTagStrict(access, id);
-		// if (blockTagOpt.isPresent() && !blockTagOpt.get().isEmpty()) {
-		// 	var blocks = blockTagOpt.get();
-		// 	Level level = this.level();
-		// 	for (int i = 0; i < count; i++) {
-		// 		Block chosen = blocks.get(this.random.nextInt(blocks.size()));
-		// 		BlockState state = chosen.defaultBlockState();
-		// 		BlockPos target = findPlacementSpot(level, radius, 6, state);
-		// 		if (target != null) {
-		// 			level.setBlock(target, state, 3);
-		// 		}
-		// 	}
-		// 	return;
-		// }
-
-		// // 2) Tag: entity types
-		// var entityTagOpt = Ids.resolveEntityTypeTagStrict(access, id);
-		// if (entityTagOpt.isPresent() && !entityTagOpt.get().isEmpty()) {
-		// 	var types = entityTagOpt.get();
-		// 	Level level = this.level();
-		// 	for (int i = 0; i < count; i++) {
-		// 		EntityType<?> chosen = types.get(this.random.nextInt(types.size()));
-		// 		BlockPos target = findPlacementSpot(level, radius, 6, null);
-		// 		if (target != null) {
-		// 			Entity spawned = chosen.create(level);
-		// 			if (spawned != null) {
-		// 				spawned.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
-		// 				level.addFreshEntity(spawned);
-		// 			}
-		// 		}
-		// 	}
-		// 	return;
-		// }
-
-		// 3) Single id: block
+		// 1) Single id: block
 		var blockOpt = Ids.resolveBlockStrict(access, id);
 		if (blockOpt.isPresent()) {
             System.out.println("blockOpt: " + blockOpt.get());
@@ -241,7 +203,7 @@ public class SpellEntity extends Entity {
 			return;
 		}
 
-		// 4) Single id: entity type
+		// 2) Single id: entity type
 		var entityOpt = Ids.resolveEntityTypeStrict(access, id);
 		if (entityOpt.isPresent()) {
 			EntityType<?> entityType = entityOpt.get();
