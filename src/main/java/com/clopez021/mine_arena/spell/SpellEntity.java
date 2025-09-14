@@ -1,6 +1,7 @@
 package com.clopez021.mine_arena.spell;
 
 import com.clopez021.mine_arena.utils.IdResolver;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -18,8 +19,6 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
-import net.minecraft.world.phys.AABB;
-import java.util.List;
 
 public class SpellEntity extends Entity {
   // ---- Synced key (entire config) ----
@@ -272,19 +271,26 @@ public class SpellEntity extends Entity {
       this.move(MoverType.SELF, this.getDeltaMovement());
 
       // Enhanced collision detection: blocks OR entities
-      boolean blockCollision = this.onGround() || this.horizontalCollision || this.verticalCollision;
+      boolean blockCollision =
+          this.onGround() || this.horizontalCollision || this.verticalCollision;
       boolean entityCollision = this.entityCollisionDetected;
-      
+
       // Additional entity collision check using AABB overlap
       if (!entityCollision && !blockCollision) {
-        List<Entity> nearbyEntities = this.level().getEntities(this, this.getBoundingBox(), 
-            entity -> entity != this && 
-                     (this.ownerPlayerId == null || !entity.getUUID().equals(this.ownerPlayerId)));
+        List<Entity> nearbyEntities =
+            this.level()
+                .getEntities(
+                    this,
+                    this.getBoundingBox(),
+                    entity ->
+                        entity != this
+                            && (this.ownerPlayerId == null
+                                || !entity.getUUID().equals(this.ownerPlayerId)));
         entityCollision = !nearbyEntities.isEmpty();
       }
-      
+
       boolean collidingNow = blockCollision || entityCollision;
-      
+
       if (collidingNow) {
         if (!collisionTriggered) {
           triggerCollision();
@@ -294,7 +300,7 @@ public class SpellEntity extends Entity {
         // Collision ended this tick
         isColliding = false;
       }
-      
+
       // Reset entity collision flag for next tick
       this.entityCollisionDetected = false;
     }
