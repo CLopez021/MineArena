@@ -10,12 +10,18 @@ import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
 public class ModCommandArguments {
-    public static DeferredRegister<ArgumentTypeInfo<?, ?>> argTypeRegistry = DeferredRegister.create(ForgeRegistries.COMMAND_ARGUMENT_TYPES, MineArena.MOD_ID);
+  public static DeferredRegister<ArgumentTypeInfo<?, ?>> argTypeRegistry =
+      DeferredRegister.create(ForgeRegistries.COMMAND_ARGUMENT_TYPES, MineArena.MOD_ID);
 
-    public static final RegistryObject<ArgumentTypeInfo<?, ?>> MODELFILE_ARGUMENT =
-            argTypeRegistry.register("model_file_argument", () -> ArgumentTypeInfos.registerByClass(ModelFileArgument.class, SingletonArgumentInfo.contextFree(ModelFileArgument::new)));
+  public static final RegistryObject<ArgumentTypeInfo<?, ?>> MODELFILE_ARGUMENT =
+      argTypeRegistry.register(
+          "model_file_argument",
+          () ->
+              ArgumentTypeInfos.registerByClass(
+                  ModelFileArgument.class,
+                  SingletonArgumentInfo.contextFree(ModelFileArgument::new)));
 
-    public static void register(IEventBus eventbus) {
-        argTypeRegistry.register(eventbus);
-    }
+  public static void register(IEventBus eventbus) {
+    argTypeRegistry.register(eventbus);
+  }
 }
