@@ -40,5 +40,11 @@ public class PacketHandler {
         .decoder(WandSubmitPacket::decode)
         .consumerMainThread(WandSubmitPacket::handle)
         .add();
+    INSTANCE
+        .messageBuilder(VoiceSidecarStopPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT)
+        .encoder(VoiceSidecarStopPacket::encode)
+        .decoder(VoiceSidecarStopPacket::decode)
+        .consumerMainThread(VoiceSidecarStopPacket::handle)
+        .add();
   }
 }

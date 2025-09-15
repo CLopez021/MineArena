@@ -1,6 +1,5 @@
 package com.clopez021.mine_arena.client.speech_recognition;
 
-import com.clopez021.mine_arena.client.VoiceSidecarUi;
 import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.packets.RecognizedSpeechPacket;
 import com.clopez021.mine_arena.speech_recognition.SpeechCommand;
@@ -14,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import net.minecraft.Util;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
 import org.java_websocket.server.WebSocketServer;
@@ -60,7 +60,7 @@ public final class VoiceSidecar {
     UUID playerId = getCurrentPlayerId();
     String url =
         "http://127.0.0.1:" + httpPort + "/index.html?wsPort=" + wsPort + "&playerId=" + playerId;
-    VoiceSidecarUi.promptAndOpen(url);
+    Util.getPlatform().openUri(URI.create(url));
 
     // Cache initial config; the client will request it once ready
     this.lastLang = lang;
@@ -72,6 +72,9 @@ public final class VoiceSidecar {
   public void stop() {
     if (!isRunning) return;
 
+    // Send close message to browser tab before shutting down
+    closeTab();
+
     try {
       if (ws != null) ws.stop(1000);
     } catch (Exception ignored) {
@@ -82,6 +85,17 @@ public final class VoiceSidecar {
     }
 
     isRunning = false;
+  }
+
+  private void closeTab() {
+    if (!isRunning || ws == null) return;
+
+    try {
+      JsonObject closeMsg = new JsonObject();
+      closeMsg.addProperty("type", "end");
+      ws.broadcast(gson.toJson(closeMsg));
+    } catch (Exception ignored) {
+    }
   }
 
   public void sendConfig(String lang, Map<String, String> phraseToName) {

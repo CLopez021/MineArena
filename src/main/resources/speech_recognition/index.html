@@ -95,6 +95,23 @@
           spells = msg.spells.filter(s => s && typeof s.phrase === 'string' && typeof s.name === 'string');
           // No need to restart - just update the spell list
         }
+      } else if (msg["type"] === "end") {
+        console.log("[Voice Debug] Received end message - closing tab");
+        // Stop speech recognition
+        isListening = false;
+        if (recog) {
+          try {
+            recog.stop();
+          } catch (e) {
+            console.log("[Voice Debug] Error stopping recognition:", e);
+          }
+        }
+        // Close the tab (may be blocked by browser if not user-initiated)
+        const closed = window.close();
+        setTimeout(() => {
+          try { if (ws && ws.readyState === 1) ws.close(); } catch {}
+          setStatus("Stopped - you can close this tab", false);
+        }, 50);
       }
     };
     
