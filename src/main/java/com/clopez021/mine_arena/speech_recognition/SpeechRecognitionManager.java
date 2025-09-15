@@ -2,6 +2,7 @@ package com.clopez021.mine_arena.speech_recognition;
 
 import com.clopez021.mine_arena.packets.PacketHandler;
 import com.clopez021.mine_arena.packets.VoiceSidecarConfigPacket;
+import com.clopez021.mine_arena.packets.VoiceSidecarStopPacket;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;
@@ -49,7 +50,8 @@ public class SpeechRecognitionManager {
   public static void stopVoiceRecognition(ServerPlayer player) {
     if (isVoiceRecognitionActive(player)) {
       activeVoiceRecognition.remove(player.getUUID());
-      // TODO: Send stop packet to client if needed
+      // Signal client to stop sidecar
+      PacketHandler.INSTANCE.send(new VoiceSidecarStopPacket(), player.connection.getConnection());
       System.out.println("Stopped voice recognition for player: " + player.getName().getString());
     }
   }
