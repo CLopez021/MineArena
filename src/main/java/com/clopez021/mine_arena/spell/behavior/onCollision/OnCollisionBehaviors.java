@@ -21,7 +21,8 @@ public final class OnCollisionBehaviors {
     Level level = e.level();
     float radius = Math.max(0.1f, e.getConfig().getCollisionBehavior().getRadius());
     float damage = Math.max(0f, e.getConfig().getCollisionBehavior().getDamage());
-    ExplosionHelper.explode(level, e.position(), radius, damage, e.getOwnerPlayerId());
+    boolean affectOwner = e.getConfig().getCollisionBehavior().getAffectPlayer();
+    ExplosionHelper.explode(level, e.position(), radius, damage, e.getOwnerPlayerId(), affectOwner);
     if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
       e.discard();
     }
