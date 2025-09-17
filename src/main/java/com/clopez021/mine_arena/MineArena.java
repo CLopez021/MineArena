@@ -119,7 +119,7 @@ public class MineArena {
         Model m = ModelUtils.loadModelFromResources(dir, baseName);
         Map<BlockPos, BlockState> blocks = ModelCommand.buildVoxels(m);
         CollisionBehaviorConfig behavior =
-            new CollisionBehaviorConfig("explode", 3f, 2f, true, "minecraft:fire", 10);
+            new CollisionBehaviorConfig("explode", 3f, 0f, true, "minecraft:fire", 10);
         SpellEntityConfig cfg =
             new SpellEntityConfig(
                 blocks, 0.05f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 1.0f);

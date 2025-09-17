@@ -22,6 +22,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
   // Unified id for either entity or block
   private String spawnId = "";
   private int spawnCount = 0;
+  // Whether explosion effects should also affect the caster/owner
+  private boolean affectPlayer = false;
 
   public CollisionBehaviorConfig() {}
 
@@ -58,6 +60,14 @@ public class CollisionBehaviorConfig extends BaseConfig {
 
   public Consumer<SpellEntity> getCollisionHandler() {
     return handler;
+  }
+
+  public boolean getAffectPlayer() {
+    return affectPlayer;
+  }
+
+  public void setAffectPlayer(boolean affectPlayer) {
+    this.affectPlayer = affectPlayer;
   }
 
   public void setName(String name) {
@@ -111,6 +121,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
     tag.putFloat("radius", radius);
     tag.putFloat("damage", damage);
     tag.putBoolean("shouldDespawn", shouldDespawn);
+    tag.putBoolean("affectPlayer", affectPlayer);
     if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
     if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
     return tag;
@@ -125,6 +136,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
     if (tag.contains("damage", Tag.TAG_FLOAT)) c.setDamage(tag.getFloat("damage"));
     if (tag.contains("shouldDespawn", Tag.TAG_BYTE))
       c.setShouldDespawn(tag.getBoolean("shouldDespawn"));
+    if (tag.contains("affectPlayer", Tag.TAG_BYTE))
+      c.setAffectPlayer(tag.getBoolean("affectPlayer"));
     if (tag.contains("spawnId", Tag.TAG_STRING)) c.setSpawnId(tag.getString("spawnId"));
     if (tag.contains("spawnCount", Tag.TAG_INT)) c.setSpawnCount(tag.getInt("spawnCount"));
     return c;

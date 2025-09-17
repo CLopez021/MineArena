@@ -20,7 +20,9 @@ public final class OnCollisionBehaviors {
     if (e == null || e.level() == null || e.level().isClientSide) return;
     Level level = e.level();
     float radius = Math.max(0.1f, e.getConfig().getCollisionBehavior().getRadius());
-    level.explode(e, e.getX(), e.getY(), e.getZ(), radius, Level.ExplosionInteraction.BLOCK);
+    float damage = Math.max(0f, e.getConfig().getCollisionBehavior().getDamage());
+    boolean affectOwner = e.getConfig().getCollisionBehavior().getAffectPlayer();
+    ExplosionHelper.explode(level, e.position(), radius, damage, e.getOwnerPlayerId(), affectOwner);
     if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
       e.discard();
     }
