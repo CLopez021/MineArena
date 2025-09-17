@@ -53,6 +53,10 @@ public class SpellEntity extends Entity {
     this.ownerPlayerId = id;
   }
 
+  public UUID getOwnerPlayerId() {
+    return this.ownerPlayerId;
+  }
+
   @Override
   protected void defineSynchedData(SynchedEntityData.Builder b) {
     b.define(DATA_CONFIG, new CompoundTag());
