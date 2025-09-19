@@ -119,11 +119,48 @@ public class MineArena {
         Model m = ModelUtils.loadModelFromResources(dir, baseName);
         Map<BlockPos, BlockState> blocks = ModelCommand.buildVoxels(m);
         CollisionBehaviorConfig behavior =
-            new CollisionBehaviorConfig("explode", 3f, 0f, true, "minecraft:fire", 10);
+            new CollisionBehaviorConfig(
+                "explode", 3f, 0f, true, "minecraft:fire", 100, "ignite", 100);
+        // Fireball: explosion + ignite effect for 5s
         SpellEntityConfig cfg =
             new SpellEntityConfig(
                 blocks, 0.05f, behavior, SpellEntityConfig.MovementDirection.FORWARD, 1.0f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("fireball", "fireball", cfg));
+
+        // Shockwave: push entities away, no damage, with slowness for 5s
+        CollisionBehaviorConfig shockwave =
+            new CollisionBehaviorConfig(
+                "shockwave", 4.0f, 0f, true, "", 0, "minecraft:slowness", 100);
+        SpellEntityConfig shockwaveCfg =
+            new SpellEntityConfig(
+                blocks, 0.05f, shockwave, SpellEntityConfig.MovementDirection.FORWARD, 0.8f);
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("shockwave", "shockwave", shockwaveCfg));
+
+        // Summon wolves: no collision effect; spawn wolves only
+        CollisionBehaviorConfig summon =
+            new CollisionBehaviorConfig("none", 3.0f, 0f, true, "minecraft:wolf", 2, "", 0);
+        SpellEntityConfig summonCfg =
+            new SpellEntityConfig(
+                blocks, 0.05f, summon, SpellEntityConfig.MovementDirection.NONE, 0.0f);
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("summon_wolves", "summon wolves", summonCfg));
+
+        // Ice burst: no collision effect; place snow around and apply slow for 8s
+        CollisionBehaviorConfig ice =
+            new CollisionBehaviorConfig(
+                "none", 4.0f, 0f, true, "minecraft:snow", 12, "minecraft:slowness", 160);
+        SpellEntityConfig iceCfg =
+            new SpellEntityConfig(
+                blocks, 0.05f, ice, SpellEntityConfig.MovementDirection.FORWARD, 0.6f);
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("ice_burst", "ice burst", iceCfg));
+
+        // Rocket: faster, smaller radius but deals damage via explosion
+        CollisionBehaviorConfig rocket =
+            new CollisionBehaviorConfig("explode", 2.5f, 6.0f, true, "", 0, "", 0);
+        SpellEntityConfig rocketCfg =
+            new SpellEntityConfig(
+                blocks, 0.05f, rocket, SpellEntityConfig.MovementDirection.FORWARD, 1.5f);
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("rocket", "rocket", rocketCfg));
+
         LOGGER.info("Loaded default spell model from resources {}/{}", dir, baseName);
       } catch (Exception ex) {
         // If model loading fails, do not add a default spell

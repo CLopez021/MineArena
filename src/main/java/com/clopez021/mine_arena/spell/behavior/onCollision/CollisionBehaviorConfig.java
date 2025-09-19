@@ -24,6 +24,11 @@ public class CollisionBehaviorConfig extends BaseConfig {
   private int spawnCount = 0;
   // Whether explosion effects should also affect the caster/owner
   private boolean affectPlayer = false;
+  // Unified effect id: either a single registry id (e.g., "minecraft:regeneration") or a keyword
+  // ("ignite","freeze")
+  private String effectId = "";
+  // Duration to apply effect in ticks (20 ticks = 1 second)
+  private int effectDuration = 0;
 
   public CollisionBehaviorConfig() {}
 
@@ -33,13 +38,17 @@ public class CollisionBehaviorConfig extends BaseConfig {
       float damage,
       boolean shouldDespawn,
       String spawnEntityId,
-      int spawnCount) {
+      int spawnCount,
+      String effectId,
+      int effectDuration) {
     setName(name);
     this.radius = radius;
     this.damage = damage;
     this.shouldDespawn = shouldDespawn;
     this.spawnId = spawnEntityId == null ? "" : spawnEntityId; // unified
     this.spawnCount = Math.max(0, spawnCount); // unified
+    this.effectId = effectId == null ? "" : effectId;
+    this.effectDuration = Math.max(0, effectDuration);
   }
 
   public String getName() {
@@ -108,6 +117,23 @@ public class CollisionBehaviorConfig extends BaseConfig {
     this.spawnCount = Math.max(0, spawnCount);
   }
 
+  // Effect config
+  public String getEffectId() {
+    return effectId;
+  }
+
+  public void setEffectId(String effectId) {
+    this.effectId = effectId == null ? "" : effectId;
+  }
+
+  public int getEffectDuration() {
+    return effectDuration;
+  }
+
+  public void setEffectDuration(int effectDuration) {
+    this.effectDuration = Math.max(0, effectDuration);
+  }
+
   private void updateDerived() {
     var def = OnCollisionBehaviors.definitionFor(this.name);
     this.description = def.description();
@@ -124,6 +150,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
     tag.putBoolean("affectPlayer", affectPlayer);
     if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
     if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
+    if (!effectId.isEmpty()) tag.putString("effectId", effectId);
+    if (effectDuration > 0) tag.putInt("effectDuration", effectDuration);
     return tag;
   }
 
@@ -140,6 +168,9 @@ public class CollisionBehaviorConfig extends BaseConfig {
       c.setAffectPlayer(tag.getBoolean("affectPlayer"));
     if (tag.contains("spawnId", Tag.TAG_STRING)) c.setSpawnId(tag.getString("spawnId"));
     if (tag.contains("spawnCount", Tag.TAG_INT)) c.setSpawnCount(tag.getInt("spawnCount"));
+    if (tag.contains("effectId", Tag.TAG_STRING)) c.setEffectId(tag.getString("effectId"));
+    if (tag.contains("effectDuration", Tag.TAG_INT))
+      c.setEffectDuration(tag.getInt("effectDuration"));
     return c;
   }
 }

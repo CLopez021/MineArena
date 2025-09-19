@@ -12,11 +12,13 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -184,7 +186,39 @@ public class SpellEntity extends Entity {
         && this.config.getCollisionBehavior().getCollisionHandler() != null) {
       collisionTriggered = true;
       this.config.getCollisionBehavior().getCollisionHandler().accept(this);
+      applyConfiguredEffectArea();
       spawnOrPlaceConfiguredOnImpact();
+    }
+  }
+
+  private void applyConfiguredEffectArea() {
+    if (this.level().isClientSide) return;
+    var behavior = this.config.getCollisionBehavior();
+    String effectId = behavior.getEffectId();
+    int duration = Math.max(0, behavior.getEffectDuration());
+    if (effectId == null || effectId.isBlank() || duration <= 0) return;
+
+    float radius = Math.max(0.1f, behavior.getRadius());
+    boolean affectOwner = behavior.getAffectPlayer();
+    Vec3 center = this.position();
+
+    AABB box =
+        new AABB(
+            center.x - radius,
+            center.y - radius,
+            center.z - radius,
+            center.x + radius,
+            center.y + radius,
+            center.z + radius);
+
+    List<LivingEntity> targets = this.level().getEntitiesOfClass(LivingEntity.class, box);
+    for (LivingEntity entity : targets) {
+      if (!affectOwner && this.ownerPlayerId != null && entity.getUUID().equals(this.ownerPlayerId))
+        continue;
+      double dist = entity.position().distanceTo(center);
+      if (dist > radius) continue;
+      EffectEngine.applyUnifiedEffect(
+          (net.minecraft.server.level.ServerLevel) this.level(), entity, effectId, duration);
     }
   }
 
