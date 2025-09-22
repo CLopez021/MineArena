@@ -10,6 +10,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.server.ServerLifecycleHooks;
@@ -37,6 +38,10 @@ public class SpellEntityConfig extends BaseConfig {
   // Cached direction vector once computed; persisted in NBT
   private float dirX = 0f, dirY = 0f, dirZ = 0f;
 
+  private static Map<BlockPos, BlockState> defaultUnitAirBlock() {
+    return Map.of(new BlockPos(0, 0, 0), Blocks.AIR.defaultBlockState());
+  }
+
   // Single canonical constructor
   public SpellEntityConfig(
       Map<BlockPos, BlockState> blocks,
@@ -44,7 +49,7 @@ public class SpellEntityConfig extends BaseConfig {
       CollisionBehaviorConfig behavior,
       MovementDirection direction,
       float speed) {
-    this.blocks = blocks != null ? blocks : Map.of();
+    this.blocks = (blocks != null && !blocks.isEmpty()) ? blocks : defaultUnitAirBlock();
     this.microScale = microScale;
     this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
     this.movementDirection = direction != null ? direction : MovementDirection.NONE;
@@ -55,7 +60,7 @@ public class SpellEntityConfig extends BaseConfig {
 
   public static SpellEntityConfig empty() {
     return new SpellEntityConfig(
-        Map.of(), 1.0f, new CollisionBehaviorConfig(), MovementDirection.NONE, 0.0f);
+        defaultUnitAirBlock(), 1.0f, new CollisionBehaviorConfig(), MovementDirection.NONE, 0.0f);
   }
 
   // Standard getters
@@ -124,7 +129,7 @@ public class SpellEntityConfig extends BaseConfig {
 
   // Mutable setters (pydantic-like model)
   public void setBlocks(Map<BlockPos, BlockState> blocks) {
-    this.blocks = blocks != null ? blocks : Map.of();
+    this.blocks = (blocks != null && !blocks.isEmpty()) ? blocks : defaultUnitAirBlock();
   }
 
   public void setMicroScale(float microScale) {

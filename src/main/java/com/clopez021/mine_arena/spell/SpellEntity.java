@@ -12,11 +12,13 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -178,13 +180,51 @@ public class SpellEntity extends Entity {
   // ----------------- Collision handling -----------------
 
   /** Invoke the selected on-collision behavior immediately (server-side). */
-  public void triggerCollision() {
+  public void triggerCollision(java.util.List<LivingEntity> affectedEntities) {
     if (!level().isClientSide
         && !collisionTriggered
         && this.config.getCollisionBehavior().getCollisionHandler() != null) {
       collisionTriggered = true;
       this.config.getCollisionBehavior().getCollisionHandler().accept(this);
+      applyConfiguredEffectArea(affectedEntities);
       spawnOrPlaceConfiguredOnImpact();
+    }
+  }
+
+  private java.util.List<LivingEntity> collectAffectedEntities(float radius, boolean affectOwner) {
+    Vec3 center = this.position();
+    AABB box =
+        new AABB(
+            center.x - radius,
+            center.y - radius,
+            center.z - radius,
+            center.x + radius,
+            center.y + radius,
+            center.z + radius);
+    List<LivingEntity> targets = this.level().getEntitiesOfClass(LivingEntity.class, box);
+    targets.removeIf(
+        entity ->
+            (!affectOwner
+                    && this.ownerPlayerId != null
+                    && entity.getUUID().equals(this.ownerPlayerId))
+                || entity.position().distanceTo(center) > radius);
+    return targets;
+  }
+
+  private void applyConfiguredEffectArea(java.util.List<LivingEntity> targets) {
+    if (this.level().isClientSide) return;
+    var behavior = this.config.getCollisionBehavior();
+    String effectId = behavior.getEffectId();
+    int duration = Math.max(0, behavior.getEffectDuration());
+    if (effectId == null || effectId.isBlank() || duration <= 0) return;
+
+    for (LivingEntity entity : targets) {
+      EffectEngine.applyUnifiedEffect(
+          (net.minecraft.server.level.ServerLevel) this.level(),
+          entity,
+          effectId,
+          duration,
+          behavior.getEffectAmplifier());
     }
   }
 
@@ -296,8 +336,15 @@ public class SpellEntity extends Entity {
       boolean collidingNow = blockCollision || entityCollision;
 
       if (collidingNow) {
+        // Pre-compute affected entities once for this tick
+        var behavior = this.config.getCollisionBehavior();
+        float radius = Math.max(0.1f, behavior.getRadius());
+        boolean affectOwner = behavior.getAffectPlayer();
+        java.util.List<LivingEntity> affectedEntities =
+            collectAffectedEntities(radius, affectOwner);
+
         if (!collisionTriggered) {
-          triggerCollision();
+          triggerCollision(affectedEntities);
         }
         isColliding = true;
       } else if (isColliding) {
