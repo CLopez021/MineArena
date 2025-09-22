@@ -121,7 +121,7 @@ public class MineArena {
         Map<BlockPos, BlockState> fireball_blocks = ModelCommand.buildVoxels(fireball_model);
         CollisionBehaviorConfig fireball_behavior =
             new CollisionBehaviorConfig(
-                "explode", 3f, 0f, true, "minecraft:fire", 100, "ignite", 100, 1);
+                "explode", 3f, 0f, true, "minecraft:fire", 100, "ignite", 100, 1, false);
         // Fireball: explosion + ignite effect for 5s
         SpellEntityConfig fireball_cfg =
             new SpellEntityConfig(
@@ -138,7 +138,7 @@ public class MineArena {
         Model wind_model = ModelUtils.loadModelFromResources(wind_dir, wind_baseName);
         Map<BlockPos, BlockState> wind_blocks = ModelCommand.buildVoxels(wind_model);
         CollisionBehaviorConfig wind_behavior =
-            new CollisionBehaviorConfig("shockwave", 4.0f, 0f, true, "", 0, "", 100, 10);
+            new CollisionBehaviorConfig("shockwave", 4.0f, 0f, true, "", 0, "", 100, 10, false);
         SpellEntityConfig wind_cfg =
             new SpellEntityConfig(
                 wind_blocks,
@@ -147,14 +147,6 @@ public class MineArena {
                 SpellEntityConfig.MovementDirection.FORWARD,
                 0.8f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("wind", "wind", wind_cfg));
-
-        // Summon wolves: no collision effect; spawn wolves only
-        CollisionBehaviorConfig summon =
-            new CollisionBehaviorConfig("none", 3.0f, 0f, true, "minecraft:wolf", 2, "", 0, 1);
-        SpellEntityConfig summonCfg =
-            new SpellEntityConfig(
-                fireball_blocks, 0.05f, summon, SpellEntityConfig.MovementDirection.NONE, 0.0f);
-        DEFAULT_SPELLS.add(new PlayerSpellConfig("summon_wolves", "summon wolves", summonCfg));
 
         // Ice burst: no collision effect; place snow around and apply slow for 8s
         ResourceLocation ice_cube_dir =
@@ -165,7 +157,7 @@ public class MineArena {
         Map<BlockPos, BlockState> ice_cube_blocks = ModelCommand.buildVoxels(ice_cube_model);
         CollisionBehaviorConfig ice_cube_behavior =
             new CollisionBehaviorConfig(
-                "none", 4.0f, 0f, true, "minecraft:ice", 12, "minecraft:slowness", 160, 3);
+                "none", 4.0f, 0f, true, "minecraft:ice", 12, "minecraft:slowness", 160, 3, false);
         SpellEntityConfig ice_cube_cfg =
             new SpellEntityConfig(
                 ice_cube_blocks,
@@ -181,7 +173,7 @@ public class MineArena {
         Model bomb_model = ModelUtils.loadModelFromResources(bomb_dir, bomb_baseName);
         Map<BlockPos, BlockState> bomb_blocks = ModelCommand.buildVoxels(bomb_model);
         CollisionBehaviorConfig bomb_behavior =
-            new CollisionBehaviorConfig("explode", 2.5f, 6.0f, true, "", 0, "", 0, 1);
+            new CollisionBehaviorConfig("explode", 2.5f, 6.0f, true, "", 0, "", 0, 1, false);
         SpellEntityConfig bomb_cfg =
             new SpellEntityConfig(
                 bomb_blocks,
@@ -191,6 +183,14 @@ public class MineArena {
                 1.5f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("bomb", "bomb", bomb_cfg));
 
+        // Shockwave: push entities away, no damage, with slowness for 5s
+        CollisionBehaviorConfig levitate_behavior =
+            new CollisionBehaviorConfig(
+                "none", 4.0f, 0f, true, "", 0, "minecraft:levitation", 100, 10, true);
+        SpellEntityConfig levitate_cfg =
+            new SpellEntityConfig(
+                Map.of(), 0.05f, levitate_behavior, SpellEntityConfig.MovementDirection.DOWN, 0.8f);
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("levitate", "levitate", levitate_cfg));
       } catch (Exception ex) {
         // If model loading fails, do not add a default spell
         LOGGER.warn("Failed to load default model from resources. No default spell added.", ex);

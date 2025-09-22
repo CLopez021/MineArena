@@ -43,7 +43,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
       int spawnCount,
       String effectId,
       int effectDuration,
-      int effectAmplifier) {
+      int effectAmplifier,
+      boolean affectPlayer) {
     setName(name);
     this.radius = radius;
     this.damage = damage;
@@ -53,6 +54,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
     this.effectId = effectId == null ? "" : effectId;
     this.effectDuration = Math.max(0, effectDuration);
     this.effectAmplifier = Math.max(1, effectAmplifier);
+    this.affectPlayer = affectPlayer;
   }
 
   public String getName() {
