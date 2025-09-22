@@ -20,7 +20,7 @@ public final class EffectEngine {
   private EffectEngine() {}
 
   public static void applyUnifiedEffect(
-      ServerLevel level, LivingEntity target, String effectId, int durationTicks) {
+      ServerLevel level, LivingEntity target, String effectId, int durationTicks, int amplifier) {
     if (level == null || target == null) return;
     String id = effectId == null ? "" : effectId.trim();
     if (id.isEmpty()) return;
@@ -41,7 +41,8 @@ public final class EffectEngine {
     Holder<MobEffect> effect = resolveMobEffect(level.registryAccess(), id);
     if (effect != null) {
       int dur = Math.max(1, durationTicks > 0 ? durationTicks : 200);
-      target.addEffect(new MobEffectInstance(effect, dur, 0, false, true, true));
+      int amp = Math.max(0, amplifier);
+      target.addEffect(new MobEffectInstance(effect, dur, amp, false, true, true));
     }
   }
 

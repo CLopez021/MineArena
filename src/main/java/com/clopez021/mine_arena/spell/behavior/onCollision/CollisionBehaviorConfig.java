@@ -29,6 +29,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
   private String effectId = "";
   // Duration to apply effect in ticks (20 ticks = 1 second)
   private int effectDuration = 0;
+  // Strength of the effect (0 = level I, 1 = level II, ...)
+  private int effectAmplifier = 1;
 
   public CollisionBehaviorConfig() {}
 
@@ -40,7 +42,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
       String spawnEntityId,
       int spawnCount,
       String effectId,
-      int effectDuration) {
+      int effectDuration,
+      int effectAmplifier) {
     setName(name);
     this.radius = radius;
     this.damage = damage;
@@ -49,6 +52,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
     this.spawnCount = Math.max(0, spawnCount); // unified
     this.effectId = effectId == null ? "" : effectId;
     this.effectDuration = Math.max(0, effectDuration);
+    this.effectAmplifier = Math.max(1, effectAmplifier);
   }
 
   public String getName() {
@@ -134,6 +138,14 @@ public class CollisionBehaviorConfig extends BaseConfig {
     this.effectDuration = Math.max(0, effectDuration);
   }
 
+  public int getEffectAmplifier() {
+    return effectAmplifier;
+  }
+
+  public void setEffectAmplifier(int effectAmplifier) {
+    this.effectAmplifier = Math.max(0, effectAmplifier);
+  }
+
   private void updateDerived() {
     var def = OnCollisionBehaviors.definitionFor(this.name);
     this.description = def.description();
@@ -152,6 +164,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
     if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
     if (!effectId.isEmpty()) tag.putString("effectId", effectId);
     if (effectDuration > 0) tag.putInt("effectDuration", effectDuration);
+    if (effectAmplifier > 0) tag.putInt("effectAmplifier", effectAmplifier);
     return tag;
   }
 
@@ -171,6 +184,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
     if (tag.contains("effectId", Tag.TAG_STRING)) c.setEffectId(tag.getString("effectId"));
     if (tag.contains("effectDuration", Tag.TAG_INT))
       c.setEffectDuration(tag.getInt("effectDuration"));
+    if (tag.contains("effectAmplifier", Tag.TAG_INT))
+      c.setEffectAmplifier(tag.getInt("effectAmplifier"));
     return c;
   }
 }

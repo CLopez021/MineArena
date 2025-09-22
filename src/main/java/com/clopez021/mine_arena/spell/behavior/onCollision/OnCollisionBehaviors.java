@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
-import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -41,6 +39,8 @@ public final class OnCollisionBehaviors {
 
     float r = Math.max(0.1f, e.getConfig().getCollisionBehavior().getRadius());
     boolean affectOwner = e.getConfig().getCollisionBehavior().getAffectPlayer();
+    int amplifier = Math.max(1, e.getConfig().getCollisionBehavior().getEffectAmplifier());
+    float ampScale = Math.max(1f, (float) amplifier);
     Vec3 center = e.position();
 
     AABB box =
@@ -53,22 +53,13 @@ public final class OnCollisionBehaviors {
       double dist = entity.position().distanceTo(center);
       if (dist > r || dist <= 1e-6) continue;
       float falloff = 1.0f - (float) (dist / r);
-      float kb = Math.max(0.4f, r * 0.25f) * Math.max(0f, falloff);
+      float baseKb = Math.max(0.4f, r * 0.25f);
+      float kb = baseKb * ampScale * Math.max(0f, falloff);
       double dirX = entity.getX() - center.x;
       double dirZ = entity.getZ() - center.z;
       entity.knockback(kb, dirX, dirZ);
       entity.setDeltaMovement(entity.getDeltaMovement().add(0.0, 0.05 * kb, 0.0));
     }
-
-    serverLevel.playSound(
-        null,
-        center.x,
-        center.y,
-        center.z,
-        SoundEvents.GENERIC_EXPLODE,
-        SoundSource.BLOCKS,
-        1.0f,
-        1.2f);
 
     if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
       e.discard();

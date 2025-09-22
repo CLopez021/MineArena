@@ -29,7 +29,8 @@ public class SpellFactory {
 
   // Step 2: Build collision behavior config (hardcoded for now)
   private static CollisionBehaviorConfig buildCollisionBehaviorConfig() {
-    return new CollisionBehaviorConfig("explode", 10f, 5f, true, "minecraft:fireball", 20, "", 0);
+    return new CollisionBehaviorConfig(
+        "explode", 10f, 5f, true, "minecraft:fireball", 20, "", 0, 1);
   }
 
   // Step 3: Provide movement/misc params (hardcoded for now)
