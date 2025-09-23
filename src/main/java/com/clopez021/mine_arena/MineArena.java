@@ -67,7 +67,7 @@ public class MineArena {
     modEventBus.addListener(this::addCreative);
 
     // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
-    context.registerConfig(ModConfig.Type.SERVER, ServerConfig.SPEC);
+    context.registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
     context.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
     // Defer default spell creation until server start (resources ready)
   }
