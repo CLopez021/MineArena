@@ -37,6 +37,9 @@ public class SpellEntity extends Entity {
   private boolean collisionTriggered = false;
   private boolean isColliding = false;
   private boolean entityCollisionDetected = false;
+  // Cooldown management to avoid excessive triggering
+  private static final int COLLISION_COOLDOWN_TICKS = 20; // 1 second at 20 TPS
+  private int ticksSinceLastTrigger = COLLISION_COOLDOWN_TICKS;
 
   // Dynamic dimensions
   private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
@@ -182,12 +185,12 @@ public class SpellEntity extends Entity {
   /** Invoke the selected on-collision behavior immediately (server-side). */
   public void triggerCollision(java.util.List<LivingEntity> affectedEntities) {
     if (!level().isClientSide
-        && !collisionTriggered
-        && this.config.getCollisionBehavior().getCollisionHandler() != null) {
-      collisionTriggered = true;
+        && this.config.getCollisionBehavior().getCollisionHandler() != null
+        && ticksSinceLastTrigger >= COLLISION_COOLDOWN_TICKS) {
       this.config.getCollisionBehavior().getCollisionHandler().accept(this);
       applyConfiguredEffectArea(affectedEntities);
       spawnOrPlaceConfiguredOnImpact();
+      ticksSinceLastTrigger = 0;
     }
   }
 
@@ -303,16 +306,33 @@ public class SpellEntity extends Entity {
     super.tick();
 
     if (!level().isClientSide) {
+      // Increment cooldown timer
+      if (ticksSinceLastTrigger < COLLISION_COOLDOWN_TICKS) ticksSinceLastTrigger++;
+
       // Compute desired motion each tick from config-provided direction (per-player)
       float speed = Math.max(0f, this.config.getMovementSpeed());
       Vec3 v = this.config.getDirection(ownerPlayerId);
-      Vec3 motion = (speed > 0f && v.lengthSqr() > 1e-6) ? v.normalize().scale(speed) : Vec3.ZERO;
+      boolean shouldMove = this.config.getShouldMove();
+      Vec3 motion =
+          (shouldMove && speed > 0f && v.lengthSqr() > 1e-6)
+              ? v.normalize().scale(speed)
+              : Vec3.ZERO;
 
       this.setDeltaMovement(motion);
       if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
 
       // Move using vanilla pipeline for proper networking/interpolation
       this.move(MoverType.SELF, this.getDeltaMovement());
+
+      // Instant trigger behavior (no collision required)
+      if (this.config.getCollisionBehavior().getTriggersInstantly()) {
+        var behavior = this.config.getCollisionBehavior();
+        float radius = Math.max(0.1f, behavior.getRadius());
+        boolean affectOwner = behavior.getAffectPlayer();
+        java.util.List<LivingEntity> affectedEntities =
+            collectAffectedEntities(radius, affectOwner);
+        triggerCollision(affectedEntities);
+      }
 
       // Enhanced collision detection: blocks OR entities
       boolean blockCollision =
@@ -343,9 +363,7 @@ public class SpellEntity extends Entity {
         java.util.List<LivingEntity> affectedEntities =
             collectAffectedEntities(radius, affectOwner);
 
-        if (!collisionTriggered) {
-          triggerCollision(affectedEntities);
-        }
+        triggerCollision(affectedEntities);
         isColliding = true;
       } else if (isColliding) {
         // Collision ended this tick

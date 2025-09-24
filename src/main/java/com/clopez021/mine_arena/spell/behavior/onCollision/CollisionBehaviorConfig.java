@@ -11,7 +11,7 @@ import net.minecraft.nbt.Tag;
  * and damage.
  */
 public class CollisionBehaviorConfig extends BaseConfig {
-  private String name = OnCollisionBehaviors.DEFAULT_KEY;
+  private String collisionBehaviorName = OnCollisionBehaviors.DEFAULT_KEY;
   private float radius = 2.0f;
   private float damage = 0.0f;
   private boolean shouldDespawn = true;
@@ -31,11 +31,13 @@ public class CollisionBehaviorConfig extends BaseConfig {
   private int effectDuration = 0;
   // Strength of the effect (0 = level I, 1 = level II, ...)
   private int effectAmplifier = 1;
+  // If true, behavior triggers instantly even without a collision
+  private boolean triggersInstantly = false;
 
   public CollisionBehaviorConfig() {}
 
   public CollisionBehaviorConfig(
-      String name,
+      String collisionBehaviorName,
       float radius,
       float damage,
       boolean shouldDespawn,
@@ -44,8 +46,9 @@ public class CollisionBehaviorConfig extends BaseConfig {
       String effectId,
       int effectDuration,
       int effectAmplifier,
-      boolean affectPlayer) {
-    setName(name);
+      boolean affectPlayer,
+      boolean triggersInstantly) {
+    setCollisionBehaviorName(collisionBehaviorName);
     this.radius = radius;
     this.damage = damage;
     this.shouldDespawn = shouldDespawn;
@@ -55,10 +58,11 @@ public class CollisionBehaviorConfig extends BaseConfig {
     this.effectDuration = Math.max(0, effectDuration);
     this.effectAmplifier = Math.max(1, effectAmplifier);
     this.affectPlayer = affectPlayer;
+    this.triggersInstantly = triggersInstantly;
   }
 
-  public String getName() {
-    return name;
+  public String getCollisionBehaviorName() {
+    return collisionBehaviorName;
   }
 
   public float getRadius() {
@@ -85,8 +89,19 @@ public class CollisionBehaviorConfig extends BaseConfig {
     this.affectPlayer = affectPlayer;
   }
 
-  public void setName(String name) {
-    this.name = (name == null || name.isEmpty()) ? OnCollisionBehaviors.DEFAULT_KEY : name;
+  public boolean getTriggersInstantly() {
+    return triggersInstantly;
+  }
+
+  public void setTriggersInstantly(boolean triggersInstantly) {
+    this.triggersInstantly = triggersInstantly;
+  }
+
+  public void setCollisionBehaviorName(String collisionBehaviorName) {
+    this.collisionBehaviorName =
+        (collisionBehaviorName == null || collisionBehaviorName.isEmpty())
+            ? OnCollisionBehaviors.DEFAULT_KEY
+            : collisionBehaviorName;
     updateDerived();
   }
 
@@ -149,7 +164,7 @@ public class CollisionBehaviorConfig extends BaseConfig {
   }
 
   private void updateDerived() {
-    var def = OnCollisionBehaviors.definitionFor(this.name);
+    var def = OnCollisionBehaviors.definitionFor(this.collisionBehaviorName);
     this.description = def.description();
     this.handler = def.handler();
   }
@@ -157,11 +172,12 @@ public class CollisionBehaviorConfig extends BaseConfig {
   @Override
   public CompoundTag toNBT() {
     CompoundTag tag = new CompoundTag();
-    tag.putString("name", name);
+    tag.putString("collisionBehaviorName", collisionBehaviorName);
     tag.putFloat("radius", radius);
     tag.putFloat("damage", damage);
     tag.putBoolean("shouldDespawn", shouldDespawn);
     tag.putBoolean("affectPlayer", affectPlayer);
+    tag.putBoolean("triggersInstantly", triggersInstantly);
     if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
     if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
     if (!effectId.isEmpty()) tag.putString("effectId", effectId);
@@ -173,7 +189,10 @@ public class CollisionBehaviorConfig extends BaseConfig {
   public static CollisionBehaviorConfig fromNBT(CompoundTag tag) {
     CollisionBehaviorConfig c = new CollisionBehaviorConfig();
     if (tag == null) return c;
-    if (tag.contains("name", Tag.TAG_STRING)) c.setName(tag.getString("name"));
+    if (tag.contains("collisionBehaviorName", Tag.TAG_STRING))
+      c.setCollisionBehaviorName(tag.getString("collisionBehaviorName"));
+    else if (tag.contains("name", Tag.TAG_STRING)) // backward compat
+    c.setCollisionBehaviorName(tag.getString("name"));
     else c.updateDerived();
     if (tag.contains("radius", Tag.TAG_FLOAT)) c.setRadius(tag.getFloat("radius"));
     if (tag.contains("damage", Tag.TAG_FLOAT)) c.setDamage(tag.getFloat("damage"));
@@ -181,6 +200,8 @@ public class CollisionBehaviorConfig extends BaseConfig {
       c.setShouldDespawn(tag.getBoolean("shouldDespawn"));
     if (tag.contains("affectPlayer", Tag.TAG_BYTE))
       c.setAffectPlayer(tag.getBoolean("affectPlayer"));
+    if (tag.contains("triggersInstantly", Tag.TAG_BYTE))
+      c.setTriggersInstantly(tag.getBoolean("triggersInstantly"));
     if (tag.contains("spawnId", Tag.TAG_STRING)) c.setSpawnId(tag.getString("spawnId"));
     if (tag.contains("spawnCount", Tag.TAG_INT)) c.setSpawnCount(tag.getInt("spawnCount"));
     if (tag.contains("effectId", Tag.TAG_STRING)) c.setEffectId(tag.getString("effectId"));

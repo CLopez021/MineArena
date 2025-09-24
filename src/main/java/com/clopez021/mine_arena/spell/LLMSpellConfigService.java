@@ -38,6 +38,7 @@ public final class LLMSpellConfigService {
     String effectId = getString(o, "effectId", "");
     int effectDuration = getInt(o, "effectDuration", 0);
     int effectAmplifier = getInt(o, "effectAmplifier", 0);
+    boolean triggersInstantly = getBool(o, "triggersInstantly", false);
     return new CollisionBehaviorConfig(
         name,
         radius,
@@ -48,7 +49,8 @@ public final class LLMSpellConfigService {
         effectId,
         effectDuration,
         effectAmplifier,
-        affectPlayer);
+        affectPlayer,
+        triggersInstantly);
   }
 
   /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */
@@ -73,32 +75,26 @@ public final class LLMSpellConfigService {
     if (prompt == null || prompt.isEmpty())
       throw new IllegalArgumentException("LLM missing 'prompt'");
     float microScale = getFloat(o, "microScale", 1.0f);
-    String dirStr = getString(o, "movementDirection", "NONE");
-    SpellEntityConfig.MovementDirection dir;
-    try {
-      dir = SpellEntityConfig.MovementDirection.valueOf(dirStr.toUpperCase());
-    } catch (Exception e) {
-      dir = SpellEntityConfig.MovementDirection.NONE;
-    }
+    boolean shouldMove = getBool(o, "shouldMove", true);
     float speed = getFloat(o, "speed", 0.0f);
 
     Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
 
-    return new SpellEntityConfig(blocks, microScale, cb, dir, speed);
+    return new SpellEntityConfig(blocks, microScale, cb, shouldMove, speed);
   }
 
   // ---- System prompts ----
 
   private static String systemPromptSpell() {
     return "Output ONLY valid JSON for a spell model request with keys: "
-        + "{prompt:string, microScale:number, movementDirection:one of [FORWARD,BACKWARD,UP,DOWN,NONE], speed:number}."
+        + "{prompt:string, microScale:number, shouldMove:boolean, speed:number}."
         + " No prose.";
   }
 
   private static String systemPromptCollisionFull() {
     return "Output ONLY valid JSON for collision behavior with keys: "
         + "{collisionBehaviorName:string(one of [explode,shockwave,none]), radius:number, damage:number, shouldDespawn:boolean, "
-        + "spawnEntityID:string, spawnCount:number, affectPlayer:boolean, effectId:string, effectDuration:number, effectAmplifier:number}. No prose.";
+        + "spawnEntityID:string, spawnCount:number, affectPlayer:boolean, effectId:string, effectDuration:number, effectAmplifier:number, triggersInstantly:boolean}. No prose.";
   }
 
   // ---- JSON helpers ----

@@ -41,6 +41,18 @@ public class WandScreens {
     }
   }
 
+  public static void onSpellErrorClient(String message) {
+    SpellLoadingIcon.stopBrewing();
+    timeoutActive = false;
+    Minecraft mc = Minecraft.getInstance();
+    if (mc.player != null) {
+      mc.player.displayClientMessage(
+          Component.literal(message != null ? message : "Spell failed.")
+              .withStyle(ChatFormatting.RED),
+          true);
+    }
+  }
+
   @Mod.EventBusSubscriber(
       modid = MineArena.MOD_ID,
       value = Dist.CLIENT,
