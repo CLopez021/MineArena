@@ -16,16 +16,18 @@ public final class LLMSpellConfigService {
   private LLMSpellConfigService() {}
 
   // Step 1a: Get collision behavior from LLM as JSON and build the config
-  public static CollisionBehaviorConfig generateCollisionBehaviorFromLLM(String collisionIntent) {
-    if (collisionIntent == null || collisionIntent.isEmpty()) {
-      throw new IllegalArgumentException("collisionIntent cannot be empty");
+  public static CollisionBehaviorConfig generateCollisionBehaviorFromLLM(String spellIntent) {
+    if (spellIntent == null || spellIntent.isEmpty()) {
+      throw new IllegalArgumentException("spellIntent cannot be empty");
     }
     String assistant =
         openrouter.chat(
             java.util.List.of(
                 new Message("system", systemPromptCollisionFull()),
-                new Message("user", collisionIntent)));
+                new Message("user", spellIntent)));
+    System.out.println("collision behavior: " + assistant);
     JsonObject o = parseObject(assistant);
+    System.out.println("collision behavior: " + o);
     String name = firstPresentString(o, "collisionBehaviorName", "name", "");
     float radius = getFloat(o, "radius", 0.0f);
     float damage = getFloat(o, "damage", 0.0f);
@@ -50,22 +52,22 @@ public final class LLMSpellConfigService {
   }
 
   /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */
-  public static SpellEntityConfig generateSpellConfigFromLLM(
-      String collisionIntent, String spellIntent) throws Exception {
+  public static SpellEntityConfig generateSpellConfigFromLLM(String spellIntent) throws Exception {
     if (spellIntent == null || spellIntent.isEmpty()) {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
 
     // First, build collision behavior via LLM
-    CollisionBehaviorConfig cb = generateCollisionBehaviorFromLLM(collisionIntent);
+    CollisionBehaviorConfig cb = generateCollisionBehaviorFromLLM(spellIntent);
 
     // Then, build movement/model info via a separate LLM call
     String assistant =
         openrouter.chat(
             java.util.List.of(
                 new Message("system", systemPromptSpell()), new Message("user", spellIntent)));
-
+    System.out.println("spell config: " + assistant);
     JsonObject o = parseObject(assistant);
+    System.out.println("spell config: " + o);
 
     String prompt = getString(o, "prompt", null);
     if (prompt == null || prompt.isEmpty())

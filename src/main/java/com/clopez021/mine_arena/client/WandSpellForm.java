@@ -85,7 +85,8 @@ public class WandSpellForm extends Screen {
         new WandSubmitPacket(description, phrase), PacketDistributor.SERVER.noArg());
     // Close screen and start manager-controlled loading with 2-minute timeout
     Minecraft.getInstance().setScreen(null);
-    WandScreens.startLoadingWithTimeout(2L * 60L * 1000L);
+    // Timeout after 2 minutes
+    WandScreens.startLoadingWithTimeout(20L * 60L * 1000L);
     this.onClose();
   }
 
