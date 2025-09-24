@@ -25,15 +25,8 @@ public class SpellEntityConfig extends BaseConfig {
   private CollisionBehaviorConfig behavior = new CollisionBehaviorConfig();
 
   // Movement config
-  public enum MovementDirection {
-    FORWARD,
-    BACKWARD,
-    UP,
-    DOWN,
-    NONE
-  }
-
-  private MovementDirection movementDirection = MovementDirection.NONE;
+  // Removed MovementDirection; we now use a simple shouldMove flag and forward look direction
+  private boolean shouldMove = false;
   private float movementSpeed = 0.0f;
   // Cached direction vector once computed; persisted in NBT
   private float dirX = 0f, dirY = 0f, dirZ = 0f;
@@ -47,12 +40,12 @@ public class SpellEntityConfig extends BaseConfig {
       Map<BlockPos, BlockState> blocks,
       float microScale,
       CollisionBehaviorConfig behavior,
-      MovementDirection direction,
+      boolean shouldMove,
       float speed) {
     this.blocks = (blocks != null && !blocks.isEmpty()) ? blocks : defaultUnitAirBlock();
     this.microScale = microScale;
     this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
-    this.movementDirection = direction != null ? direction : MovementDirection.NONE;
+    this.shouldMove = shouldMove;
     this.movementSpeed = speed;
 
     // Direction vectors are derived lazily via getDirection(playerId)
@@ -60,7 +53,7 @@ public class SpellEntityConfig extends BaseConfig {
 
   public static SpellEntityConfig empty() {
     return new SpellEntityConfig(
-        defaultUnitAirBlock(), 1.0f, new CollisionBehaviorConfig(), MovementDirection.NONE, 0.0f);
+        defaultUnitAirBlock(), 1.0f, new CollisionBehaviorConfig(), false, 0.0f);
   }
 
   // Standard getters
@@ -76,8 +69,8 @@ public class SpellEntityConfig extends BaseConfig {
     return behavior;
   }
 
-  public MovementDirection getMovementDirection() {
-    return movementDirection;
+  public boolean getShouldMove() {
+    return shouldMove;
   }
 
   public float getMovementSpeed() {
@@ -94,30 +87,17 @@ public class SpellEntityConfig extends BaseConfig {
       return new Vec3(dirX, dirY, dirZ);
     }
 
-    Vec3 v;
-    if (movementDirection == MovementDirection.UP) {
-      v = new Vec3(0, 1, 0);
-    } else if (movementDirection == MovementDirection.DOWN) {
-      v = new Vec3(0, -1, 0);
-    } else if (movementDirection == MovementDirection.NONE) {
-      v = Vec3.ZERO;
-    } else {
-      // FORWARD/BACKWARD based on player's current look
-      Vec3 look = Vec3.ZERO;
-      if (playerId != null) {
-        try {
-          var server = ServerLifecycleHooks.getCurrentServer();
-          if (server != null) {
-            ServerPlayer p = server.getPlayerList().getPlayer(playerId);
-            if (p != null) look = p.getLookAngle();
-          }
-        } catch (Exception ignored) {
+    Vec3 v = Vec3.ZERO;
+    // Forward look based on player's current look when first requested
+    if (playerId != null) {
+      try {
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+          ServerPlayer p = server.getPlayerList().getPlayer(playerId);
+          if (p != null) v = p.getLookAngle();
         }
+      } catch (Exception ignored) {
       }
-      v =
-          (movementDirection == MovementDirection.BACKWARD)
-              ? new Vec3(-look.x, -look.y, -look.z)
-              : look;
     }
 
     // Cache
@@ -140,15 +120,15 @@ public class SpellEntityConfig extends BaseConfig {
     this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
   }
 
-  public void setMovementDirection(MovementDirection movementDirection) {
-    this.movementDirection = movementDirection != null ? movementDirection : MovementDirection.NONE;
+  public void setShouldMove(boolean shouldMove) {
+    this.shouldMove = shouldMove;
   }
 
   public void setMovementSpeed(float movementSpeed) {
     this.movementSpeed = movementSpeed;
   }
 
-  // No explicit vector setters; direction derives from movementDirection and player look
+  // No explicit vector setters; direction derives from player look
 
   // Note: all other constructors removed to keep a single entry point
 
@@ -167,7 +147,7 @@ public class SpellEntityConfig extends BaseConfig {
     tag.put("blocks", blocksList);
     tag.putFloat("microScale", microScale);
     tag.put("behavior", behavior.toNBT());
-    tag.putString("movementDirection", movementDirection.name());
+    tag.putBoolean("shouldMove", shouldMove);
     tag.putFloat("movementSpeed", movementSpeed);
     tag.putFloat("dirX", dirX);
     tag.putFloat("dirY", dirY);
@@ -196,18 +176,11 @@ public class SpellEntityConfig extends BaseConfig {
             : new CollisionBehaviorConfig();
 
     // Movement fields (defaults if absent)
-    MovementDirection direction = MovementDirection.NONE;
-    if (tag.contains("movementDirection", Tag.TAG_STRING)) {
-      try {
-        direction = MovementDirection.valueOf(tag.getString("movementDirection"));
-      } catch (IllegalArgumentException ignored) {
-        direction = MovementDirection.NONE;
-      }
-    }
+    boolean shouldMove = tag.contains("shouldMove", Tag.TAG_BYTE) && tag.getBoolean("shouldMove");
     float speed =
         tag.contains("movementSpeed", Tag.TAG_FLOAT) ? tag.getFloat("movementSpeed") : 0.0f;
 
-    SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, direction, speed);
+    SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, shouldMove, speed);
     if (tag.contains("dirX", Tag.TAG_FLOAT)) cfg.dirX = tag.getFloat("dirX");
     if (tag.contains("dirY", Tag.TAG_FLOAT)) cfg.dirY = tag.getFloat("dirY");
     if (tag.contains("dirZ", Tag.TAG_FLOAT)) cfg.dirZ = tag.getFloat("dirZ");

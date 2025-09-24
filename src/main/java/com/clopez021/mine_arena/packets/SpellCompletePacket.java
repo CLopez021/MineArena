@@ -7,19 +7,38 @@ import net.minecraftforge.event.network.CustomPayloadEvent;
 import net.minecraftforge.fml.DistExecutor;
 
 public class SpellCompletePacket {
-  public SpellCompletePacket() {}
+  private final String errorMessage; // null or empty means success
 
-  public void encode(FriendlyByteBuf buf) {}
+  public SpellCompletePacket() {
+    this("");
+  }
+
+  public SpellCompletePacket(String errorMessage) {
+    this.errorMessage = errorMessage != null ? errorMessage : "";
+  }
+
+  public void encode(FriendlyByteBuf buf) {
+    buf.writeUtf(errorMessage);
+  }
 
   public static SpellCompletePacket decode(FriendlyByteBuf buf) {
-    return new SpellCompletePacket();
+    String err = buf.readUtf();
+    return new SpellCompletePacket(err);
   }
 
   public void handle(CustomPayloadEvent.Context ctx) {
     ctx.enqueueWork(
         () ->
             DistExecutor.unsafeRunWhenOn(
-                Dist.CLIENT, () -> () -> WandScreens.onSpellCompleteClient()));
+                Dist.CLIENT,
+                () ->
+                    () -> {
+                      if (errorMessage != null && !errorMessage.isEmpty()) {
+                        WandScreens.onSpellErrorClient(errorMessage);
+                      } else {
+                        WandScreens.onSpellCompleteClient();
+                      }
+                    }));
     ctx.setPacketHandled(true);
   }
 }

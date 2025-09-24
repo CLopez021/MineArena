@@ -192,7 +192,7 @@ public class Player {
             rotatedBlocks,
             base.getMicroScale(),
             base.getCollisionBehavior(),
-            base.getMovementDirection(),
+            base.getShouldMove(),
             base.getMovementSpeed());
 
     serverPlayer.server.execute(
