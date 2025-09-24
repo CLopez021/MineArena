@@ -4,6 +4,8 @@ import static com.clopez021.mine_arena.ClientConfig.meshyApiKey;
 import static com.clopez021.mine_arena.command.GenerateCommand.isCancelling;
 
 import com.clopez021.mine_arena.MineArena;
+import com.clopez021.mine_arena.command.ModelCommand;
+import com.clopez021.mine_arena.models.Model;
 import com.clopez021.mine_arena.models.ObjModel;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -19,11 +21,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntConsumer;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.state.BlockState;
 
 public class Meshy {
   private static void checkCancellation() {
@@ -113,6 +118,56 @@ public class Meshy {
         new File(objPath).delete();
         new File(mtlPath).delete();
         new File(texturePath).delete();
+      }
+    }
+  }
+
+  /**
+   * Convenience: generate a model from a prompt and return the voxelized blocks. Deletes temp
+   * files.
+   */
+  public static Map<BlockPos, BlockState> buildBlocksFromPrompt(String prompt) throws Exception {
+    if (prompt == null || prompt.isEmpty())
+      throw new IllegalArgumentException("prompt cannot be empty");
+    IntConsumer noop = p -> {};
+    String previewTaskId = createPreviewTask(prompt);
+    waitForTask(previewTaskId, 0, noop);
+    String refineTaskId = createRefineTask(previewTaskId);
+    waitForTask(refineTaskId, 50, noop);
+
+    String[] urls = retrieveTextTo3dTask(refineTaskId, noop);
+    String objUrl = urls[0];
+    String mtlUrl = urls[1];
+    String textureUrl = urls[2];
+
+    String modelName = refineTaskId;
+    String textureName = modelName;
+
+    String objPath = "models/" + modelName + ".obj";
+    String mtlPath = "models/" + modelName + ".mtl";
+    String texturePath = "models/" + textureName + ".png";
+
+    try {
+      Files.createDirectories(Paths.get("models"));
+      downloadFile(objUrl, objPath);
+      downloadFile(mtlUrl, mtlPath);
+      downloadFile(textureUrl, texturePath);
+      renameInFile(mtlPath, "texture_0", textureName);
+
+      Model model = new ObjModel(new File(objPath));
+      return ModelCommand.buildVoxels(model);
+    } finally {
+      try {
+        new File(objPath).delete();
+      } catch (Exception ignored) {
+      }
+      try {
+        new File(mtlPath).delete();
+      } catch (Exception ignored) {
+      }
+      try {
+        new File(texturePath).delete();
+      } catch (Exception ignored) {
       }
     }
   }

@@ -1,71 +1,151 @@
 package com.clopez021.mine_arena.spell;
 
+import com.clopez021.mine_arena.api.Meshy;
 import com.clopez021.mine_arena.api.Message;
 import com.clopez021.mine_arena.api.openrouter;
 import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
-import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfigBuilder;
-import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorRequest;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.util.Map;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.state.BlockState;
 
-/**
- * Orchestrates a one-shot LLM prompt to produce a {@link UnifiedSpellConfigRequest} JSON, then
- * builds a {@link SpellEntityConfig} by generating the model via Meshy and attaching the specified
- * collision behavior.
- */
+/** Minimal service for generating spell configs from an LLM in two steps, parsing raw JSON. */
 public final class LLMSpellConfigService {
   private LLMSpellConfigService() {}
 
-  /**
-   * Call the LLM with instructions and user intent and build a full SpellEntityConfig.
-   *
-   * @param systemPrompt High-level instructions for the LLM about the JSON format
-   * @param userIntent Natural language description (what to create)
-   */
-  public static SpellEntityConfig generateFromLLM(String systemPrompt, String userIntent)
-      throws Exception {
-    if (userIntent == null || userIntent.isEmpty()) {
-      throw new IllegalArgumentException("userIntent cannot be empty");
+  // Step 1a: Get collision behavior from LLM as JSON and build the config
+  public static CollisionBehaviorConfig generateCollisionBehaviorFromLLM(String collisionIntent) {
+    if (collisionIntent == null || collisionIntent.isEmpty()) {
+      throw new IllegalArgumentException("collisionIntent cannot be empty");
     }
-
     String assistant =
         openrouter.chat(
             java.util.List.of(
-                new Message("system", systemPrompt != null ? systemPrompt : defaultSystemPrompt()),
-                new Message("user", userIntent)));
-
-    UnifiedSpellConfigRequest req = UnifiedSpellConfigRequest.fromJson(assistant);
-
-    CollisionBehaviorRequest cReq = req.getCollision();
-    CollisionBehaviorConfig behavior = CollisionBehaviorConfigBuilder.fromFull(cReq);
-
-    SpellEntityConfigRequest sReq =
-        new SpellEntityConfigRequest(
-            req.getPrompt(),
-            req.getMicroScale(),
-            req.getMovementDirection(),
-            req.getMovementSpeed());
-
-    return SpellEntityConfigBuilder.build(sReq, behavior);
+                new Message("system", systemPromptCollisionFull()),
+                new Message("user", collisionIntent)));
+    JsonObject o = parseObject(assistant);
+    String name = firstPresentString(o, "collisionBehaviorName", "name", "");
+    float radius = getFloat(o, "radius", 0.0f);
+    float damage = getFloat(o, "damage", 0.0f);
+    boolean shouldDespawn = getBool(o, "shouldDespawn", false);
+    String spawnId = firstPresentString(o, "spawnEntityID", "spawnId", "");
+    int spawnCount = getInt(o, "spawnCount", 0);
+    boolean affectPlayer = getBool(o, "affectPlayer", false);
+    String effectId = getString(o, "effectId", "");
+    int effectDuration = getInt(o, "effectDuration", 0);
+    int effectAmplifier = getInt(o, "effectAmplifier", 0);
+    return new CollisionBehaviorConfig(
+        name,
+        radius,
+        damage,
+        shouldDespawn,
+        spawnId,
+        spawnCount,
+        effectId,
+        effectDuration,
+        effectAmplifier,
+        affectPlayer);
   }
 
-  private static String defaultSystemPrompt() {
-    return "You are a helpful assistant that outputs ONLY valid JSON matching this schema: "
-        + "{\n"
-        + "  prompt: string,\n"
-        + "  microScale: number,\n"
-        + "  movementDirection: one of [FORWARD,BACKWARD,UP,DOWN,NONE],\n"
-        + "  speed: number,\n"
-        + "  collision: {\n"
-        + "    collisionBehaviorName: string (one of [explode,shockwave,none]),\n"
-        + "    radius: number,\n"
-        + "    damage: number,\n"
-        + "    shouldDespawn: boolean,\n"
-        + "    spawnId: string,\n"
-        + "    spawnCount: number,\n"
-        + "    effectId: string,\n"
-        + "    effectDuration: number,\n"
-        + "    effectAmplifier: number,\n"
-        + "    affectPlayer: boolean\n"
-        + "  }\n"
-        + "}. Do not include any commentary.";
+  /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */
+  public static SpellEntityConfig generateSpellConfigFromLLM(
+      String collisionIntent, String spellIntent) throws Exception {
+    if (spellIntent == null || spellIntent.isEmpty()) {
+      throw new IllegalArgumentException("spellIntent cannot be empty");
+    }
+
+    // First, build collision behavior via LLM
+    CollisionBehaviorConfig cb = generateCollisionBehaviorFromLLM(collisionIntent);
+
+    // Then, build movement/model info via a separate LLM call
+    String assistant =
+        openrouter.chat(
+            java.util.List.of(
+                new Message("system", systemPromptSpell()), new Message("user", spellIntent)));
+
+    JsonObject o = parseObject(assistant);
+
+    String prompt = getString(o, "prompt", null);
+    if (prompt == null || prompt.isEmpty())
+      throw new IllegalArgumentException("LLM missing 'prompt'");
+    float microScale = getFloat(o, "microScale", 1.0f);
+    String dirStr = getString(o, "movementDirection", "NONE");
+    SpellEntityConfig.MovementDirection dir;
+    try {
+      dir = SpellEntityConfig.MovementDirection.valueOf(dirStr.toUpperCase());
+    } catch (Exception e) {
+      dir = SpellEntityConfig.MovementDirection.NONE;
+    }
+    float speed = getFloat(o, "speed", 0.0f);
+
+    Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
+
+    return new SpellEntityConfig(blocks, microScale, cb, dir, speed);
+  }
+
+  // ---- System prompts ----
+
+  private static String systemPromptSpell() {
+    return "Output ONLY valid JSON for a spell model request with keys: "
+        + "{prompt:string, microScale:number, movementDirection:one of [FORWARD,BACKWARD,UP,DOWN,NONE], speed:number}."
+        + " No prose.";
+  }
+
+  private static String systemPromptCollisionFull() {
+    return "Output ONLY valid JSON for collision behavior with keys: "
+        + "{collisionBehaviorName:string(one of [explode,shockwave,none]), radius:number, damage:number, shouldDespawn:boolean, "
+        + "spawnEntityID:string, spawnCount:number, affectPlayer:boolean, effectId:string, effectDuration:number, effectAmplifier:number}. No prose.";
+  }
+
+  // ---- JSON helpers ----
+
+  private static JsonObject parseObject(String json) {
+    try {
+      return JsonParser.parseString(json).getAsJsonObject();
+    } catch (Exception e) {
+      throw new IllegalArgumentException("LLM did not return JSON: " + json);
+    }
+  }
+
+  private static String getString(JsonObject o, String key, String defaultValue) {
+    JsonElement e = o.get(key);
+    return e != null && !e.isJsonNull() ? e.getAsString() : defaultValue;
+  }
+
+  private static String firstPresentString(JsonObject o, String k1, String k2, String def) {
+    String v1 = getString(o, k1, null);
+    if (v1 != null && !v1.isEmpty()) return v1;
+    String v2 = getString(o, k2, null);
+    if (v2 != null && !v2.isEmpty()) return v2;
+    return def;
+  }
+
+  private static float getFloat(JsonObject o, String key, float def) {
+    JsonElement e = o.get(key);
+    try {
+      return e != null && !e.isJsonNull() ? e.getAsFloat() : def;
+    } catch (Exception ex) {
+      return def;
+    }
+  }
+
+  private static int getInt(JsonObject o, String key, int def) {
+    JsonElement e = o.get(key);
+    try {
+      return e != null && !e.isJsonNull() ? e.getAsInt() : def;
+    } catch (Exception ex) {
+      return def;
+    }
+  }
+
+  private static boolean getBool(JsonObject o, String key, boolean def) {
+    JsonElement e = o.get(key);
+    try {
+      return e != null && !e.isJsonNull() ? e.getAsBoolean() : def;
+    } catch (Exception ex) {
+      return def;
+    }
   }
 }
