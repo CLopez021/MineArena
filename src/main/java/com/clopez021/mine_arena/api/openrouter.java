@@ -35,6 +35,7 @@ public class openrouter {
         messages.add(m.toJsonObject());
       }
       body.add("messages", messages);
+      System.out.println("body: " + body.toString());
 
       HttpRequest request =
           HttpRequest.newBuilder()

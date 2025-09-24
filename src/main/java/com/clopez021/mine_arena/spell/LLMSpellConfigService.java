@@ -20,12 +20,28 @@ public final class LLMSpellConfigService {
     if (spellIntent == null || spellIntent.isEmpty()) {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
+
+    // Two-step: reasoning then final JSON
+    String system = SpellPromptTemplates.collisionBehaviorSystemPrompt();
+    String reasoning =
+        openrouter.chat(
+            java.util.List.of(
+                new Message("system", system),
+                new Message(
+                    "system",
+                    SpellPromptTemplates.reasoningNotepadPrompt(
+                        spellIntent, "Collision Behavior"))));
+
     String assistant =
         openrouter.chat(
             java.util.List.of(
-                new Message("system", systemPromptCollisionFull()),
-                new Message("user", spellIntent)));
+                new Message("system", system),
+                new Message("assistant", reasoning),
+                new Message("system", SpellPromptTemplates.finalJsonOnlyInstruction())));
+
+    System.out.println("collision behavior reasoning: " + reasoning);
     System.out.println("collision behavior: " + assistant);
+
     JsonObject o = parseObject(assistant);
     System.out.println("collision behavior: " + o);
     String name = firstPresentString(o, "collisionBehaviorName", "name", "");
@@ -62,12 +78,27 @@ public final class LLMSpellConfigService {
     // First, build collision behavior via LLM
     CollisionBehaviorConfig cb = generateCollisionBehaviorFromLLM(spellIntent);
 
-    // Then, build movement/model info via a separate LLM call
+    // Then, build movement/model info via a separate two-step LLM flow
+    String system = SpellPromptTemplates.spellEntitySystemPrompt();
+    String reasoning =
+        openrouter.chat(
+            java.util.List.of(
+                new Message("system", system),
+                new Message(
+                    "user",
+                    SpellPromptTemplates.reasoningNotepadPrompt(
+                        spellIntent, "Model and Movement"))));
+
     String assistant =
         openrouter.chat(
             java.util.List.of(
-                new Message("system", systemPromptSpell()), new Message("user", spellIntent)));
+                new Message("system", system),
+                new Message("assistant", reasoning),
+                new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction())));
+
+    System.out.println("spell config reasoning: " + reasoning);
     System.out.println("spell config: " + assistant);
+
     JsonObject o = parseObject(assistant);
     System.out.println("spell config: " + o);
 
@@ -81,20 +112,6 @@ public final class LLMSpellConfigService {
     Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
 
     return new SpellEntityConfig(blocks, microScale, cb, shouldMove, speed);
-  }
-
-  // ---- System prompts ----
-
-  private static String systemPromptSpell() {
-    return "Output ONLY valid JSON for a spell model request with keys: "
-        + "{prompt:string, microScale:number, shouldMove:boolean, speed:number}."
-        + " No prose.";
-  }
-
-  private static String systemPromptCollisionFull() {
-    return "Output ONLY valid JSON for collision behavior with keys: "
-        + "{collisionBehaviorName:string(one of [explode,shockwave,none]), radius:number, damage:number, shouldDespawn:boolean, "
-        + "spawnEntityID:string, spawnCount:number, affectPlayer:boolean, effectId:string, effectDuration:number, effectAmplifier:number, triggersInstantly:boolean}. No prose.";
   }
 
   // ---- JSON helpers ----
