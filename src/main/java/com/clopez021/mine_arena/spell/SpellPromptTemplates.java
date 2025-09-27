@@ -29,11 +29,13 @@ public final class SpellPromptTemplates {
         + "  shouldDespawn: boolean (whether the spell entity is removed after triggering),\n"
         + "  spawnEntityID: string (optional entity identifier to spawn on collision; empty for none),\n"
         + "  spawnCount: number (how many entities to spawn if spawnEntityID is provided),\n"
-        + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
         + "  effectId: string (optional status effect id to apply; empty for none),\n"
         + "  effectDuration: number (duration of effect, in ticks),\n"
         + "  effectAmplifier: number (strength/amplifier of the effect),\n"
-        + "  triggersInstantly: boolean (if true, trigger immediately on impact)\n"
+        + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
+        + "  triggersInstantly: boolean (if true, triggers immediately without waiting for collision. Collision behavior happens at spawn."
+        + " Good for when we just want to instantly trigger the collision behavior without having the spell travel to the target. For example,"
+        + " if the player wants the spell to make them fly, there is no need for a spell entity and we can use trigger instantly.)\n"
         + "}.\n"
         + "Do not include prose, code fences, or extra keys in the FINAL OUTPUT.");
   }
@@ -46,7 +48,8 @@ public final class SpellPromptTemplates {
         + "{\n"
         + "  prompt: string (short, descriptive prompt for block-based model generation),\n"
         + "  microScale: number (visual scale factor for the model; typical ~0.2 to 1.5),\n"
-        + "  shouldMove: boolean (whether the entity moves after being cast),\n"
+        + "  shouldMove: boolean (whether the entity moves after being cast),"
+        + " this can be set to false if the player wants the spell to be stationary, for example, a spell that creates a stationary spawner.\n"
         + "  speed: number (movement speed scalar; larger is faster)\n"
         + "}.\n"
         + "Do not include prose, code fences, or extra keys in the FINAL OUTPUT.");
@@ -66,7 +69,10 @@ public final class SpellPromptTemplates {
 
   /** Final instruction asking for the JSON only. */
   public static String finalJsonOnlyInstruction() {
-    return "Now output ONLY the final JSON object as specified. No prose or code fences.";
+    return "Now output ONLY the final JSON object as specified. "
+        + "Do NOT include any prose, markdown, or code fences/backticks. "
+        + "Return pure JSON only: the first character MUST be '{' and the last MUST be '}'. "
+        + "Example format (keys will differ): {\"exampleKey\": 1}";
   }
 
   private static String safeDesc(String s) {
