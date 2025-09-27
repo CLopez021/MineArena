@@ -7,6 +7,8 @@ import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConf
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
@@ -20,25 +22,67 @@ public final class LLMSpellConfigService {
     if (spellIntent == null || spellIntent.isEmpty()) {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
-    String assistant =
-        openrouter.chat(
-            java.util.List.of(
-                new Message("system", systemPromptCollisionFull()),
-                new Message("user", spellIntent)));
-    System.out.println("collision behavior: " + assistant);
-    JsonObject o = parseObject(assistant);
-    System.out.println("collision behavior: " + o);
-    String name = firstPresentString(o, "collisionBehaviorName", "name", "");
-    float radius = getFloat(o, "radius", 0.0f);
-    float damage = getFloat(o, "damage", 0.0f);
-    boolean shouldDespawn = getBool(o, "shouldDespawn", false);
-    String spawnId = firstPresentString(o, "spawnEntityID", "spawnId", "");
-    int spawnCount = getInt(o, "spawnCount", 0);
-    boolean affectPlayer = getBool(o, "affectPlayer", false);
-    String effectId = getString(o, "effectId", "");
-    int effectDuration = getInt(o, "effectDuration", 0);
-    int effectAmplifier = getInt(o, "effectAmplifier", 0);
-    boolean triggersInstantly = getBool(o, "triggersInstantly", false);
+
+    // Two-step: reasoning then final JSON
+    String system = SpellPromptTemplates.collisionBehaviorSystemPrompt();
+    List<Message> messages = new ArrayList<>();
+    messages.add(new Message("system", system));
+    messages.add(
+        new Message(
+            "user",
+            SpellPromptTemplates.reasoningNotepadPrompt(spellIntent, "Collision Behavior")));
+
+    String llm_reasoning;
+    try {
+      llm_reasoning = openrouter.chat(messages);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get collision behavior reasoning: " + e);
+    }
+
+    messages.add(new Message("assistant", llm_reasoning));
+    messages.add(new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction()));
+
+    String llm_config_result;
+    try {
+      llm_config_result = openrouter.chat(messages);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get collision behavior assistant: " + e);
+    }
+
+    JsonObject json_config;
+    try {
+      json_config = parseObject(llm_config_result);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to parse collision behavior: " + e);
+    }
+
+    String name;
+    float radius;
+    float damage;
+    boolean shouldDespawn;
+    String spawnId;
+    int spawnCount;
+    boolean affectPlayer;
+    String effectId;
+    int effectDuration;
+    int effectAmplifier;
+    boolean triggersInstantly;
+    try {
+      name = firstPresentString(json_config, "collisionBehaviorName", "name", "");
+      radius = getFloat(json_config, "radius", 0.0f);
+      damage = getFloat(json_config, "damage", 0.0f);
+      shouldDespawn = getBool(json_config, "shouldDespawn", false);
+      spawnId = firstPresentString(json_config, "spawnEntityID", "spawnId", "");
+      spawnCount = getInt(json_config, "spawnCount", 0);
+      affectPlayer = getBool(json_config, "affectPlayer", false);
+      effectId = getString(json_config, "effectId", "");
+      effectDuration = getInt(json_config, "effectDuration", 0);
+      effectAmplifier = getInt(json_config, "effectAmplifier", 0);
+      triggersInstantly = getBool(json_config, "triggersInstantly", false);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to parse collision behavior: " + e);
+    }
+
     return new CollisionBehaviorConfig(
         name,
         radius,
@@ -62,39 +106,48 @@ public final class LLMSpellConfigService {
     // First, build collision behavior via LLM
     CollisionBehaviorConfig cb = generateCollisionBehaviorFromLLM(spellIntent);
 
-    // Then, build movement/model info via a separate LLM call
-    String assistant =
-        openrouter.chat(
-            java.util.List.of(
-                new Message("system", systemPromptSpell()), new Message("user", spellIntent)));
-    System.out.println("spell config: " + assistant);
-    JsonObject o = parseObject(assistant);
-    System.out.println("spell config: " + o);
+    // Then, build movement/model info via a separate two-step LLM flow
+    String system = SpellPromptTemplates.spellEntitySystemPrompt();
+    List<Message> messages = new ArrayList<>();
+    messages.add(new Message("system", system));
+    messages.add(
+        new Message(
+            "user",
+            SpellPromptTemplates.reasoningNotepadPrompt(spellIntent, "Model and Movement")));
+    String llm_reasoning;
+    try {
+      llm_reasoning = openrouter.chat(messages);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get spell entity reasoning: " + e);
+    }
 
-    String prompt = getString(o, "prompt", null);
+    messages.add(new Message("assistant", llm_reasoning));
+    messages.add(new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction()));
+
+    String llm_config_result;
+    try {
+      llm_config_result = openrouter.chat(messages);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get spell entity assistant: " + e);
+    }
+
+    JsonObject json_config;
+    try {
+      json_config = parseObject(llm_config_result);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to parse spell entity config: " + e);
+    }
+
+    String prompt = getString(json_config, "prompt", null);
     if (prompt == null || prompt.isEmpty())
       throw new IllegalArgumentException("LLM missing 'prompt'");
-    float microScale = getFloat(o, "microScale", 1.0f);
-    boolean shouldMove = getBool(o, "shouldMove", true);
-    float speed = getFloat(o, "speed", 0.0f);
+    float microScale = getFloat(json_config, "microScale", 1.0f);
+    boolean shouldMove = getBool(json_config, "shouldMove", true);
+    float speed = getFloat(json_config, "speed", 0.0f);
 
     Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
 
     return new SpellEntityConfig(blocks, microScale, cb, shouldMove, speed);
-  }
-
-  // ---- System prompts ----
-
-  private static String systemPromptSpell() {
-    return "Output ONLY valid JSON for a spell model request with keys: "
-        + "{prompt:string, microScale:number, shouldMove:boolean, speed:number}."
-        + " No prose.";
-  }
-
-  private static String systemPromptCollisionFull() {
-    return "Output ONLY valid JSON for collision behavior with keys: "
-        + "{collisionBehaviorName:string(one of [explode,shockwave,none]), radius:number, damage:number, shouldDespawn:boolean, "
-        + "spawnEntityID:string, spawnCount:number, affectPlayer:boolean, effectId:string, effectDuration:number, effectAmplifier:number, triggersInstantly:boolean}. No prose.";
   }
 
   // ---- JSON helpers ----
@@ -103,7 +156,7 @@ public final class LLMSpellConfigService {
     try {
       return JsonParser.parseString(json).getAsJsonObject();
     } catch (Exception e) {
-      throw new IllegalArgumentException("LLM did not return JSON: " + json);
+      throw new IllegalArgumentException("LLM did not return JSON: " + json + " error:" + e);
     }
   }
 

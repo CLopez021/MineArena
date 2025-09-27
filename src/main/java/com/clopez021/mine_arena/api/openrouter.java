@@ -46,7 +46,6 @@ public class openrouter {
 
       HttpResponse<String> response =
           HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
-
       if (response.statusCode() >= 400) {
         try {
           JsonObject err = JsonParser.parseString(response.body()).getAsJsonObject();
