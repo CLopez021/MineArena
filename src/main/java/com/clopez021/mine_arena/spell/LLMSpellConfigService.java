@@ -66,6 +66,8 @@ public final class LLMSpellConfigService {
     int statusDurationSeconds;
     int statusAmplifier;
     SpellEffectBehaviorConfig.EffectTrigger trigger;
+    float knockbackAmount;
+    boolean breakBlocks;
     try {
       name = getString(json_config, "behaviorName", "");
       radius = getFloat(json_config, "radius", 0.0f);
@@ -78,6 +80,8 @@ public final class LLMSpellConfigService {
       statusDurationSeconds = getInt(json_config, "statusDurationSeconds", 0);
       statusAmplifier = getInt(json_config, "statusAmplifier", 0);
       trigger = parseTrigger(getString(json_config, "trigger", "onImpact"));
+      knockbackAmount = getFloat(json_config, "knockbackAmount", 0.0f);
+      breakBlocks = getBool(json_config, "breakBlocks", false);
     } catch (Exception e) {
       throw new RuntimeException("Failed to parse effect behavior: " + e);
     }
@@ -93,7 +97,9 @@ public final class LLMSpellConfigService {
         statusDurationSeconds,
         statusAmplifier,
         affectPlayer,
-        trigger);
+        trigger,
+        knockbackAmount,
+        breakBlocks);
   }
 
   /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */

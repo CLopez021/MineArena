@@ -23,9 +23,9 @@ public final class OnCollisionBehaviors {
   public static void explode(SpellEntity e) {
     if (e == null || e.level() == null || e.level().isClientSide) return;
     Level level = e.level();
-    float radius = Math.max(0.1f, e.getConfig().getEffectBehavior().getEffectRadius());
-    float damage = Math.max(0f, e.getConfig().getEffectBehavior().getEffectDamage());
-    boolean affectOwner = e.getConfig().getEffectBehavior().getEffectAffectPlayer();
+    float radius = Math.max(0.1f, e.getConfig().getEffectBehavior().getRadius());
+    float damage = Math.max(0f, e.getConfig().getEffectBehavior().getDamage());
+    boolean affectOwner = e.getConfig().getEffectBehavior().getAffectPlayer();
     ExplosionHelper.explode(level, e.position(), radius, damage, e.getOwnerPlayerId(), affectOwner);
     if (e.getConfig().getEffectBehavior().getDespawnOnTrigger()) {
       e.discard();
@@ -37,9 +37,9 @@ public final class OnCollisionBehaviors {
     if (e == null || e.level() == null || e.level().isClientSide) return;
     if (!(e.level() instanceof ServerLevel serverLevel)) return;
 
-    float r = Math.max(0.1f, e.getConfig().getEffectBehavior().getEffectRadius());
-    boolean affectOwner = e.getConfig().getEffectBehavior().getEffectAffectPlayer();
-    int amplifier = Math.max(1, e.getConfig().getEffectBehavior().getEffectAmplifier());
+    float r = Math.max(0.1f, e.getConfig().getEffectBehavior().getRadius());
+    boolean affectOwner = e.getConfig().getEffectBehavior().getAffectPlayer();
+    int amplifier = Math.max(1, e.getConfig().getEffectBehavior().getStatusAmplifier());
     float ampScale = Math.max(1f, (float) amplifier);
     Vec3 center = e.position();
 

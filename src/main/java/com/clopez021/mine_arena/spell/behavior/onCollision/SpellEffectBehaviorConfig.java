@@ -41,6 +41,10 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   private int statusAmplifier = 1;
   // When to trigger the effect
   private EffectTrigger trigger = EffectTrigger.ON_IMPACT;
+  // Knockback amount to apply to entities (0 = no knockback)
+  private float knockbackAmount = 0.0f;
+  // Whether to break blocks within the effect radius
+  private boolean breakBlocks = false;
 
   public SpellEffectBehaviorConfig() {}
 
@@ -55,7 +59,9 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       int statusDurationSeconds,
       int statusAmplifier,
       boolean affectPlayer,
-      EffectTrigger trigger) {
+      EffectTrigger trigger,
+      float knockbackAmount,
+      boolean breakBlocks) {
     setBehaviorName(behaviorName);
     this.radius = radius;
     this.damage = damage;
@@ -67,6 +73,8 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.statusAmplifier = Math.max(1, statusAmplifier);
     this.affectPlayer = affectPlayer;
     this.trigger = trigger == null ? EffectTrigger.ON_IMPACT : trigger;
+    this.knockbackAmount = Math.max(0.0f, knockbackAmount);
+    this.breakBlocks = breakBlocks;
   }
 
   public String getBehaviorName() {
@@ -175,6 +183,22 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.statusAmplifier = Math.max(0, statusAmplifier);
   }
 
+  public float getKnockbackAmount() {
+    return knockbackAmount;
+  }
+
+  public void setKnockbackAmount(float knockbackAmount) {
+    this.knockbackAmount = Math.max(0.0f, knockbackAmount);
+  }
+
+  public boolean getBreakBlocks() {
+    return breakBlocks;
+  }
+
+  public void setBreakBlocks(boolean breakBlocks) {
+    this.breakBlocks = breakBlocks;
+  }
+
   private void updateDerived() {
     var def = OnCollisionBehaviors.definitionFor(this.behaviorName);
     this.description = def.description();
@@ -195,6 +219,8 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     if (!statusEffectId.isEmpty()) tag.putString("statusEffectId", statusEffectId);
     if (statusDurationSeconds > 0) tag.putInt("statusDurationSeconds", statusDurationSeconds);
     if (statusAmplifier > 0) tag.putInt("statusAmplifier", statusAmplifier);
+    if (knockbackAmount > 0.0f) tag.putFloat("knockbackAmount", knockbackAmount);
+    tag.putBoolean("breakBlocks", breakBlocks);
     return tag;
   }
 
@@ -233,6 +259,11 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
 
     if (tag.contains("statusAmplifier", Tag.TAG_INT))
       c.setStatusAmplifier(tag.getInt("statusAmplifier"));
+
+    if (tag.contains("knockbackAmount", Tag.TAG_FLOAT))
+      c.setKnockbackAmount(tag.getFloat("knockbackAmount"));
+
+    if (tag.contains("breakBlocks", Tag.TAG_BYTE)) c.setBreakBlocks(tag.getBoolean("breakBlocks"));
 
     return c;
   }

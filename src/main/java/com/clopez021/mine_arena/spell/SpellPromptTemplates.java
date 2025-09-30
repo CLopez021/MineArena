@@ -33,7 +33,9 @@ public final class SpellPromptTemplates {
         + "  statusDurationSeconds: number (duration of status effect, in SECONDS),\n"
         + "  statusAmplifier: number (strength/amplifier of the status effect),\n"
         + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
-        + "  trigger: string (one of: onCast | onImpact)\n"
+        + "  trigger: string (one of: onCast | onImpact),\n"
+        + "  knockbackAmount: number (knockback force to apply to entities; 0 for none),\n"
+        + "  breakBlocks: boolean (whether to break blocks within effect radius)\n"
         + "}\n\n"
         + "Be creative and match the intent. Consider realistic game balance.");
   }
