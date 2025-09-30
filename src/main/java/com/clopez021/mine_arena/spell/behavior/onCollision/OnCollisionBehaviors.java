@@ -23,11 +23,11 @@ public final class OnCollisionBehaviors {
   public static void explode(SpellEntity e) {
     if (e == null || e.level() == null || e.level().isClientSide) return;
     Level level = e.level();
-    float radius = Math.max(0.1f, e.getConfig().getCollisionBehavior().getRadius());
-    float damage = Math.max(0f, e.getConfig().getCollisionBehavior().getDamage());
-    boolean affectOwner = e.getConfig().getCollisionBehavior().getAffectPlayer();
+    float radius = Math.max(0.1f, e.getConfig().getEffectBehavior().getEffectRadius());
+    float damage = Math.max(0f, e.getConfig().getEffectBehavior().getEffectDamage());
+    boolean affectOwner = e.getConfig().getEffectBehavior().getEffectAffectPlayer();
     ExplosionHelper.explode(level, e.position(), radius, damage, e.getOwnerPlayerId(), affectOwner);
-    if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
+    if (e.getConfig().getEffectBehavior().getDespawnOnTrigger()) {
       e.discard();
     }
   }
@@ -37,9 +37,9 @@ public final class OnCollisionBehaviors {
     if (e == null || e.level() == null || e.level().isClientSide) return;
     if (!(e.level() instanceof ServerLevel serverLevel)) return;
 
-    float r = Math.max(0.1f, e.getConfig().getCollisionBehavior().getRadius());
-    boolean affectOwner = e.getConfig().getCollisionBehavior().getAffectPlayer();
-    int amplifier = Math.max(1, e.getConfig().getCollisionBehavior().getEffectAmplifier());
+    float r = Math.max(0.1f, e.getConfig().getEffectBehavior().getEffectRadius());
+    boolean affectOwner = e.getConfig().getEffectBehavior().getEffectAffectPlayer();
+    int amplifier = Math.max(1, e.getConfig().getEffectBehavior().getEffectAmplifier());
     float ampScale = Math.max(1f, (float) amplifier);
     Vec3 center = e.position();
 
@@ -61,7 +61,7 @@ public final class OnCollisionBehaviors {
       entity.setDeltaMovement(entity.getDeltaMovement().add(0.0, 0.05 * kb, 0.0));
     }
 
-    if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
+    if (e.getConfig().getEffectBehavior().getDespawnOnTrigger()) {
       e.discard();
     }
   }
@@ -69,7 +69,7 @@ public final class OnCollisionBehaviors {
   // No-op behavior (do nothing besides optional despawn)
   public static void none(SpellEntity e) {
     if (e == null || e.level() == null || e.level().isClientSide) return;
-    if (e.getConfig().getCollisionBehavior().getShouldDespawn()) {
+    if (e.getConfig().getEffectBehavior().getDespawnOnTrigger()) {
       e.discard();
     }
   }

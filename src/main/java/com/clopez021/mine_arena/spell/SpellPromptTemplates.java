@@ -8,7 +8,7 @@ public final class SpellPromptTemplates {
   private SpellPromptTemplates() {}
 
   /**
-   * System prompt for collision behavior configuration. Dynamically lists valid behavior names and
+   * System prompt for effect behavior configuration. Dynamically lists valid behavior names and
    * their brief descriptions from the registry.
    */
   public static String collisionBehaviorSystemPrompt() {
@@ -16,26 +16,24 @@ public final class SpellPromptTemplates {
         OnCollisionBehaviors.registry().entrySet().stream()
             .map(e -> e.getKey() + ": " + safeDesc(e.getValue().description()))
             .collect(Collectors.joining("; "));
-    return ("You are configuring a Minecraft spell's ON-COLLISION behavior. "
+    return ("You are configuring a Minecraft spell's EFFECT behavior. "
         + "Use the player's intent to choose appropriate parameters. "
-        + "Valid collisionBehaviorName values with descriptions: "
+        + "Valid effectBehaviorName values with descriptions: "
         + behaviors
         + ".\n\n"
         + "When asked for FINAL OUTPUT, return ONLY a single JSON object with EXACTLY these keys: \n"
         + "{\n"
-        + "  collisionBehaviorName: string (choose one of the names listed above),\n"
-        + "  radius: number (effect radius in blocks; area of influence),\n"
-        + "  damage: number (damage to entities within radius; higher means more damage),\n"
-        + "  shouldDespawn: boolean (whether the spell entity is removed after triggering),\n"
-        + "  spawnEntityID: string (optional entity identifier to spawn on collision; empty for none),\n"
-        + "  spawnCount: number (how many entities to spawn if spawnEntityID is provided),\n"
-        + "  effectId: string (optional status effect id to apply; empty for none),\n"
-        + "  effectDuration: number (duration of effect, in ticks),\n"
+        + "  effectBehaviorName: string (choose one of the names listed above),\n"
+        + "  effectRadius: number (effect radius in blocks; area of influence),\n"
+        + "  effectDamage: number (damage to entities within radius; higher means more damage),\n"
+        + "  despawnOnTrigger: boolean (whether the spell entity is removed after triggering),\n"
+        + "  effectSpawnId: string (optional entity or block identifier to spawn/place; empty for none),\n"
+        + "  effectSpawnCount: number (how many to spawn/place if effectSpawnId is provided),\n"
+        + "  effectId: string (optional status effect id or keyword; empty for none),\n"
+        + "  effectDurationSeconds: number (duration of effect, in SECONDS),\n"
         + "  effectAmplifier: number (strength/amplifier of the effect),\n"
-        + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
-        + "  triggersInstantly: boolean (if true, triggers immediately without waiting for collision. Collision behavior happens at spawn."
-        + " Good for when we just want to instantly trigger the collision behavior without having the spell travel to the target. For example,"
-        + " if the player wants the spell to make them fly, there is no need for a spell entity and we can use trigger instantly.)\n"
+        + "  effectAffectPlayer: boolean (whether the spell can affect its owner),\n"
+        + "  effectTrigger: string (one of: onCast | onImpact)\n"
         + "}.\n"
         + "Do not include prose, code fences, or extra keys in the FINAL OUTPUT.");
   }

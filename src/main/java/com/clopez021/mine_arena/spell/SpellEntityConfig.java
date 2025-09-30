@@ -1,6 +1,6 @@
 package com.clopez021.mine_arena.spell;
 
-import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
+import com.clopez021.mine_arena.spell.behavior.onCollision.SpellEffectBehaviorConfig;
 import java.util.HashMap;
 import java.util.Map;
 import net.minecraft.core.BlockPos;
@@ -22,7 +22,7 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 public class SpellEntityConfig extends BaseConfig {
   private Map<BlockPos, BlockState> blocks;
   private float microScale;
-  private CollisionBehaviorConfig behavior = new CollisionBehaviorConfig();
+  private SpellEffectBehaviorConfig behavior = new SpellEffectBehaviorConfig();
 
   // Movement config
   // Removed MovementDirection; we now use a simple shouldMove flag and forward look direction
@@ -39,12 +39,12 @@ public class SpellEntityConfig extends BaseConfig {
   public SpellEntityConfig(
       Map<BlockPos, BlockState> blocks,
       float microScale,
-      CollisionBehaviorConfig behavior,
+      SpellEffectBehaviorConfig behavior,
       boolean shouldMove,
       float speed) {
     this.blocks = (blocks != null && !blocks.isEmpty()) ? blocks : defaultUnitAirBlock();
     this.microScale = microScale;
-    this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
+    this.behavior = behavior != null ? behavior : new SpellEffectBehaviorConfig();
     this.shouldMove = shouldMove;
     this.movementSpeed = speed;
 
@@ -53,7 +53,7 @@ public class SpellEntityConfig extends BaseConfig {
 
   public static SpellEntityConfig empty() {
     return new SpellEntityConfig(
-        defaultUnitAirBlock(), 1.0f, new CollisionBehaviorConfig(), false, 0.0f);
+        defaultUnitAirBlock(), 1.0f, new SpellEffectBehaviorConfig(), false, 0.0f);
   }
 
   // Standard getters
@@ -65,7 +65,7 @@ public class SpellEntityConfig extends BaseConfig {
     return microScale;
   }
 
-  public CollisionBehaviorConfig getCollisionBehavior() {
+  public SpellEffectBehaviorConfig getEffectBehavior() {
     return behavior;
   }
 
@@ -116,8 +116,8 @@ public class SpellEntityConfig extends BaseConfig {
     this.microScale = microScale;
   }
 
-  public void setBehavior(CollisionBehaviorConfig behavior) {
-    this.behavior = behavior != null ? behavior : new CollisionBehaviorConfig();
+  public void setBehavior(SpellEffectBehaviorConfig behavior) {
+    this.behavior = behavior != null ? behavior : new SpellEffectBehaviorConfig();
   }
 
   public void setShouldMove(boolean shouldMove) {
@@ -170,10 +170,16 @@ public class SpellEntityConfig extends BaseConfig {
     }
     float microScale =
         tag.contains("microScale", Tag.TAG_FLOAT) ? tag.getFloat("microScale") : 1.0f;
-    CollisionBehaviorConfig behavior =
-        tag.contains("behavior", Tag.TAG_COMPOUND)
-            ? CollisionBehaviorConfig.fromNBT(tag.getCompound("behavior"))
-            : new CollisionBehaviorConfig();
+
+    // Backward compat: try old CollisionBehaviorConfig if present
+    SpellEffectBehaviorConfig behavior;
+    if (tag.contains("behavior", Tag.TAG_COMPOUND)) {
+      CompoundTag b = tag.getCompound("behavior");
+      // If it looks like new keys, parse directly; otherwise, map from old keys via new fromNBT
+      behavior = SpellEffectBehaviorConfig.fromNBT(b);
+    } else {
+      behavior = new SpellEffectBehaviorConfig();
+    }
 
     // Movement fields (defaults if absent)
     boolean shouldMove = tag.contains("shouldMove", Tag.TAG_BYTE) && tag.getBoolean("shouldMove");

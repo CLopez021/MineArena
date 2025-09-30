@@ -2,8 +2,6 @@ package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.entity.ModEntities;
 import com.clopez021.mine_arena.models.ObjModel;
-import com.clopez021.mine_arena.packets.PacketHandler;
-import com.clopez021.mine_arena.packets.SpellCompletePacket;
 import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
 import com.clopez021.mine_arena.spell.PlayerSpellConfig;
 import com.clopez021.mine_arena.spell.SpellEntity;
@@ -17,7 +15,6 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.PacketDistributor;
 
 /**
  * Player model that encapsulates player-specific data and behavior. Handles its own speech
@@ -191,7 +188,7 @@ public class Player {
         new SpellEntityConfig(
             rotatedBlocks,
             base.getMicroScale(),
-            base.getCollisionBehavior(),
+            base.getEffectBehavior(),
             base.getShouldMove(),
             base.getMovementSpeed());
 
