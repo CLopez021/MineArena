@@ -132,7 +132,8 @@ public class MineArena {
                 false, // affectPlayer
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 2.0f, // knockbackAmount
-                true); // breakBlocks
+                3.0f, // blockDestructionRadius
+                2); // blockDestructionDepth
         // Fireball: explosion + ignite effect for 5s
         SpellEntityConfig fireball_cfg =
             new SpellEntityConfig(fireball_blocks, 0.05f, fireball_behavior, true, 1.0f);
@@ -156,7 +157,8 @@ public class MineArena {
                 false, // affectPlayer
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 2.0f, // knockbackAmount (shockwave effect)
-                false); // breakBlocks
+                0.0f, // blockDestructionRadius (no block breaking)
+                0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig wind_cfg =
             new SpellEntityConfig(wind_blocks, 0.05f, wind_behavior, true, 0.8f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("wind", "wind", wind_cfg));
@@ -181,7 +183,8 @@ public class MineArena {
                 false, // affectPlayer
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 0.0f, // knockbackAmount
-                false); // breakBlocks
+                0.0f, // blockDestructionRadius (no block breaking)
+                0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig ice_cube_cfg =
             new SpellEntityConfig(ice_cube_blocks, 0.05f, ice_cube_behavior, true, 0.6f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("ice_cube", "ice cube", ice_cube_cfg));
@@ -204,7 +207,8 @@ public class MineArena {
                 false, // affectPlayer
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 1.0f, // knockbackAmount (explosive knockback)
-                true); // breakBlocks (bomb breaks blocks)
+                2.5f, // blockDestructionRadius (bomb breaks blocks)
+                3); // blockDestructionDepth (deep destruction)
         SpellEntityConfig bomb_cfg =
             new SpellEntityConfig(bomb_blocks, 0.05f, bomb_behavior, true, 1.5f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("bomb", "bomb", bomb_cfg));
@@ -223,7 +227,8 @@ public class MineArena {
                 true, // affectPlayer
                 SpellEffectBehaviorConfig.EffectTrigger.ON_CAST, // trigger
                 0.0f, // knockbackAmount
-                false); // breakBlocks
+                0.0f, // blockDestructionRadius (no block breaking)
+                0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig levitate_cfg =
             new SpellEntityConfig(Map.of(), 0.05f, levitate_behavior, true, 0.8f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("levitate", "levitate", levitate_cfg));

@@ -303,30 +303,38 @@ public class SpellEntity extends Entity {
     }
   }
 
-  private void breakBlocksInRadius(float radius) {
-    if (this.level().isClientSide) return;
+  private void breakBlocksInRadius(float radius, int depth) {
+    if (this.level().isClientSide || radius <= 0.0f || depth <= 0) return;
 
     Vec3 center = this.position();
-    int minX = (int) Math.floor(center.x - radius);
-    int maxX = (int) Math.ceil(center.x + radius);
-    int minY = (int) Math.floor(center.y - radius);
-    int maxY = (int) Math.ceil(center.y + radius);
-    int minZ = (int) Math.floor(center.z - radius);
-    int maxZ = (int) Math.ceil(center.z + radius);
 
-    for (int x = minX; x <= maxX; x++) {
-      for (int y = minY; y <= maxY; y++) {
-        for (int z = minZ; z <= maxZ; z++) {
-          BlockPos pos = new BlockPos(x, y, z);
-          double dist = center.distanceTo(Vec3.atCenterOf(pos));
-          if (dist <= radius) {
-            BlockState state = this.level().getBlockState(pos);
-            if (!state.isAir() && state.getDestroySpeed(this.level(), pos) >= 0) {
-              this.level().destroyBlock(pos, true);
+    // Break blocks in layers from surface inward
+    for (int layer = 0; layer < depth; layer++) {
+      int minX = (int) Math.floor(center.x - radius);
+      int maxX = (int) Math.ceil(center.x + radius);
+      int minY = (int) Math.floor(center.y - radius);
+      int maxY = (int) Math.ceil(center.y + radius);
+      int minZ = (int) Math.floor(center.z - radius);
+      int maxZ = (int) Math.ceil(center.z + radius);
+
+      for (int x = minX; x <= maxX; x++) {
+        for (int y = minY; y <= maxY; y++) {
+          for (int z = minZ; z <= maxZ; z++) {
+            BlockPos pos = new BlockPos(x, y, z);
+            double dist = center.distanceTo(Vec3.atCenterOf(pos));
+            if (dist <= radius) {
+              BlockState state = this.level().getBlockState(pos);
+              if (!state.isAir() && state.getDestroySpeed(this.level(), pos) >= 0) {
+                this.level().destroyBlock(pos, true);
+              }
             }
           }
         }
       }
+
+      // Reduce radius for next layer to create depth effect
+      radius = Math.max(0.0f, radius - 1.0f);
+      if (radius <= 0.0f) break;
     }
   }
 
@@ -432,8 +440,9 @@ public class SpellEntity extends Entity {
       }
 
       // Break blocks if configured
-      if (behavior.getBreakBlocks()) {
-        breakBlocksInRadius(behavior.getRadius());
+      if (behavior.getBlockDestructionRadius() > 0.0f && behavior.getBlockDestructionDepth() > 0) {
+        breakBlocksInRadius(
+            behavior.getBlockDestructionRadius(), behavior.getBlockDestructionDepth());
       }
 
       // Apply status effects
