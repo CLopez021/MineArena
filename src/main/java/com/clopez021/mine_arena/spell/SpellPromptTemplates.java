@@ -18,7 +18,7 @@ public final class SpellPromptTemplates {
         + "  statusEffectId: string (optional status effect id or keyword; empty for none),\n"
         + "  statusDurationSeconds: number (duration of status effect, in SECONDS),\n"
         + "  statusAmplifier: number (strength/amplifier of the status effect),\n"
-        + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
+        + "  affectOwner: boolean (whether the spell can affect its owner),\n"
         + "  trigger: string (one of: onCast | onImpact),\n"
         + "  knockbackAmount: number (knockback force to apply to entities; 0 for none),\n"
         + "  blockDestructionRadius: number (radius of block destruction; 0 for none),\n"

@@ -129,7 +129,7 @@ public class MineArena {
                 "ignite", // statusEffectId
                 2, // statusDurationSeconds
                 1, // statusAmplifier
-                false, // affectPlayer
+                false, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 2.0f, // knockbackAmount
                 3.0f, // blockDestructionRadius
@@ -154,7 +154,7 @@ public class MineArena {
                 "", // statusEffectId (none)
                 0, // statusDurationSeconds (none)
                 0, // statusAmplifier (none)
-                false, // affectPlayer
+                false, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 2.0f, // knockbackAmount (shockwave effect)
                 0.0f, // blockDestructionRadius (no block breaking)
@@ -180,7 +180,7 @@ public class MineArena {
                 "freeze", // statusEffectId (freeze keyword)
                 8, // statusDurationSeconds
                 0, // statusAmplifier (unused for freeze)
-                false, // affectPlayer
+                false, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 0.0f, // knockbackAmount
                 0.0f, // blockDestructionRadius (no block breaking)
@@ -204,7 +204,7 @@ public class MineArena {
                 "", // statusEffectId
                 0, // statusDurationSeconds
                 1, // statusAmplifier
-                false, // affectPlayer
+                false, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
                 1.0f, // knockbackAmount (explosive knockback)
                 2.5f, // blockDestructionRadius (bomb breaks blocks)
@@ -224,7 +224,7 @@ public class MineArena {
                 "minecraft:levitation", // statusEffectId
                 5, // statusDurationSeconds
                 10, // statusAmplifier
-                true, // affectPlayer
+                true, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_CAST, // trigger
                 0.0f, // knockbackAmount
                 0.0f, // blockDestructionRadius (no block breaking)

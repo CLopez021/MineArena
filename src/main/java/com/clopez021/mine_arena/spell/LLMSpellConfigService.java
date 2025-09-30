@@ -60,7 +60,7 @@ public final class LLMSpellConfigService {
     boolean despawnOnTrigger;
     String spawnId;
     int spawnCount;
-    boolean affectPlayer;
+    boolean affectOwner;
     String statusEffectId;
     int statusDurationSeconds;
     int statusAmplifier;
@@ -74,7 +74,7 @@ public final class LLMSpellConfigService {
       despawnOnTrigger = getBool(json_config, "despawnOnTrigger", false);
       spawnId = getString(json_config, "spawnId", "");
       spawnCount = getInt(json_config, "spawnCount", 0);
-      affectPlayer = getBool(json_config, "affectPlayer", false);
+      affectOwner = getBool(json_config, "affectOwner", false);
       statusEffectId = getString(json_config, "statusEffectId", "");
       statusDurationSeconds = getInt(json_config, "statusDurationSeconds", 0);
       statusAmplifier = getInt(json_config, "statusAmplifier", 0);
@@ -95,7 +95,7 @@ public final class LLMSpellConfigService {
         statusEffectId,
         statusDurationSeconds,
         statusAmplifier,
-        affectPlayer,
+        affectOwner,
         trigger,
         knockbackAmount,
         blockDestructionRadius,
