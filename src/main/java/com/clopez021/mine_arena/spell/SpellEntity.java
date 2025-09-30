@@ -1,5 +1,6 @@
 package com.clopez021.mine_arena.spell;
 
+import com.clopez021.mine_arena.spell.behavior.onCollision.SpellEffectBehaviorConfig;
 import com.clopez021.mine_arena.utils.IdResolver;
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class SpellEntity extends Entity {
   // Authoritative config (single source of truth)
   private SpellEntityConfig config = SpellEntityConfig.empty();
 
-  // Behavior description/handler live in config.getCollisionBehavior()
+  // Behavior description/handler live in config.getEffectBehavior()
   private boolean collisionTriggered = false;
   private boolean isColliding = false;
   private boolean entityCollisionDetected = false;
@@ -122,9 +123,9 @@ public class SpellEntity extends Entity {
   @Override
   protected void readAdditionalSaveData(CompoundTag tag) {
     if (level().isClientSide) return; // client doesn't load saves
-
-    // Use SpellEntityConfig's parser and apply as authoritative state
-    applyConfigServer(SpellEntityConfig.fromNBT(tag));
+    this.config = SpellEntityConfig.fromNBT(tag);
+    pushConfigToSyncedData();
+    applyDerivedFromConfig();
   }
 
   // ------------ Dynamic dimensions (canonical approach) ------------
@@ -170,28 +171,12 @@ public class SpellEntity extends Entity {
     this.minCorner.set(minX, minY, minZ);
   }
 
-  /** Apply the given config as the authoritative state (server-side only). */
-  private void applyConfigServer(SpellEntityConfig cfg) {
-    if (level().isClientSide) return;
-    if (cfg == null) cfg = SpellEntityConfig.empty();
-    // Blocks should already be rotated by the caster at spawn time
-    this.config = cfg;
-    applyDerivedFromConfig();
+  // Public: server-only configure
+  public void applyConfigServer(SpellEntityConfig config) {
+    if (level().isClientSide) return; // client doesn't load saves
+    this.config = config != null ? config : SpellEntityConfig.empty();
     pushConfigToSyncedData();
-  }
-
-  // ----------------- Collision handling -----------------
-
-  /** Invoke the selected on-collision behavior immediately (server-side). */
-  public void triggerCollision(java.util.List<LivingEntity> affectedEntities) {
-    if (!level().isClientSide
-        && this.config.getCollisionBehavior().getCollisionHandler() != null
-        && ticksSinceLastTrigger >= COLLISION_COOLDOWN_TICKS) {
-      this.config.getCollisionBehavior().getCollisionHandler().accept(this);
-      applyConfiguredEffectArea(affectedEntities);
-      spawnOrPlaceConfiguredOnImpact();
-      ticksSinceLastTrigger = 0;
-    }
+    applyDerivedFromConfig();
   }
 
   private java.util.List<LivingEntity> collectAffectedEntities(float radius, boolean affectOwner) {
@@ -216,24 +201,24 @@ public class SpellEntity extends Entity {
 
   private void applyConfiguredEffectArea(java.util.List<LivingEntity> targets) {
     if (this.level().isClientSide) return;
-    var behavior = this.config.getCollisionBehavior();
-    String effectId = behavior.getEffectId();
-    int duration = Math.max(0, behavior.getEffectDuration());
-    if (effectId == null || effectId.isBlank() || duration <= 0) return;
+    var behavior = this.config.getEffectBehavior();
+    String statusEffectId = behavior.getStatusEffectId();
+    int durationTicks = Math.max(0, behavior.getStatusDurationTicks());
+    if (statusEffectId == null || statusEffectId.isBlank() || durationTicks <= 0) return;
 
     for (LivingEntity entity : targets) {
       EffectEngine.applyUnifiedEffect(
           (net.minecraft.server.level.ServerLevel) this.level(),
           entity,
-          effectId,
-          duration,
-          behavior.getEffectAmplifier());
+          statusEffectId,
+          durationTicks,
+          behavior.getStatusAmplifier());
     }
   }
 
   private void spawnOrPlaceConfiguredOnImpact() {
     if (this.level().isClientSide) return;
-    var behavior = this.config.getCollisionBehavior();
+    var behavior = this.config.getEffectBehavior();
     String id = behavior.getSpawnId();
     int count = Math.max(0, behavior.getSpawnCount());
     float radius = Math.max(0.0f, behavior.getRadius());
@@ -301,6 +286,50 @@ public class SpellEntity extends Entity {
     return null;
   }
 
+  private void applyKnockbackToEntities(
+      java.util.List<LivingEntity> entities, float knockbackAmount) {
+    Vec3 center = this.position();
+    for (LivingEntity entity : entities) {
+      double dist = entity.position().distanceTo(center);
+      if (dist <= 1e-6) continue; // Avoid division by zero
+
+      float falloff = 1.0f - (float) (dist / this.config.getEffectBehavior().getRadius());
+      float kb = knockbackAmount * Math.max(0f, falloff);
+
+      double dirX = entity.getX() - center.x;
+      double dirZ = entity.getZ() - center.z;
+      entity.knockback(kb, dirX, dirZ);
+      entity.setDeltaMovement(entity.getDeltaMovement().add(0.0, 0.05 * kb, 0.0));
+    }
+  }
+
+  private void breakBlocksInRadius(float radius) {
+    if (this.level().isClientSide) return;
+
+    Vec3 center = this.position();
+    int minX = (int) Math.floor(center.x - radius);
+    int maxX = (int) Math.ceil(center.x + radius);
+    int minY = (int) Math.floor(center.y - radius);
+    int maxY = (int) Math.ceil(center.y + radius);
+    int minZ = (int) Math.floor(center.z - radius);
+    int maxZ = (int) Math.ceil(center.z + radius);
+
+    for (int x = minX; x <= maxX; x++) {
+      for (int y = minY; y <= maxY; y++) {
+        for (int z = minZ; z <= maxZ; z++) {
+          BlockPos pos = new BlockPos(x, y, z);
+          double dist = center.distanceTo(Vec3.atCenterOf(pos));
+          if (dist <= radius) {
+            BlockState state = this.level().getBlockState(pos);
+            if (!state.isAir() && state.getDestroySpeed(this.level(), pos) >= 0) {
+              this.level().destroyBlock(pos, true);
+            }
+          }
+        }
+      }
+    }
+  }
+
   @Override
   public void tick() {
     super.tick();
@@ -324,9 +353,10 @@ public class SpellEntity extends Entity {
       // Move using vanilla pipeline for proper networking/interpolation
       this.move(MoverType.SELF, this.getDeltaMovement());
 
-      // Instant trigger behavior (no collision required)
-      if (this.config.getCollisionBehavior().getTriggersInstantly()) {
-        var behavior = this.config.getCollisionBehavior();
+      // Trigger on-cast behavior (no collision required)
+      if (this.config.getEffectBehavior().getTrigger()
+          == SpellEffectBehaviorConfig.EffectTrigger.ON_CAST) {
+        SpellEffectBehaviorConfig behavior = this.config.getEffectBehavior();
         float radius = Math.max(0.1f, behavior.getRadius());
         boolean affectOwner = behavior.getAffectPlayer();
         java.util.List<LivingEntity> affectedEntities =
@@ -357,7 +387,7 @@ public class SpellEntity extends Entity {
 
       if (collidingNow) {
         // Pre-compute affected entities once for this tick
-        var behavior = this.config.getCollisionBehavior();
+        var behavior = this.config.getEffectBehavior();
         float radius = Math.max(0.1f, behavior.getRadius());
         boolean affectOwner = behavior.getAffectPlayer();
         java.util.List<LivingEntity> affectedEntities =
@@ -378,9 +408,46 @@ public class SpellEntity extends Entity {
   /** Initialize from SpellEntityConfig (server-side only). */
   public void initializeServer(SpellEntityConfig data) {
     if (level().isClientSide) {
-      throw new IllegalStateException("initializeServer() can only be called on the server side!");
+      return;
     }
-
     applyConfigServer(data);
+  }
+
+  public void triggerCollision(java.util.List<LivingEntity> affectedEntities) {
+    if (!level().isClientSide && ticksSinceLastTrigger >= COLLISION_COOLDOWN_TICKS) {
+      var behavior = this.config.getEffectBehavior();
+
+      // Apply damage to entities
+      float damage = Math.max(0f, behavior.getDamage());
+      if (damage > 0f) {
+        for (LivingEntity entity : affectedEntities) {
+          entity.hurt(this.damageSources().magic(), damage);
+        }
+      }
+
+      // Apply knockback to entities
+      float knockback = Math.max(0f, behavior.getKnockbackAmount());
+      if (knockback > 0f) {
+        applyKnockbackToEntities(affectedEntities, knockback);
+      }
+
+      // Break blocks if configured
+      if (behavior.getBreakBlocks()) {
+        breakBlocksInRadius(behavior.getRadius());
+      }
+
+      // Apply status effects
+      applyConfiguredEffectArea(affectedEntities);
+
+      // Spawn entities/blocks
+      spawnOrPlaceConfiguredOnImpact();
+
+      // Despawn if configured
+      if (behavior.getDespawnOnTrigger()) {
+        this.discard();
+      }
+
+      ticksSinceLastTrigger = 0;
+    }
   }
 }

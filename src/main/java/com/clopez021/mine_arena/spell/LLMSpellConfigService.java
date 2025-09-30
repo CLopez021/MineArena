@@ -3,7 +3,7 @@ package com.clopez021.mine_arena.spell;
 import com.clopez021.mine_arena.api.Meshy;
 import com.clopez021.mine_arena.api.Message;
 import com.clopez021.mine_arena.api.openrouter;
-import com.clopez021.mine_arena.spell.behavior.onCollision.CollisionBehaviorConfig;
+import com.clopez021.mine_arena.spell.behavior.onCollision.SpellEffectBehaviorConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -17,8 +17,8 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class LLMSpellConfigService {
   private LLMSpellConfigService() {}
 
-  // Step 1a: Get collision behavior from LLM as JSON and build the config
-  public static CollisionBehaviorConfig generateCollisionBehaviorFromLLM(String spellIntent) {
+  // Step 1a: Get effect behavior from LLM as JSON and build the config
+  public static SpellEffectBehaviorConfig generateEffectBehaviorFromLLM(String spellIntent) {
     if (spellIntent == null || spellIntent.isEmpty()) {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
@@ -29,14 +29,13 @@ public final class LLMSpellConfigService {
     messages.add(new Message("system", system));
     messages.add(
         new Message(
-            "user",
-            SpellPromptTemplates.reasoningNotepadPrompt(spellIntent, "Collision Behavior")));
+            "user", SpellPromptTemplates.reasoningNotepadPrompt(spellIntent, "Effect Behavior")));
 
     String llm_reasoning;
     try {
       llm_reasoning = openrouter.chat(messages);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to get collision behavior reasoning: " + e);
+      throw new RuntimeException("Failed to get effect behavior reasoning: " + e);
     }
 
     messages.add(new Message("assistant", llm_reasoning));
@@ -46,55 +45,58 @@ public final class LLMSpellConfigService {
     try {
       llm_config_result = openrouter.chat(messages);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to get collision behavior assistant: " + e);
+      throw new RuntimeException("Failed to get effect behavior assistant: " + e);
     }
 
     JsonObject json_config;
     try {
       json_config = parseObject(llm_config_result);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to parse collision behavior: " + e);
+      throw new RuntimeException("Failed to parse effect behavior: " + e);
     }
 
-    String name;
     float radius;
     float damage;
-    boolean shouldDespawn;
+    boolean despawnOnTrigger;
     String spawnId;
     int spawnCount;
     boolean affectPlayer;
-    String effectId;
-    int effectDuration;
-    int effectAmplifier;
-    boolean triggersInstantly;
+    String statusEffectId;
+    int statusDurationSeconds;
+    int statusAmplifier;
+    SpellEffectBehaviorConfig.EffectTrigger trigger;
+    float knockbackAmount;
+    boolean breakBlocks;
     try {
-      name = firstPresentString(json_config, "collisionBehaviorName", "name", "");
       radius = getFloat(json_config, "radius", 0.0f);
       damage = getFloat(json_config, "damage", 0.0f);
-      shouldDespawn = getBool(json_config, "shouldDespawn", false);
-      spawnId = firstPresentString(json_config, "spawnEntityID", "spawnId", "");
+      despawnOnTrigger = getBool(json_config, "despawnOnTrigger", false);
+      spawnId = getString(json_config, "spawnId", "");
       spawnCount = getInt(json_config, "spawnCount", 0);
       affectPlayer = getBool(json_config, "affectPlayer", false);
-      effectId = getString(json_config, "effectId", "");
-      effectDuration = getInt(json_config, "effectDuration", 0);
-      effectAmplifier = getInt(json_config, "effectAmplifier", 0);
-      triggersInstantly = getBool(json_config, "triggersInstantly", false);
+      statusEffectId = getString(json_config, "statusEffectId", "");
+      statusDurationSeconds = getInt(json_config, "statusDurationSeconds", 0);
+      statusAmplifier = getInt(json_config, "statusAmplifier", 0);
+      trigger = parseTrigger(getString(json_config, "trigger", "onImpact"));
+      knockbackAmount = getFloat(json_config, "knockbackAmount", 0.0f);
+      breakBlocks = getBool(json_config, "breakBlocks", false);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to parse collision behavior: " + e);
+      throw new RuntimeException("Failed to parse effect behavior: " + e);
     }
 
-    return new CollisionBehaviorConfig(
-        name,
+    return new SpellEffectBehaviorConfig(
         radius,
         damage,
-        shouldDespawn,
+        despawnOnTrigger,
         spawnId,
         spawnCount,
-        effectId,
-        effectDuration,
-        effectAmplifier,
+        statusEffectId,
+        statusDurationSeconds,
+        statusAmplifier,
         affectPlayer,
-        triggersInstantly);
+        trigger,
+        knockbackAmount,
+        breakBlocks);
   }
 
   /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */
@@ -103,8 +105,8 @@ public final class LLMSpellConfigService {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
 
-    // First, build collision behavior via LLM
-    CollisionBehaviorConfig cb = generateCollisionBehaviorFromLLM(spellIntent);
+    // First, build effect behavior via LLM
+    SpellEffectBehaviorConfig cb = generateEffectBehaviorFromLLM(spellIntent);
 
     // Then, build movement/model info via a separate two-step LLM flow
     String system = SpellPromptTemplates.spellEntitySystemPrompt();
@@ -165,14 +167,6 @@ public final class LLMSpellConfigService {
     return e != null && !e.isJsonNull() ? e.getAsString() : defaultValue;
   }
 
-  private static String firstPresentString(JsonObject o, String k1, String k2, String def) {
-    String v1 = getString(o, k1, null);
-    if (v1 != null && !v1.isEmpty()) return v1;
-    String v2 = getString(o, k2, null);
-    if (v2 != null && !v2.isEmpty()) return v2;
-    return def;
-  }
-
   private static float getFloat(JsonObject o, String key, float def) {
     JsonElement e = o.get(key);
     try {
@@ -198,5 +192,15 @@ public final class LLMSpellConfigService {
     } catch (Exception ex) {
       return def;
     }
+  }
+
+  private static SpellEffectBehaviorConfig.EffectTrigger parseTrigger(String v) {
+    if (v == null) return SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT;
+    String s = v.trim().toLowerCase(java.util.Locale.ROOT);
+    return switch (s) {
+      case "oncast", "on_cast", "cast" -> SpellEffectBehaviorConfig.EffectTrigger.ON_CAST;
+      case "onimpact", "on_impact", "impact" -> SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT;
+      default -> SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT;
+    };
   }
 }

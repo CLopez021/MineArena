@@ -191,7 +191,7 @@ public class Player {
         new SpellEntityConfig(
             rotatedBlocks,
             base.getMicroScale(),
-            base.getCollisionBehavior(),
+            base.getEffectBehavior(),
             base.getShouldMove(),
             base.getMovementSpeed());
 
