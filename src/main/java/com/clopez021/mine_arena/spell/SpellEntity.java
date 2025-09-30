@@ -286,6 +286,50 @@ public class SpellEntity extends Entity {
     return null;
   }
 
+  private void applyKnockbackToEntities(
+      java.util.List<LivingEntity> entities, float knockbackAmount) {
+    Vec3 center = this.position();
+    for (LivingEntity entity : entities) {
+      double dist = entity.position().distanceTo(center);
+      if (dist <= 1e-6) continue; // Avoid division by zero
+
+      float falloff = 1.0f - (float) (dist / this.config.getEffectBehavior().getRadius());
+      float kb = knockbackAmount * Math.max(0f, falloff);
+
+      double dirX = entity.getX() - center.x;
+      double dirZ = entity.getZ() - center.z;
+      entity.knockback(kb, dirX, dirZ);
+      entity.setDeltaMovement(entity.getDeltaMovement().add(0.0, 0.05 * kb, 0.0));
+    }
+  }
+
+  private void breakBlocksInRadius(float radius) {
+    if (this.level().isClientSide) return;
+
+    Vec3 center = this.position();
+    int minX = (int) Math.floor(center.x - radius);
+    int maxX = (int) Math.ceil(center.x + radius);
+    int minY = (int) Math.floor(center.y - radius);
+    int maxY = (int) Math.ceil(center.y + radius);
+    int minZ = (int) Math.floor(center.z - radius);
+    int maxZ = (int) Math.ceil(center.z + radius);
+
+    for (int x = minX; x <= maxX; x++) {
+      for (int y = minY; y <= maxY; y++) {
+        for (int z = minZ; z <= maxZ; z++) {
+          BlockPos pos = new BlockPos(x, y, z);
+          double dist = center.distanceTo(Vec3.atCenterOf(pos));
+          if (dist <= radius) {
+            BlockState state = this.level().getBlockState(pos);
+            if (!state.isAir() && state.getDestroySpeed(this.level(), pos) >= 0) {
+              this.level().destroyBlock(pos, true);
+            }
+          }
+        }
+      }
+    }
+  }
+
   @Override
   public void tick() {
     super.tick();
@@ -370,12 +414,39 @@ public class SpellEntity extends Entity {
   }
 
   public void triggerCollision(java.util.List<LivingEntity> affectedEntities) {
-    if (!level().isClientSide
-        && this.config.getEffectBehavior().getEffectHandler() != null
-        && ticksSinceLastTrigger >= COLLISION_COOLDOWN_TICKS) {
-      this.config.getEffectBehavior().getEffectHandler().accept(this);
+    if (!level().isClientSide && ticksSinceLastTrigger >= COLLISION_COOLDOWN_TICKS) {
+      var behavior = this.config.getEffectBehavior();
+
+      // Apply damage to entities
+      float damage = Math.max(0f, behavior.getDamage());
+      if (damage > 0f) {
+        for (LivingEntity entity : affectedEntities) {
+          entity.hurt(this.damageSources().magic(), damage);
+        }
+      }
+
+      // Apply knockback to entities
+      float knockback = Math.max(0f, behavior.getKnockbackAmount());
+      if (knockback > 0f) {
+        applyKnockbackToEntities(affectedEntities, knockback);
+      }
+
+      // Break blocks if configured
+      if (behavior.getBreakBlocks()) {
+        breakBlocksInRadius(behavior.getRadius());
+      }
+
+      // Apply status effects
       applyConfiguredEffectArea(affectedEntities);
+
+      // Spawn entities/blocks
       spawnOrPlaceConfiguredOnImpact();
+
+      // Despawn if configured
+      if (behavior.getDespawnOnTrigger()) {
+        this.discard();
+      }
+
       ticksSinceLastTrigger = 0;
     }
   }

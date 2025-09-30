@@ -1,29 +1,15 @@
 package com.clopez021.mine_arena.spell;
 
-import com.clopez021.mine_arena.spell.behavior.onCollision.OnCollisionBehaviors;
-import java.util.stream.Collectors;
-
 /** Prompt builder utilities for spell-related LLM prompts. */
 public final class SpellPromptTemplates {
   private SpellPromptTemplates() {}
 
-  /**
-   * System prompt for effect behavior configuration. Dynamically lists valid behavior names and
-   * their brief descriptions from the registry.
-   */
+  /** System prompt for effect behavior configuration. */
   public static String collisionBehaviorSystemPrompt() {
-    String allDefinitions =
-        OnCollisionBehaviors.registry().entrySet().stream()
-            .map(e -> e.getKey() + ": " + safeDesc(e.getValue().description()))
-            .collect(Collectors.joining("; "));
     return ("You are configuring a Minecraft spell's EFFECT behavior. "
         + "Use the player's intent to choose appropriate parameters. "
-        + "Valid behaviorName values with descriptions: "
-        + allDefinitions
-        + ".\n\n"
         + "Return a JSON object with these keys:\n"
         + "{\n"
-        + "  behaviorName: string (choose one of the names listed above),\n"
         + "  radius: number (effect radius in blocks; area of influence),\n"
         + "  damage: number (damage to entities within radius; higher means more damage),\n"
         + "  despawnOnTrigger: boolean (whether spell projectile should despawn after effect),\n"
@@ -73,10 +59,5 @@ public final class SpellPromptTemplates {
         + "Do NOT include any prose, markdown, or code fences/backticks. "
         + "Return pure JSON only: the first character MUST be '{' and the last MUST be '}'. "
         + "Example format (keys will differ): {\"exampleKey\": 1}";
-  }
-
-  private static String safeDesc(String s) {
-    if (s == null) return "";
-    return s.replace(';', ',').replace('\n', ' ').trim();
   }
 }

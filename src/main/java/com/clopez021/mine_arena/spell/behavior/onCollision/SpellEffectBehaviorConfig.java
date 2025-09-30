@@ -1,15 +1,13 @@
 package com.clopez021.mine_arena.spell.behavior.onCollision;
 
 import com.clopez021.mine_arena.spell.BaseConfig;
-import com.clopez021.mine_arena.spell.SpellEntity;
 import java.util.Locale;
-import java.util.function.Consumer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 
 /**
- * Config for selecting and parameterizing a spell effect behavior. It may be triggered on cast or
- * on impact. Stores name (registry key), effect radius, and effect damage.
+ * Config for spell effect behavior. It may be triggered on cast or on impact. Stores effect radius,
+ * damage, knockback, and other parameters.
  */
 public class SpellEffectBehaviorConfig extends BaseConfig {
   public enum EffectTrigger {
@@ -17,14 +15,9 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     ON_IMPACT
   }
 
-  private String behaviorName = OnCollisionBehaviors.DEFAULT_KEY;
   private float radius = 2.0f;
   private float damage = 0.0f;
   private boolean despawnOnTrigger = true;
-  private String description =
-      OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).description();
-  private Consumer<SpellEntity> effectHandler =
-      OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).handler();
 
   // Unified id for either entity or block
   private String spawnId = "";
@@ -49,7 +42,6 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   public SpellEffectBehaviorConfig() {}
 
   public SpellEffectBehaviorConfig(
-      String behaviorName,
       float radius,
       float damage,
       boolean despawnOnTrigger,
@@ -62,7 +54,6 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       EffectTrigger trigger,
       float knockbackAmount,
       boolean breakBlocks) {
-    setBehaviorName(behaviorName);
     this.radius = radius;
     this.damage = damage;
     this.despawnOnTrigger = despawnOnTrigger;
@@ -77,24 +68,12 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.breakBlocks = breakBlocks;
   }
 
-  public String getBehaviorName() {
-    return behaviorName;
-  }
-
   public float getRadius() {
     return radius;
   }
 
   public float getDamage() {
     return damage;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
-  public Consumer<SpellEntity> getEffectHandler() {
-    return effectHandler;
   }
 
   public boolean getAffectPlayer() {
@@ -119,14 +98,6 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
 
   public void setDespawnOnTrigger(boolean despawnOnTrigger) {
     this.despawnOnTrigger = despawnOnTrigger;
-  }
-
-  public void setBehaviorName(String behaviorName) {
-    this.behaviorName =
-        (behaviorName == null || behaviorName.isEmpty())
-            ? OnCollisionBehaviors.DEFAULT_KEY
-            : behaviorName;
-    updateDerived();
   }
 
   public void setRadius(float radius) {
@@ -199,16 +170,9 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.breakBlocks = breakBlocks;
   }
 
-  private void updateDerived() {
-    var def = OnCollisionBehaviors.definitionFor(this.behaviorName);
-    this.description = def.description();
-    this.effectHandler = def.handler();
-  }
-
   @Override
   public CompoundTag toNBT() {
     CompoundTag tag = new CompoundTag();
-    tag.putString("behaviorName", behaviorName);
     tag.putFloat("radius", radius);
     tag.putFloat("damage", damage);
     tag.putBoolean("despawnOnTrigger", despawnOnTrigger);
@@ -227,10 +191,6 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   public static SpellEffectBehaviorConfig fromNBT(CompoundTag tag) {
     SpellEffectBehaviorConfig c = new SpellEffectBehaviorConfig();
     if (tag == null) return c;
-
-    if (tag.contains("behaviorName", Tag.TAG_STRING))
-      c.setBehaviorName(tag.getString("behaviorName"));
-    else c.updateDerived();
 
     if (tag.contains("radius", Tag.TAG_FLOAT)) c.setRadius(tag.getFloat("radius"));
 

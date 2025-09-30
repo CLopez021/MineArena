@@ -55,7 +55,6 @@ public final class LLMSpellConfigService {
       throw new RuntimeException("Failed to parse effect behavior: " + e);
     }
 
-    String name;
     float radius;
     float damage;
     boolean despawnOnTrigger;
@@ -69,7 +68,6 @@ public final class LLMSpellConfigService {
     float knockbackAmount;
     boolean breakBlocks;
     try {
-      name = getString(json_config, "behaviorName", "");
       radius = getFloat(json_config, "radius", 0.0f);
       damage = getFloat(json_config, "damage", 0.0f);
       despawnOnTrigger = getBool(json_config, "despawnOnTrigger", false);
@@ -87,7 +85,6 @@ public final class LLMSpellConfigService {
     }
 
     return new SpellEffectBehaviorConfig(
-        name,
         radius,
         damage,
         despawnOnTrigger,
