@@ -36,8 +36,10 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   private EffectTrigger trigger = EffectTrigger.ON_IMPACT;
   // Knockback amount to apply to entities (0 = no knockback)
   private float knockbackAmount = 0.0f;
-  // Whether to break blocks within the effect radius
-  private boolean breakBlocks = false;
+  // Block destruction parameters - depth controls how many layers of blocks to break, radius
+  // controls the area
+  private float blockDestructionRadius = 0.0f;
+  private int blockDestructionDepth = 0;
 
   public SpellEffectBehaviorConfig() {}
 
@@ -53,7 +55,8 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       boolean affectPlayer,
       EffectTrigger trigger,
       float knockbackAmount,
-      boolean breakBlocks) {
+      float blockDestructionRadius,
+      int blockDestructionDepth) {
     this.radius = radius;
     this.damage = damage;
     this.despawnOnTrigger = despawnOnTrigger;
@@ -65,7 +68,8 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.affectPlayer = affectPlayer;
     this.trigger = trigger == null ? EffectTrigger.ON_IMPACT : trigger;
     this.knockbackAmount = Math.max(0.0f, knockbackAmount);
-    this.breakBlocks = breakBlocks;
+    this.blockDestructionRadius = Math.max(0.0f, blockDestructionRadius);
+    this.blockDestructionDepth = Math.max(0, blockDestructionDepth);
   }
 
   public float getRadius() {
@@ -162,12 +166,20 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.knockbackAmount = Math.max(0.0f, knockbackAmount);
   }
 
-  public boolean getBreakBlocks() {
-    return breakBlocks;
+  public float getBlockDestructionRadius() {
+    return blockDestructionRadius;
   }
 
-  public void setBreakBlocks(boolean breakBlocks) {
-    this.breakBlocks = breakBlocks;
+  public void setBlockDestructionRadius(float blockDestructionRadius) {
+    this.blockDestructionRadius = Math.max(0.0f, blockDestructionRadius);
+  }
+
+  public int getBlockDestructionDepth() {
+    return blockDestructionDepth;
+  }
+
+  public void setBlockDestructionDepth(int blockDestructionDepth) {
+    this.blockDestructionDepth = Math.max(0, blockDestructionDepth);
   }
 
   @Override
@@ -184,7 +196,9 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     if (statusDurationSeconds > 0) tag.putInt("statusDurationSeconds", statusDurationSeconds);
     if (statusAmplifier > 0) tag.putInt("statusAmplifier", statusAmplifier);
     if (knockbackAmount > 0.0f) tag.putFloat("knockbackAmount", knockbackAmount);
-    tag.putBoolean("breakBlocks", breakBlocks);
+    if (blockDestructionRadius > 0.0f)
+      tag.putFloat("blockDestructionRadius", blockDestructionRadius);
+    if (blockDestructionDepth > 0) tag.putInt("blockDestructionDepth", blockDestructionDepth);
     return tag;
   }
 
@@ -223,7 +237,11 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     if (tag.contains("knockbackAmount", Tag.TAG_FLOAT))
       c.setKnockbackAmount(tag.getFloat("knockbackAmount"));
 
-    if (tag.contains("breakBlocks", Tag.TAG_BYTE)) c.setBreakBlocks(tag.getBoolean("breakBlocks"));
+    if (tag.contains("blockDestructionRadius", Tag.TAG_FLOAT))
+      c.setBlockDestructionRadius(tag.getFloat("blockDestructionRadius"));
+
+    if (tag.contains("blockDestructionDepth", Tag.TAG_INT))
+      c.setBlockDestructionDepth(tag.getInt("blockDestructionDepth"));
 
     return c;
   }

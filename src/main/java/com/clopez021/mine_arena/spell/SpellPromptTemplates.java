@@ -21,7 +21,8 @@ public final class SpellPromptTemplates {
         + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
         + "  trigger: string (one of: onCast | onImpact),\n"
         + "  knockbackAmount: number (knockback force to apply to entities; 0 for none),\n"
-        + "  breakBlocks: boolean (whether to break blocks within effect radius)\n"
+        + "  blockDestructionRadius: number (radius of block destruction; 0 for none),\n"
+        + "  blockDestructionDepth: number (layers of blocks to destroy; 0 for none)\n"
         + "}\n\n"
         + "Be creative and match the intent. Consider realistic game balance.");
   }
