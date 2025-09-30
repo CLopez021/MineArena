@@ -121,15 +121,15 @@ public class MineArena {
         Map<BlockPos, BlockState> fireball_blocks = ModelCommand.buildVoxels(fireball_model);
         SpellEffectBehaviorConfig fireball_behavior =
             new SpellEffectBehaviorConfig(
-                "explode",
-                3f,
-                0f,
+                "explosion",
+                5.0f,
+                20.0f,
                 true,
-                "minecraft:fire",
-                100,
-                "ignite",
-                5, // seconds
-                1,
+                "",
+                0,
+                "",
+                0,
+                0,
                 false,
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT);
         // Fireball: explosion + ignite effect for 5s

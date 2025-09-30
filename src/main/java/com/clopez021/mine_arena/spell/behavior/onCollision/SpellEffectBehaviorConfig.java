@@ -17,9 +17,9 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     ON_IMPACT
   }
 
-  private String effectBehaviorName = OnCollisionBehaviors.DEFAULT_KEY;
-  private float effectRadius = 2.0f;
-  private float effectDamage = 0.0f;
+  private String behaviorName = OnCollisionBehaviors.DEFAULT_KEY;
+  private float radius = 2.0f;
+  private float damage = 0.0f;
   private boolean despawnOnTrigger = true;
   private String description =
       OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).description();
@@ -27,57 +27,58 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       OnCollisionBehaviors.definitionFor(OnCollisionBehaviors.DEFAULT_KEY).handler();
 
   // Unified id for either entity or block
-  private String effectSpawnId = "";
-  private int effectSpawnCount = 0;
+  private String spawnId = "";
+  private int spawnCount = 0;
   // Whether explosion/effect should also affect the caster/owner
-  private boolean effectAffectPlayer = false;
-  // Unified effect id: either a single registry id (e.g., "minecraft:regeneration") or a keyword
+  private boolean affectPlayer = false;
+  // Unified status effect id: either a single registry id (e.g., "minecraft:regeneration") or a
+  // keyword
   // ("ignite","freeze")
-  private String effectId = "";
-  // Duration to apply effect in seconds (we convert to ticks internally as needed)
-  private int effectDurationSeconds = 0;
-  // Strength of the effect (0 = level I, 1 = level II, ...)
-  private int effectAmplifier = 1;
+  private String statusEffectId = "";
+  // Duration to apply status effect in seconds (we convert to ticks internally as needed)
+  private int statusDurationSeconds = 0;
+  // Strength of the status effect (0 = level I, 1 = level II, ...)
+  private int statusAmplifier = 1;
   // When to trigger the effect
-  private EffectTrigger effectTrigger = EffectTrigger.ON_IMPACT;
+  private EffectTrigger trigger = EffectTrigger.ON_IMPACT;
 
   public SpellEffectBehaviorConfig() {}
 
   public SpellEffectBehaviorConfig(
-      String effectBehaviorName,
-      float effectRadius,
-      float effectDamage,
+      String behaviorName,
+      float radius,
+      float damage,
       boolean despawnOnTrigger,
-      String effectSpawnId,
-      int effectSpawnCount,
-      String effectId,
-      int effectDurationSeconds,
-      int effectAmplifier,
-      boolean effectAffectPlayer,
-      EffectTrigger effectTrigger) {
-    setEffectBehaviorName(effectBehaviorName);
-    this.effectRadius = effectRadius;
-    this.effectDamage = effectDamage;
+      String spawnId,
+      int spawnCount,
+      String statusEffectId,
+      int statusDurationSeconds,
+      int statusAmplifier,
+      boolean affectPlayer,
+      EffectTrigger trigger) {
+    setBehaviorName(behaviorName);
+    this.radius = radius;
+    this.damage = damage;
     this.despawnOnTrigger = despawnOnTrigger;
-    this.effectSpawnId = effectSpawnId == null ? "" : effectSpawnId;
-    this.effectSpawnCount = Math.max(0, effectSpawnCount);
-    this.effectId = effectId == null ? "" : effectId;
-    this.effectDurationSeconds = Math.max(0, effectDurationSeconds);
-    this.effectAmplifier = Math.max(1, effectAmplifier);
-    this.effectAffectPlayer = effectAffectPlayer;
-    this.effectTrigger = effectTrigger == null ? EffectTrigger.ON_IMPACT : effectTrigger;
+    this.spawnId = spawnId == null ? "" : spawnId;
+    this.spawnCount = Math.max(0, spawnCount);
+    this.statusEffectId = statusEffectId == null ? "" : statusEffectId;
+    this.statusDurationSeconds = Math.max(0, statusDurationSeconds);
+    this.statusAmplifier = Math.max(1, statusAmplifier);
+    this.affectPlayer = affectPlayer;
+    this.trigger = trigger == null ? EffectTrigger.ON_IMPACT : trigger;
   }
 
-  public String getEffectBehaviorName() {
-    return effectBehaviorName;
+  public String getBehaviorName() {
+    return behaviorName;
   }
 
-  public float getEffectRadius() {
-    return effectRadius;
+  public float getRadius() {
+    return radius;
   }
 
-  public float getEffectDamage() {
-    return effectDamage;
+  public float getDamage() {
+    return damage;
   }
 
   public String getDescription() {
@@ -88,20 +89,20 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     return effectHandler;
   }
 
-  public boolean getEffectAffectPlayer() {
-    return effectAffectPlayer;
+  public boolean getAffectPlayer() {
+    return affectPlayer;
   }
 
-  public void setEffectAffectPlayer(boolean effectAffectPlayer) {
-    this.effectAffectPlayer = effectAffectPlayer;
+  public void setAffectPlayer(boolean affectPlayer) {
+    this.affectPlayer = affectPlayer;
   }
 
-  public EffectTrigger getEffectTrigger() {
-    return effectTrigger;
+  public EffectTrigger getTrigger() {
+    return trigger;
   }
 
-  public void setEffectTrigger(EffectTrigger effectTrigger) {
-    this.effectTrigger = effectTrigger == null ? EffectTrigger.ON_IMPACT : effectTrigger;
+  public void setTrigger(EffectTrigger trigger) {
+    this.trigger = trigger == null ? EffectTrigger.ON_IMPACT : trigger;
   }
 
   public boolean getDespawnOnTrigger() {
@@ -112,70 +113,70 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.despawnOnTrigger = despawnOnTrigger;
   }
 
-  public void setEffectBehaviorName(String effectBehaviorName) {
-    this.effectBehaviorName =
-        (effectBehaviorName == null || effectBehaviorName.isEmpty())
+  public void setBehaviorName(String behaviorName) {
+    this.behaviorName =
+        (behaviorName == null || behaviorName.isEmpty())
             ? OnCollisionBehaviors.DEFAULT_KEY
-            : effectBehaviorName;
+            : behaviorName;
     updateDerived();
   }
 
-  public void setEffectRadius(float effectRadius) {
-    this.effectRadius = effectRadius;
+  public void setRadius(float radius) {
+    this.radius = radius;
   }
 
-  public void setEffectDamage(float effectDamage) {
-    this.effectDamage = effectDamage;
+  public void setDamage(float damage) {
+    this.damage = damage;
   }
 
   // Unified accessors
-  public String getEffectSpawnId() {
-    return effectSpawnId;
+  public String getSpawnId() {
+    return spawnId;
   }
 
-  public void setEffectSpawnId(String effectSpawnId) {
-    this.effectSpawnId = effectSpawnId == null ? "" : effectSpawnId;
+  public void setSpawnId(String spawnId) {
+    this.spawnId = spawnId == null ? "" : spawnId;
   }
 
-  public int getEffectSpawnCount() {
-    return effectSpawnCount;
+  public int getSpawnCount() {
+    return spawnCount;
   }
 
-  public void setEffectSpawnCount(int effectSpawnCount) {
-    this.effectSpawnCount = Math.max(0, effectSpawnCount);
+  public void setSpawnCount(int spawnCount) {
+    this.spawnCount = Math.max(0, spawnCount);
   }
 
-  // Effect config
-  public String getEffectId() {
-    return effectId;
+  // Status effect config
+  public String getStatusEffectId() {
+    return statusEffectId;
   }
 
-  public void setEffectId(String effectId) {
-    this.effectId = effectId == null ? "" : effectId;
+  public void setStatusEffectId(String statusEffectId) {
+    this.statusEffectId = statusEffectId == null ? "" : statusEffectId;
   }
 
-  public int getEffectDurationSeconds() {
-    return effectDurationSeconds;
+  public int getStatusDurationSeconds() {
+    return statusDurationSeconds;
   }
 
-  public int getEffectDurationTicks() {
-    return Math.max(0, effectDurationSeconds) * 20;
+  public int getStatusDurationTicks() {
+    return Math.max(0, statusDurationSeconds) * 20;
   }
 
-  public void setEffectDurationSeconds(int effectDurationSeconds) {
-    this.effectDurationSeconds = Math.max(0, effectDurationSeconds);
+  public void setStatusDurationSeconds(int statusDurationSeconds) {
+    this.statusDurationSeconds = Math.max(0, statusDurationSeconds);
   }
 
-  public int getEffectAmplifier() {
-    return effectAmplifier;
+  public int getStatusAmplifier() {
+    return statusAmplifier;
   }
 
-  public void setEffectAmplifier(int effectAmplifier) {
-    this.effectAmplifier = Math.max(0, effectAmplifier);
+  public void setStatusAmplifier(int statusAmplifier) {
+    this.statusAmplifier = Math.max(0, statusAmplifier);
   }
 
   private void updateDerived() {
-    var def = OnCollisionBehaviors.definitionFor(this.effectBehaviorName);
+    var def = OnCollisionBehaviors.definitionFor(this.behaviorName);
     this.description = def.description();
     this.effectHandler = def.handler();
   }
@@ -183,17 +184,17 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   @Override
   public CompoundTag toNBT() {
     CompoundTag tag = new CompoundTag();
-    tag.putString("effectBehaviorName", effectBehaviorName);
-    tag.putFloat("effectRadius", effectRadius);
-    tag.putFloat("effectDamage", effectDamage);
+    tag.putString("behaviorName", behaviorName);
+    tag.putFloat("radius", radius);
+    tag.putFloat("damage", damage);
     tag.putBoolean("despawnOnTrigger", despawnOnTrigger);
-    tag.putBoolean("effectAffectPlayer", effectAffectPlayer);
-    tag.putString("effectTrigger", effectTrigger.name().toLowerCase(Locale.ROOT));
-    if (!effectSpawnId.isEmpty()) tag.putString("effectSpawnId", effectSpawnId);
-    if (effectSpawnCount > 0) tag.putInt("effectSpawnCount", effectSpawnCount);
-    if (!effectId.isEmpty()) tag.putString("effectId", effectId);
-    if (effectDurationSeconds > 0) tag.putInt("effectDurationSeconds", effectDurationSeconds);
-    if (effectAmplifier > 0) tag.putInt("effectAmplifier", effectAmplifier);
+    tag.putBoolean("affectPlayer", affectPlayer);
+    tag.putString("trigger", trigger.name().toLowerCase(Locale.ROOT));
+    if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
+    if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
+    if (!statusEffectId.isEmpty()) tag.putString("statusEffectId", statusEffectId);
+    if (statusDurationSeconds > 0) tag.putInt("statusDurationSeconds", statusDurationSeconds);
+    if (statusAmplifier > 0) tag.putInt("statusAmplifier", statusAmplifier);
     return tag;
   }
 
@@ -201,60 +202,37 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     SpellEffectBehaviorConfig c = new SpellEffectBehaviorConfig();
     if (tag == null) return c;
 
-    // New keys
-    if (tag.contains("effectBehaviorName", Tag.TAG_STRING))
-      c.setEffectBehaviorName(tag.getString("effectBehaviorName"));
-    else if (tag.contains("collisionBehaviorName", Tag.TAG_STRING)) // backward compat
-    c.setEffectBehaviorName(tag.getString("collisionBehaviorName"));
-    else if (tag.contains("name", Tag.TAG_STRING)) // older compat
-    c.setEffectBehaviorName(tag.getString("name"));
+    if (tag.contains("behaviorName", Tag.TAG_STRING))
+      c.setBehaviorName(tag.getString("behaviorName"));
     else c.updateDerived();
 
-    if (tag.contains("effectRadius", Tag.TAG_FLOAT))
-      c.setEffectRadius(tag.getFloat("effectRadius"));
-    else if (tag.contains("radius", Tag.TAG_FLOAT)) c.setEffectRadius(tag.getFloat("radius"));
+    if (tag.contains("radius", Tag.TAG_FLOAT)) c.setRadius(tag.getFloat("radius"));
 
-    if (tag.contains("effectDamage", Tag.TAG_FLOAT))
-      c.setEffectDamage(tag.getFloat("effectDamage"));
-    else if (tag.contains("damage", Tag.TAG_FLOAT)) c.setEffectDamage(tag.getFloat("damage"));
+    if (tag.contains("damage", Tag.TAG_FLOAT)) c.setDamage(tag.getFloat("damage"));
 
     if (tag.contains("despawnOnTrigger", Tag.TAG_BYTE))
       c.setDespawnOnTrigger(tag.getBoolean("despawnOnTrigger"));
-    else if (tag.contains("shouldDespawn", Tag.TAG_BYTE))
-      c.setDespawnOnTrigger(tag.getBoolean("shouldDespawn"));
 
-    if (tag.contains("effectAffectPlayer", Tag.TAG_BYTE))
-      c.setEffectAffectPlayer(tag.getBoolean("effectAffectPlayer"));
-    else if (tag.contains("affectPlayer", Tag.TAG_BYTE))
-      c.setEffectAffectPlayer(tag.getBoolean("affectPlayer"));
+    if (tag.contains("affectPlayer", Tag.TAG_BYTE))
+      c.setAffectPlayer(tag.getBoolean("affectPlayer"));
 
-    if (tag.contains("effectTrigger", Tag.TAG_STRING)) {
-      String v = tag.getString("effectTrigger");
-      c.setEffectTrigger(parseTrigger(v));
-    } else if (tag.contains("triggersInstantly", Tag.TAG_BYTE)) {
-      // old boolean maps to ON_CAST when true, otherwise ON_IMPACT
-      boolean instant = tag.getBoolean("triggersInstantly");
-      c.setEffectTrigger(instant ? EffectTrigger.ON_CAST : EffectTrigger.ON_IMPACT);
+    if (tag.contains("trigger", Tag.TAG_STRING)) {
+      String v = tag.getString("trigger");
+      c.setTrigger(parseTrigger(v));
     }
 
-    if (tag.contains("effectSpawnId", Tag.TAG_STRING))
-      c.setEffectSpawnId(tag.getString("effectSpawnId"));
-    else if (tag.contains("spawnId", Tag.TAG_STRING)) c.setEffectSpawnId(tag.getString("spawnId"));
+    if (tag.contains("spawnId", Tag.TAG_STRING)) c.setSpawnId(tag.getString("spawnId"));
 
-    if (tag.contains("effectSpawnCount", Tag.TAG_INT))
-      c.setEffectSpawnCount(tag.getInt("effectSpawnCount"));
-    else if (tag.contains("spawnCount", Tag.TAG_INT))
-      c.setEffectSpawnCount(tag.getInt("spawnCount"));
+    if (tag.contains("spawnCount", Tag.TAG_INT)) c.setSpawnCount(tag.getInt("spawnCount"));
 
-    if (tag.contains("effectId", Tag.TAG_STRING)) c.setEffectId(tag.getString("effectId"));
+    if (tag.contains("statusEffectId", Tag.TAG_STRING))
+      c.setStatusEffectId(tag.getString("statusEffectId"));
 
-    if (tag.contains("effectDurationSeconds", Tag.TAG_INT))
-      c.setEffectDurationSeconds(tag.getInt("effectDurationSeconds"));
-    else if (tag.contains("effectDuration", Tag.TAG_INT))
-      c.setEffectDurationSeconds(Math.max(0, tag.getInt("effectDuration")) / 20);
+    if (tag.contains("statusDurationSeconds", Tag.TAG_INT))
+      c.setStatusDurationSeconds(tag.getInt("statusDurationSeconds"));
 
-    if (tag.contains("effectAmplifier", Tag.TAG_INT))
-      c.setEffectAmplifier(tag.getInt("effectAmplifier"));
+    if (tag.contains("statusAmplifier", Tag.TAG_INT))
+      c.setStatusAmplifier(tag.getInt("statusAmplifier"));
 
     return c;
   }

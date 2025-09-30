@@ -12,30 +12,30 @@ public final class SpellPromptTemplates {
    * their brief descriptions from the registry.
    */
   public static String collisionBehaviorSystemPrompt() {
-    String behaviors =
+    String allDefinitions =
         OnCollisionBehaviors.registry().entrySet().stream()
             .map(e -> e.getKey() + ": " + safeDesc(e.getValue().description()))
             .collect(Collectors.joining("; "));
     return ("You are configuring a Minecraft spell's EFFECT behavior. "
         + "Use the player's intent to choose appropriate parameters. "
-        + "Valid effectBehaviorName values with descriptions: "
-        + behaviors
+        + "Valid behaviorName values with descriptions: "
+        + allDefinitions
         + ".\n\n"
-        + "When asked for FINAL OUTPUT, return ONLY a single JSON object with EXACTLY these keys: \n"
+        + "Return a JSON object with these keys:\n"
         + "{\n"
-        + "  effectBehaviorName: string (choose one of the names listed above),\n"
-        + "  effectRadius: number (effect radius in blocks; area of influence),\n"
-        + "  effectDamage: number (damage to entities within radius; higher means more damage),\n"
-        + "  despawnOnTrigger: boolean (whether the spell entity is removed after triggering),\n"
-        + "  effectSpawnId: string (optional entity or block identifier to spawn/place; empty for none),\n"
-        + "  effectSpawnCount: number (how many to spawn/place if effectSpawnId is provided),\n"
-        + "  effectId: string (optional status effect id or keyword; empty for none),\n"
-        + "  effectDurationSeconds: number (duration of effect, in SECONDS),\n"
-        + "  effectAmplifier: number (strength/amplifier of the effect),\n"
-        + "  effectAffectPlayer: boolean (whether the spell can affect its owner),\n"
-        + "  effectTrigger: string (one of: onCast | onImpact)\n"
-        + "}.\n"
-        + "Do not include prose, code fences, or extra keys in the FINAL OUTPUT.");
+        + "  behaviorName: string (choose one of the names listed above),\n"
+        + "  radius: number (effect radius in blocks; area of influence),\n"
+        + "  damage: number (damage to entities within radius; higher means more damage),\n"
+        + "  despawnOnTrigger: boolean (whether spell projectile should despawn after effect),\n"
+        + "  spawnId: string (optional entity or block identifier to spawn/place; empty for none),\n"
+        + "  spawnCount: number (how many to spawn/place if spawnId is provided),\n"
+        + "  statusEffectId: string (optional status effect id or keyword; empty for none),\n"
+        + "  statusDurationSeconds: number (duration of status effect, in SECONDS),\n"
+        + "  statusAmplifier: number (strength/amplifier of the status effect),\n"
+        + "  affectPlayer: boolean (whether the spell can affect its owner),\n"
+        + "  trigger: string (one of: onCast | onImpact)\n"
+        + "}\n\n"
+        + "Be creative and match the intent. Consider realistic game balance.");
   }
 
   /** System prompt for spell entity model/movement configuration. */

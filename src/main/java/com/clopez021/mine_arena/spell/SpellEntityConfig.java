@@ -171,7 +171,6 @@ public class SpellEntityConfig extends BaseConfig {
     float microScale =
         tag.contains("microScale", Tag.TAG_FLOAT) ? tag.getFloat("microScale") : 1.0f;
 
-    // Backward compat: try old CollisionBehaviorConfig if present
     SpellEffectBehaviorConfig behavior;
     if (tag.contains("behavior", Tag.TAG_COMPOUND)) {
       CompoundTag b = tag.getCompound("behavior");

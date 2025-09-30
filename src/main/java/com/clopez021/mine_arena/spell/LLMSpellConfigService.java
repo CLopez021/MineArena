@@ -62,22 +62,22 @@ public final class LLMSpellConfigService {
     String spawnId;
     int spawnCount;
     boolean affectPlayer;
-    String effectId;
-    int effectDurationSeconds;
-    int effectAmplifier;
-    SpellEffectBehaviorConfig.EffectTrigger effectTrigger;
+    String statusEffectId;
+    int statusDurationSeconds;
+    int statusAmplifier;
+    SpellEffectBehaviorConfig.EffectTrigger trigger;
     try {
-      name = getString(json_config, "effectBehaviorName", "");
-      radius = getFloat(json_config, "effectRadius", 0.0f);
-      damage = getFloat(json_config, "effectDamage", 0.0f);
+      name = getString(json_config, "behaviorName", "");
+      radius = getFloat(json_config, "radius", 0.0f);
+      damage = getFloat(json_config, "damage", 0.0f);
       despawnOnTrigger = getBool(json_config, "despawnOnTrigger", false);
-      spawnId = getString(json_config, "effectSpawnId", "");
-      spawnCount = getInt(json_config, "effectSpawnCount", 0);
-      affectPlayer = getBool(json_config, "effectAffectPlayer", false);
-      effectId = getString(json_config, "effectId", "");
-      effectDurationSeconds = getInt(json_config, "effectDurationSeconds", 0);
-      effectAmplifier = getInt(json_config, "effectAmplifier", 0);
-      effectTrigger = parseTrigger(getString(json_config, "effectTrigger", "onImpact"));
+      spawnId = getString(json_config, "spawnId", "");
+      spawnCount = getInt(json_config, "spawnCount", 0);
+      affectPlayer = getBool(json_config, "affectPlayer", false);
+      statusEffectId = getString(json_config, "statusEffectId", "");
+      statusDurationSeconds = getInt(json_config, "statusDurationSeconds", 0);
+      statusAmplifier = getInt(json_config, "statusAmplifier", 0);
+      trigger = parseTrigger(getString(json_config, "trigger", "onImpact"));
     } catch (Exception e) {
       throw new RuntimeException("Failed to parse effect behavior: " + e);
     }
@@ -89,11 +89,11 @@ public final class LLMSpellConfigService {
         despawnOnTrigger,
         spawnId,
         spawnCount,
-        effectId,
-        effectDurationSeconds,
-        effectAmplifier,
+        statusEffectId,
+        statusDurationSeconds,
+        statusAmplifier,
         affectPlayer,
-        effectTrigger);
+        trigger);
   }
 
   /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */

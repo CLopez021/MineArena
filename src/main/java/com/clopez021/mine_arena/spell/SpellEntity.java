@@ -202,26 +202,26 @@ public class SpellEntity extends Entity {
   private void applyConfiguredEffectArea(java.util.List<LivingEntity> targets) {
     if (this.level().isClientSide) return;
     var behavior = this.config.getEffectBehavior();
-    String effectId = behavior.getEffectId();
-    int durationTicks = Math.max(0, behavior.getEffectDurationTicks());
-    if (effectId == null || effectId.isBlank() || durationTicks <= 0) return;
+    String statusEffectId = behavior.getStatusEffectId();
+    int durationTicks = Math.max(0, behavior.getStatusDurationTicks());
+    if (statusEffectId == null || statusEffectId.isBlank() || durationTicks <= 0) return;
 
     for (LivingEntity entity : targets) {
       EffectEngine.applyUnifiedEffect(
           (net.minecraft.server.level.ServerLevel) this.level(),
           entity,
-          effectId,
+          statusEffectId,
           durationTicks,
-          behavior.getEffectAmplifier());
+          behavior.getStatusAmplifier());
     }
   }
 
   private void spawnOrPlaceConfiguredOnImpact() {
     if (this.level().isClientSide) return;
     var behavior = this.config.getEffectBehavior();
-    String id = behavior.getEffectSpawnId();
-    int count = Math.max(0, behavior.getEffectSpawnCount());
-    float radius = Math.max(0.0f, behavior.getEffectRadius());
+    String id = behavior.getSpawnId();
+    int count = Math.max(0, behavior.getSpawnCount());
+    float radius = Math.max(0.0f, behavior.getRadius());
     if (id == null || id.isEmpty() || count <= 0) return;
 
     var access = this.level().registryAccess();
@@ -310,11 +310,11 @@ public class SpellEntity extends Entity {
       this.move(MoverType.SELF, this.getDeltaMovement());
 
       // Trigger on-cast behavior (no collision required)
-      if (this.config.getEffectBehavior().getEffectTrigger()
+      if (this.config.getEffectBehavior().getTrigger()
           == SpellEffectBehaviorConfig.EffectTrigger.ON_CAST) {
-        var behavior = this.config.getEffectBehavior();
-        float radius = Math.max(0.1f, behavior.getEffectRadius());
-        boolean affectOwner = behavior.getEffectAffectPlayer();
+        SpellEffectBehaviorConfig behavior = this.config.getEffectBehavior();
+        float radius = Math.max(0.1f, behavior.getRadius());
+        boolean affectOwner = behavior.getAffectPlayer();
         java.util.List<LivingEntity> affectedEntities =
             collectAffectedEntities(radius, affectOwner);
         triggerCollision(affectedEntities);
@@ -344,8 +344,8 @@ public class SpellEntity extends Entity {
       if (collidingNow) {
         // Pre-compute affected entities once for this tick
         var behavior = this.config.getEffectBehavior();
-        float radius = Math.max(0.1f, behavior.getEffectRadius());
-        boolean affectOwner = behavior.getEffectAffectPlayer();
+        float radius = Math.max(0.1f, behavior.getRadius());
+        boolean affectOwner = behavior.getAffectPlayer();
         java.util.List<LivingEntity> affectedEntities =
             collectAffectedEntities(radius, affectOwner);
 
