@@ -43,6 +43,7 @@ public final class LLMSpellConfigService {
     // Validate the merged config
     validateFinalConfig(finalConfigJson);
 
+    System.out.println("Final config: " + finalConfigJson.toString());
     // Parse the final merged config and create the SpellEntityConfig
     return parseAndBuildFinalConfig(finalConfigJson);
   }
