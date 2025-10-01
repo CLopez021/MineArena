@@ -19,7 +19,7 @@ public class ObjModel extends Model {
   /** The default material for missing or unassigned textures. */
   public static final String DEFAULT_MATERIAL = "iron_block  ";
 
-  public static final float MODEL_SCALE = 50;
+  public static final float MODEL_SCALE = 30;
 
   /** The default color for missing or unassigned textures. */
   public static final int DEFAULT_COLOR = (255 << 24) | (128 << 16) | (128 << 8) | 128;
