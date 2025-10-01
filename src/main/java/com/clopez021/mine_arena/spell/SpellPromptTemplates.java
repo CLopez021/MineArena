@@ -67,7 +67,7 @@ public final class SpellPromptTemplates {
         The following is the config for the spell:
         {
           prompt: string // Short visual description for 3D model generation (e.g. "glowing ice shard", "fireball with smoke trail").
-          microScale: number (0.2-1.5) // Visual size multiplier. 0.5=half block, 1.0=one block, 1.5=1.5 blocks. Keep projectiles small (0.3-0.6).
+          microScale: number (0.01-0.05) // Visual size multiplier. 0.01= small, 0.03 = medium, 0.05 = large.
           shouldMove: boolean // If true, spell travels forward in player's look direction. If false, spawns stationary at cast location.
           speed: number (>=0) // Travel speed in blocks/tick (multiply by 20 for blocks/second). Typical values: slow=0.25 (5 b/s), medium=0.5 (10 b/s), fast=1.0 (20 b/s), very fast=1.5+ (30+ b/s). Ignored if shouldMove=false.
         }
