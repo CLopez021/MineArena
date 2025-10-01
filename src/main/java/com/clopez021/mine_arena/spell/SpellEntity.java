@@ -366,7 +366,7 @@ public class SpellEntity extends Entity {
           == SpellEffectBehaviorConfig.EffectTrigger.ON_CAST) {
         SpellEffectBehaviorConfig behavior = this.config.getEffectBehavior();
         float radius = Math.max(0.1f, behavior.getRadius());
-        boolean affectOwner = behavior.getAffectPlayer();
+        boolean affectOwner = behavior.getAffectOwner();
         java.util.List<LivingEntity> affectedEntities =
             collectAffectedEntities(radius, affectOwner);
         triggerCollision(affectedEntities);
@@ -397,7 +397,7 @@ public class SpellEntity extends Entity {
         // Pre-compute affected entities once for this tick
         var behavior = this.config.getEffectBehavior();
         float radius = Math.max(0.1f, behavior.getRadius());
-        boolean affectOwner = behavior.getAffectPlayer();
+        boolean affectOwner = behavior.getAffectOwner();
         java.util.List<LivingEntity> affectedEntities =
             collectAffectedEntities(radius, affectOwner);
 

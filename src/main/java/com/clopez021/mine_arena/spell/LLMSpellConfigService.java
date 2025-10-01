@@ -13,78 +13,181 @@ import java.util.Map;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
 
-/** Minimal service for generating spell configs from an LLM in two steps, parsing raw JSON. */
+/** Service for generating spell configs from an LLM using a 2-step process with shared context. */
 public final class LLMSpellConfigService {
   private LLMSpellConfigService() {}
 
-  // Step 1a: Get effect behavior from LLM as JSON and build the config
-  public static SpellEffectBehaviorConfig generateEffectBehaviorFromLLM(String spellIntent) {
+  /**
+   * Main entry point: Generate a complete SpellEntityConfig using a 2-step process. All steps share
+   * the same conversation context so the LLM can build on previous reasoning. Step 1: Generate
+   * behavior config only Step 2: Generate entity visual/movement config (with Step 1 context) Then
+   * merge in code and validate
+   */
+  public static SpellEntityConfig generateSpellConfigFromLLM(String spellIntent) throws Exception {
     if (spellIntent == null || spellIntent.isEmpty()) {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
 
-    // Two-step: reasoning then final JSON
-    String system = SpellPromptTemplates.collisionBehaviorSystemPrompt();
-    List<Message> messages = new ArrayList<>();
-    messages.add(new Message("system", system));
-    messages.add(
+    // Shared conversation context for all steps
+    List<Message> conversationHistory = new ArrayList<>();
+
+    // Step 1: Generate behavior config
+    JsonObject step1Json = executeStep1Behavior(spellIntent, conversationHistory);
+
+    // Step 2: Generate entity config (conversation already has Step 1 context)
+    JsonObject step2Json = executeStep2Entity(spellIntent, conversationHistory);
+
+    // Merge the two JSON objects in code
+    JsonObject finalConfigJson = mergeConfigs(step1Json, step2Json);
+
+    // Validate the merged config
+    validateFinalConfig(finalConfigJson);
+
+    // Parse the final merged config and create the SpellEntityConfig
+    return parseAndBuildFinalConfig(finalConfigJson);
+  }
+
+  // ---- STEP 1: Behavior Only ----
+
+  private static JsonObject executeStep1Behavior(
+      String spellIntent, List<Message> conversationHistory) {
+    // Start with Step 1 system prompt
+    conversationHistory.add(
+        new Message("system", SpellPromptTemplates.step1BehaviorSystemPrompt()));
+    conversationHistory.add(
+        new Message("user", SpellPromptTemplates.step1BehaviorNotepadPrompt(spellIntent)));
+
+    String reasoning;
+    try {
+      reasoning = openrouter.chat(conversationHistory);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get Step 1 behavior reasoning: " + e);
+    }
+
+    // Add reasoning to shared context
+    conversationHistory.add(new Message("assistant", reasoning));
+    conversationHistory.add(new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction()));
+
+    String jsonResult;
+    try {
+      jsonResult = openrouter.chat(conversationHistory);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to get Step 1 behavior JSON: " + e);
+    }
+
+    // Add Step 1 JSON result to shared context
+    conversationHistory.add(new Message("assistant", jsonResult));
+
+    try {
+      return parseObject(jsonResult);
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to parse Step 1 behavior JSON: " + e);
+    }
+  }
+
+  // ---- STEP 2: Entity Visual/Movement ----
+
+  private static JsonObject executeStep2Entity(
+      String spellIntent, List<Message> conversationHistory) {
+    // Now transition to Step 2 - conversation already contains all of Step 1
+    conversationHistory.add(
         new Message(
-            "user", SpellPromptTemplates.reasoningNotepadPrompt(spellIntent, "Effect Behavior")));
+            "user", "Now moving to STEP 2.\n\n" + SpellPromptTemplates.step2EntitySystemPrompt()));
+    conversationHistory.add(
+        new Message("user", SpellPromptTemplates.step2EntityNotepadPrompt(spellIntent)));
 
-    String llm_reasoning;
+    String reasoning;
     try {
-      llm_reasoning = openrouter.chat(messages);
+      reasoning = openrouter.chat(conversationHistory);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to get effect behavior reasoning: " + e);
+      throw new RuntimeException("Failed to get Step 2 entity reasoning: " + e);
     }
 
-    messages.add(new Message("assistant", llm_reasoning));
-    messages.add(new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction()));
+    // Add Step 2 reasoning to shared context
+    conversationHistory.add(new Message("assistant", reasoning));
+    conversationHistory.add(new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction()));
 
-    String llm_config_result;
+    String jsonResult;
     try {
-      llm_config_result = openrouter.chat(messages);
+      jsonResult = openrouter.chat(conversationHistory);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to get effect behavior assistant: " + e);
+      throw new RuntimeException("Failed to get Step 2 entity JSON: " + e);
     }
 
-    JsonObject json_config;
+    // Add Step 2 JSON result to shared context
+    conversationHistory.add(new Message("assistant", jsonResult));
+
     try {
-      json_config = parseObject(llm_config_result);
+      return parseObject(jsonResult);
     } catch (Exception e) {
-      throw new RuntimeException("Failed to parse effect behavior: " + e);
+      throw new RuntimeException("Failed to parse Step 2 entity JSON: " + e);
+    }
+  }
+
+  // ---- Merge Configs in Code ----
+
+  private static JsonObject mergeConfigs(JsonObject step1Behavior, JsonObject step2Entity) {
+    // Simply add the behavior object to the entity config
+    step2Entity.add("behavior", step1Behavior);
+    return step2Entity;
+  }
+
+  // ---- Validation ----
+
+  private static void validateFinalConfig(JsonObject config) {
+    // Validate structure exists
+    if (!config.has("behavior")) {
+      throw new IllegalArgumentException("Final config missing 'behavior' object");
     }
 
-    float radius;
-    float damage;
-    boolean despawnOnTrigger;
-    String spawnId;
-    int spawnCount;
-    boolean affectPlayer;
-    String statusEffectId;
-    int statusDurationSeconds;
-    int statusAmplifier;
-    SpellEffectBehaviorConfig.EffectTrigger trigger;
-    float knockbackAmount;
-    float blockDestructionRadius;
-    int blockDestructionDepth;
-    try {
-      radius = getFloat(json_config, "radius", 0.0f);
-      damage = getFloat(json_config, "damage", 0.0f);
-      despawnOnTrigger = getBool(json_config, "despawnOnTrigger", false);
-      spawnId = getString(json_config, "spawnId", "");
-      spawnCount = getInt(json_config, "spawnCount", 0);
-      affectPlayer = getBool(json_config, "affectPlayer", false);
-      statusEffectId = getString(json_config, "statusEffectId", "");
-      statusDurationSeconds = getInt(json_config, "statusDurationSeconds", 0);
-      statusAmplifier = getInt(json_config, "statusAmplifier", 0);
-      trigger = parseTrigger(getString(json_config, "trigger", "onImpact"));
-      knockbackAmount = getFloat(json_config, "knockbackAmount", 0.0f);
-      blockDestructionRadius = getFloat(json_config, "blockDestructionRadius", 0.0f);
-      blockDestructionDepth = getInt(json_config, "blockDestructionDepth", 0);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to parse effect behavior: " + e);
+    JsonObject behavior = config.getAsJsonObject("behavior");
+
+    // Validate non-negative numbers
+    float radius = getFloat(behavior, "radius", 0.0f);
+    if (radius <= 0.0f) {
+      throw new IllegalArgumentException("radius must be > 0");
     }
+  }
+
+  // ---- Parse Final Config ----
+  private static SpellEntityConfig parseAndBuildFinalConfig(JsonObject finalConfig)
+      throws Exception {
+    // Extract top-level fields
+    String prompt = getString(finalConfig, "prompt", null);
+    if (prompt == null || prompt.isEmpty()) {
+      throw new IllegalArgumentException("Final config missing 'prompt'");
+    }
+
+    float microScale = getFloat(finalConfig, "microScale", 1.0f);
+    boolean shouldMove = getBool(finalConfig, "shouldMove", true);
+    float speed = getFloat(finalConfig, "speed", 0.0f);
+
+    // Extract behavior object and build SpellEffectBehaviorConfig
+    JsonObject behaviorJson = finalConfig.getAsJsonObject("behavior");
+    SpellEffectBehaviorConfig behavior = parseBehaviorFromJson(behaviorJson);
+
+    // Generate blocks from prompt
+    Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
+
+    return new SpellEntityConfig(blocks, microScale, behavior, shouldMove, speed);
+  }
+
+  // ---- Parse Behavior From JSON ----
+  private static SpellEffectBehaviorConfig parseBehaviorFromJson(JsonObject behaviorJson) {
+    float radius = getFloat(behaviorJson, "radius", 2.0f);
+    float damage = getFloat(behaviorJson, "damage", 0.0f);
+    boolean despawnOnTrigger = getBool(behaviorJson, "despawnOnTrigger", true);
+    String spawnId = getString(behaviorJson, "spawnId", "");
+    int spawnCount = getInt(behaviorJson, "spawnCount", 0);
+    boolean affectOwner = getBool(behaviorJson, "affectOwner", false);
+    String statusEffectId = getString(behaviorJson, "statusEffectId", "");
+    int statusDurationSeconds = getInt(behaviorJson, "statusDurationSeconds", 0);
+    int statusAmplifier = getInt(behaviorJson, "statusAmplifier", 1);
+    SpellEffectBehaviorConfig.EffectTrigger trigger =
+        parseTrigger(getString(behaviorJson, "trigger", "onImpact"));
+    float knockbackAmount = getFloat(behaviorJson, "knockbackAmount", 0.0f);
+    float blockDestructionRadius = getFloat(behaviorJson, "blockDestructionRadius", 0.0f);
+    int blockDestructionDepth = getInt(behaviorJson, "blockDestructionDepth", 0);
 
     return new SpellEffectBehaviorConfig(
         radius,
@@ -95,64 +198,11 @@ public final class LLMSpellConfigService {
         statusEffectId,
         statusDurationSeconds,
         statusAmplifier,
-        affectPlayer,
+        affectOwner,
         trigger,
         knockbackAmount,
         blockDestructionRadius,
         blockDestructionDepth);
-  }
-
-  /** Step 1b: Generate model + full SpellEntityConfig using a second LLM call (movement/model). */
-  public static SpellEntityConfig generateSpellConfigFromLLM(String spellIntent) throws Exception {
-    if (spellIntent == null || spellIntent.isEmpty()) {
-      throw new IllegalArgumentException("spellIntent cannot be empty");
-    }
-
-    // First, build effect behavior via LLM
-    SpellEffectBehaviorConfig cb = generateEffectBehaviorFromLLM(spellIntent);
-
-    // Then, build movement/model info via a separate two-step LLM flow
-    String system = SpellPromptTemplates.spellEntitySystemPrompt();
-    List<Message> messages = new ArrayList<>();
-    messages.add(new Message("system", system));
-    messages.add(
-        new Message(
-            "user",
-            SpellPromptTemplates.reasoningNotepadPrompt(spellIntent, "Model and Movement")));
-    String llm_reasoning;
-    try {
-      llm_reasoning = openrouter.chat(messages);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to get spell entity reasoning: " + e);
-    }
-
-    messages.add(new Message("assistant", llm_reasoning));
-    messages.add(new Message("user", SpellPromptTemplates.finalJsonOnlyInstruction()));
-
-    String llm_config_result;
-    try {
-      llm_config_result = openrouter.chat(messages);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to get spell entity assistant: " + e);
-    }
-
-    JsonObject json_config;
-    try {
-      json_config = parseObject(llm_config_result);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to parse spell entity config: " + e);
-    }
-
-    String prompt = getString(json_config, "prompt", null);
-    if (prompt == null || prompt.isEmpty())
-      throw new IllegalArgumentException("LLM missing 'prompt'");
-    float microScale = getFloat(json_config, "microScale", 1.0f);
-    boolean shouldMove = getBool(json_config, "shouldMove", true);
-    float speed = getFloat(json_config, "speed", 0.0f);
-
-    Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
-
-    return new SpellEntityConfig(blocks, microScale, cb, shouldMove, speed);
   }
 
   // ---- JSON helpers ----

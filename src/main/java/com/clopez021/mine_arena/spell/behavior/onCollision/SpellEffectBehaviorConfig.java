@@ -23,7 +23,7 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   private String spawnId = "";
   private int spawnCount = 0;
   // Whether explosion/effect should also affect the caster/owner
-  private boolean affectPlayer = false;
+  private boolean affectOwner = false;
   // Unified status effect id: either a single registry id (e.g., "minecraft:regeneration") or a
   // keyword
   // ("ignite","freeze")
@@ -52,7 +52,7 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       String statusEffectId,
       int statusDurationSeconds,
       int statusAmplifier,
-      boolean affectPlayer,
+      boolean affectOwner,
       EffectTrigger trigger,
       float knockbackAmount,
       float blockDestructionRadius,
@@ -65,7 +65,7 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.statusEffectId = statusEffectId == null ? "" : statusEffectId;
     this.statusDurationSeconds = Math.max(0, statusDurationSeconds);
     this.statusAmplifier = Math.max(1, statusAmplifier);
-    this.affectPlayer = affectPlayer;
+    this.affectOwner = affectOwner;
     this.trigger = trigger == null ? EffectTrigger.ON_IMPACT : trigger;
     this.knockbackAmount = Math.max(0.0f, knockbackAmount);
     this.blockDestructionRadius = Math.max(0.0f, blockDestructionRadius);
@@ -80,12 +80,12 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     return damage;
   }
 
-  public boolean getAffectPlayer() {
-    return affectPlayer;
+  public boolean getAffectOwner() {
+    return affectOwner;
   }
 
-  public void setAffectPlayer(boolean affectPlayer) {
-    this.affectPlayer = affectPlayer;
+  public void setAffectOwner(boolean affectOwner) {
+    this.affectOwner = affectOwner;
   }
 
   public EffectTrigger getTrigger() {
@@ -188,7 +188,7 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     tag.putFloat("radius", radius);
     tag.putFloat("damage", damage);
     tag.putBoolean("despawnOnTrigger", despawnOnTrigger);
-    tag.putBoolean("affectPlayer", affectPlayer);
+    tag.putBoolean("affectOwner", affectOwner);
     tag.putString("trigger", trigger.name().toLowerCase(Locale.ROOT));
     if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
     if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
@@ -213,8 +213,7 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     if (tag.contains("despawnOnTrigger", Tag.TAG_BYTE))
       c.setDespawnOnTrigger(tag.getBoolean("despawnOnTrigger"));
 
-    if (tag.contains("affectPlayer", Tag.TAG_BYTE))
-      c.setAffectPlayer(tag.getBoolean("affectPlayer"));
+    if (tag.contains("affectOwner", Tag.TAG_BYTE)) c.setAffectOwner(tag.getBoolean("affectOwner"));
 
     if (tag.contains("trigger", Tag.TAG_STRING)) {
       String v = tag.getString("trigger");
