@@ -18,10 +18,10 @@ public class SpellFactory {
       return;
     }
 
-    SpellEntityConfig cfg;
+    LLMSpellConfigService.SpellResult result;
     try {
       System.out.println("Generating spell config for: " + spellDescription);
-      cfg = LLMSpellConfigService.generateSpellConfigFromLLM(spellDescription);
+      result = LLMSpellConfigService.generateSpellFromLLM(spellDescription);
     } catch (MeshyExceptions.InvalidApiKeyException e) {
       System.err.println("Meshy invalid API key: " + e.getMessage());
       sendComplete(player, "Meshy API key missing or invalid. Configure it in settings.");
@@ -57,9 +57,9 @@ public class SpellFactory {
       return;
     }
 
-    // Save a reusable PlayerSpellConfig for this player using provided description/phrase
-    PlayerSpellConfig reusable =
-        new PlayerSpellConfig(castPhrase, castPhrase != null ? castPhrase : spellDescription, cfg);
+    // Save a reusable PlayerSpellConfig for this player using LLM-generated name
+    String spellName = result.name != null && !result.name.isEmpty() ? result.name : castPhrase;
+    PlayerSpellConfig reusable = new PlayerSpellConfig(spellName, castPhrase, result.config);
     PlayerManager.getInstance().addSpell(player, reusable);
 
     // Notify client that spell creation finished successfully (no error)

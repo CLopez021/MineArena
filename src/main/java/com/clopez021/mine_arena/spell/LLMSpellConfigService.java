@@ -17,13 +17,24 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class LLMSpellConfigService {
   private LLMSpellConfigService() {}
 
+  /** Result containing both the spell name and config. */
+  public static class SpellResult {
+    public final String name;
+    public final SpellEntityConfig config;
+
+    public SpellResult(String name, SpellEntityConfig config) {
+      this.name = name;
+      this.config = config;
+    }
+  }
+
   /**
    * Main entry point: Generate a complete SpellEntityConfig using a 2-step process. All steps share
    * the same conversation context so the LLM can build on previous reasoning. Step 1: Generate
-   * behavior config only Step 2: Generate entity visual/movement config (with Step 1 context) Then
-   * merge in code and validate
+   * behavior config only Step 2: Generate entity visual/movement config + name (with Step 1
+   * context) Then merge in code and validate
    */
-  public static SpellEntityConfig generateSpellConfigFromLLM(String spellIntent) throws Exception {
+  public static SpellResult generateSpellFromLLM(String spellIntent) throws Exception {
     if (spellIntent == null || spellIntent.isEmpty()) {
       throw new IllegalArgumentException("spellIntent cannot be empty");
     }
@@ -45,7 +56,9 @@ public final class LLMSpellConfigService {
 
     System.out.println("Final config: " + finalConfigJson.toString());
     // Parse the final merged config and create the SpellEntityConfig
-    return parseAndBuildFinalConfig(finalConfigJson);
+    String spellName = getString(finalConfigJson, "name", spellIntent);
+    SpellEntityConfig config = parseAndBuildFinalConfig(finalConfigJson);
+    return new SpellResult(spellName, config);
   }
 
   // ---- STEP 1: Behavior Only ----
@@ -153,7 +166,7 @@ public final class LLMSpellConfigService {
   // ---- Parse Final Config ----
   private static SpellEntityConfig parseAndBuildFinalConfig(JsonObject finalConfig)
       throws Exception {
-    // Extract top-level fields
+    // Extract top-level fields (name is extracted separately in the main method)
     String prompt = getString(finalConfig, "prompt", null);
     if (prompt == null || prompt.isEmpty()) {
       throw new IllegalArgumentException("Final config missing 'prompt'");

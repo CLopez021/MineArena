@@ -49,7 +49,7 @@ public class PlayerManager {
    * @param serverPlayer The ServerPlayer
    * @return Player object or null if not found
    */
-  private Player getPlayer(ServerPlayer serverPlayer) {
+  public Player getPlayer(ServerPlayer serverPlayer) {
     return players.get(serverPlayer.getUUID());
   }
 
