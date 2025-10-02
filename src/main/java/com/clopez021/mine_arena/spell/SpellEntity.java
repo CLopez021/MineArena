@@ -325,7 +325,7 @@ public class SpellEntity extends Entity {
             if (dist <= radius) {
               BlockState state = this.level().getBlockState(pos);
               if (!state.isAir() && state.getDestroySpeed(this.level(), pos) >= 0) {
-                this.level().destroyBlock(pos, true);
+                this.level().destroyBlock(pos, false);
               }
             }
           }

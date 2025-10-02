@@ -49,6 +49,10 @@ public class Player {
     return uuid;
   }
 
+  public Collection<PlayerSpellConfig> getSpells() {
+    return new java.util.ArrayList<>(spells.values());
+  }
+
   // Bulk-add with auto-save and speech recognition updates
   public void addSpells(Collection<PlayerSpellConfig> spells) {
     System.out.println("addSpells: " + spells);

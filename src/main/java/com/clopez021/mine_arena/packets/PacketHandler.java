@@ -46,5 +46,17 @@ public class PacketHandler {
         .decoder(VoiceSidecarStopPacket::decode)
         .consumerMainThread(VoiceSidecarStopPacket::handle)
         .add();
+    INSTANCE
+        .messageBuilder(RequestSpellListPacket.class, ++index, NetworkDirection.PLAY_TO_SERVER)
+        .encoder(RequestSpellListPacket::encode)
+        .decoder(RequestSpellListPacket::decode)
+        .consumerMainThread(RequestSpellListPacket::handle)
+        .add();
+    INSTANCE
+        .messageBuilder(SpellInfoListPacket.class, ++index, NetworkDirection.PLAY_TO_CLIENT)
+        .encoder(SpellInfoListPacket::encode)
+        .decoder(SpellInfoListPacket::decode)
+        .consumerMainThread(SpellInfoListPacket::handle)
+        .add();
   }
 }

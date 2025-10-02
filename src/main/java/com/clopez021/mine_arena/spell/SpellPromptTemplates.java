@@ -13,6 +13,17 @@ public final class SpellPromptTemplates {
       Boss/special: minecraft:ender_dragon, minecraft:wither.
       Projectiles/misc: minecraft:arrow, minecraft:snowball, minecraft:fireball, minecraft:small_fireball, minecraft:dragon_fireball, minecraft:shulker_bullet, minecraft:egg, minecraft:ender_pearl, minecraft:xp_bottle, minecraft:trident, minecraft:area_effect_cloud, minecraft:lightning_bolt, minecraft:tnt, minecraft:falling_block, minecraft:item, minecraft:item_frame, minecraft:glow_item_frame, minecraft:painting, minecraft:leash_knot, minecraft:marker, minecraft:boat, minecraft:chest_boat, minecraft:minecart, minecraft:chest_minecart, minecraft:furnace_minecart, minecraft:hopper_minecart, minecraft:tnt_minecart.""";
 
+  private static final String BLOCK_ID_EXAMPLES =
+      """
+minecraft:acacia_log, minecraft:acacia_planks, minecraft:amethyst_block, minecraft:andesite, minecraft:bamboo_block, minecraft:bamboo_planks, minecraft:bedrock, minecraft:birch_log, minecraft:birch_planks, minecraft:blue_ice, minecraft:budding_amethyst
+minecraft:cactus, minecraft:campfire, minecraft:cherry_log, minecraft:cherry_planks, minecraft:chorus_flower, minecraft:chorus_plant, minecraft:clay, minecraft:coarse_dirt, minecraft:cobweb, minecraft:crimson_nylium
+minecraft:crimson_planks, minecraft:crimson_stem, minecraft:crying_obsidian, minecraft:dark_oak_log, minecraft:dark_oak_planks, minecraft:deepslate, minecraft:diorite, minecraft:dirt, minecraft:end_gateway, minecraft:end_portal, minecraft:end_stone, minecraft:fire
+minecraft:glow_lichen, minecraft:granite, minecraft:grass_block, minecraft:gravel, minecraft:honey_block, minecraft:ice, minecraft:jungle_log, minecraft:jungle_planks, minecraft:lava, minecraft:light, minecraft:magma_block, minecraft:mangrove_log, minecraft:mangrove_planks,
+minecraft:moss_block, minecraft:mud, minecraft:mycelium, minecraft:netherrack, minecraft:nether_portal, minecraft:oak_log, minecraft:oak_planks, minecraft:obsidian, minecraft:pale_moss_block, minecraft:pale_oak_log, minecraft:pale_oak_planks, minecraft:packed_ice,
+minecraft:podzol, minecraft:powder_snow, minecraft:red_sand, minecraft:reinforced_deepslate, minecraft:rooted_dirt, minecraft:sand, minecraft:sculk_vein, minecraft:snow, minecraft:snow_block, minecraft:soul_campfire, minecraft:soul_fire,
+minecraft:soul_sand, minecraft:soul_soil, minecraft:spruce_log, minecraft:spruce_planks, minecraft:stone, minecraft:suspicious_gravel, minecraft:suspicious_sand, minecraft:sweet_berry_bush,
+minecraft:tnt, minecraft:torch, minecraft:tuff, minecraft:vine, minecraft:warped_nylium,minecraft:warped_planks, minecraft:warped_stem, minecraft:water,minecraft:blue_ice""";
+
   // ---- Status effect ID examples ----
   private static final String STATUS_EFFECT_EXAMPLES =
       """
@@ -28,7 +39,7 @@ public final class SpellPromptTemplates {
           radius: number (>0) // Effect radius in blocks. Determines area of impact for damage, knockback, and status effects.
           damage: number (>=0) // Damage in half-hearts (1 damage = 0.5 hearts, 2 damage = 1 heart). Applied directly via magic damage source.
           despawnOnTrigger: boolean // If true, spell entity disappears after triggering effects (one-time use). If false, persists (useful for structures/barriers/DoT zones).
-          spawnId: string // Minecraft entity ID to spawn. Use "" for none. Examples: %s
+          spawnId: string // Minecraft entity or block ID to spawn upon the effect being triggered. Useful for spawning anything that, given the users request, would make sense to spawn along side the spell. For example, if the spell is a large dog, you may want to summon wolves as part of the effect. Or if the spell is a web, you may want to spawn cobwebs on impact of the spell. Use "" for none. Available Entity IDs: %s \n Available Block IDs: %s
           spawnCount: number (>=0) // Number of entities to spawn at random positions within radius. Ignored if spawnId is "".
           statusEffectId: string // Status effect ID to apply. Use "" for none. Examples: %s
           statusDurationSeconds: number (>=0) // Duration the status effect lasts in seconds (converted to ticks internally at 20 TPS).
@@ -45,7 +56,7 @@ public final class SpellPromptTemplates {
         - trigger=onImpact means effects occur when the entity collides (requires travel later).
         - Empty spawnId or statusEffectId means "none" for that effect.
         - All effects (damage, knockback, status) have 1-second cooldown to prevent spam triggering."""
-        .formatted(SPAWN_ID_EXAMPLES, STATUS_EFFECT_EXAMPLES);
+        .formatted(SPAWN_ID_EXAMPLES, BLOCK_ID_EXAMPLES, STATUS_EFFECT_EXAMPLES);
   }
 
   /** STEP 1: Notepad prompt for behavior reasoning. */
@@ -62,10 +73,11 @@ public final class SpellPromptTemplates {
   /** STEP 2: System prompt for entity presentation & motion (no behavior). */
   public static String step2EntitySystemPrompt() {
     return """
-        You are configuring STEP 2: SpellEntity (visual + movement).
+        You are configuring STEP 2: SpellEntity.
 
         The following is the config for the spell:
         {
+          name: string // Edgy, wizardy spell name (2-4 words max). Should sound mystical and powerful. Examples: "Infernal Devastation", "Glacial Doom", "Ethereal Surge", "Void Cascade", "Crimson Wrath", "Spectral Lance".
           prompt: string // Short visual description for 3D model generation. Note that you do not need to include size description here as that will have no effect, that is better left for the microScale parameter. (e.g. "glowing ice shard", "fireball with smoke trail").
           microScale: number (0.01-0.05) // Visual size multiplier. 0.01= small, 0.03 = medium, 0.05 = large.
           shouldMove: boolean // If true, spell travels forward in player's look direction. If false, spawns stationary at cast location.
