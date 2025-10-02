@@ -2,33 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Minecraft Voice Proxy</title>
+  <title>MineArena Voice Casting</title>
   <style>
     body { 
       font-family: system-ui, sans-serif; 
       padding: 20px; 
-      max-width: 400px; 
+      max-width: 600px; 
       margin: 0 auto;
       background: #1a1a1a;
       color: #ffffff;
+      font-size: 18px;
     }
     .container {
       background: #2a2a2a;
-      border-radius: 8px;
-      padding: 20px;
+      border-radius: 12px;
+      padding: 32px;
       text-align: center;
     }
     h1 {
-      margin: 0 0 16px 0;
+      margin: 0 0 24px 0;
       color: #4CAF50;
-      font-size: 1.5em;
+      font-size: 2.2em;
     }
     .status {
       background: #333;
-      padding: 12px;
-      border-radius: 6px;
-      margin: 16px 0;
-      border-left: 4px solid #4CAF50;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 24px 0;
+      border-left: 6px solid #4CAF50;
+      font-size: 1.1em;
+      line-height: 1.5;
     }
     .status.listening {
       border-left-color: #FF5722;
@@ -43,7 +46,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>🎤 Voice Proxy</h1>
+    <h1>🎤 MineArena Voice Casting</h1>
     <div id="status" class="status">Connecting...</div>
   </div>
 
@@ -73,10 +76,9 @@
   function connectWS() {
     ws = new WebSocket(WS_URL);
     ws.onopen = () => {
-      setStatus("Connected - Starting microphone...");
+      setStatus("Please accept microphone permission to cast spells...");
       // Auto-start speech recognition once connected
       startRecognition();
-      setStatus("Connected");
       // Notify sidecar that the page is ready to receive config
       send({ type: "ready" });
     };
@@ -110,7 +112,7 @@
         const closed = window.close();
         setTimeout(() => {
           try { if (ws && ws.readyState === 1) ws.close(); } catch {}
-          setStatus("Stopped - you can close this tab", false);
+          setStatus("✓ Voice casting stopped - you can close this tab now", false);
         }, 50);
       }
     };
@@ -282,7 +284,7 @@
 
   function startRecognition() {
     if (!SR) { 
-      setStatus("Speech recognition not supported", true);
+      setStatus("⚠️ Speech recognition not supported in this browser - please use Chrome, Edge, or Safari", true);
       return; 
     }
     
@@ -320,7 +322,7 @@
 
       recog.onstart = () => {
         isListening = true;
-        setStatus(`Listening (${lang})`);
+        setStatus(`🎮 Listening for spells! Return to game - this tab will close automatically when you exit the world.`);
       };
 
       recog.onend = () => {
@@ -335,7 +337,7 @@
 
       recog.onerror = (e) => {
         if (e.error === 'not-allowed') {
-          setStatus("Microphone permission denied - please allow and refresh", true);
+          setStatus("⚠️ Microphone permission denied - please allow microphone access and refresh this page to cast spells", true);
           isListening = false;
         }
       };
@@ -346,7 +348,7 @@
       recog.start(); 
     } catch (e) {
       console.log("[Voice Debug] Error starting recognition:", e);
-      setStatus("Failed to start listening", true);
+      setStatus("⚠️ Failed to start microphone - please check your browser permissions", true);
     }
   }
 

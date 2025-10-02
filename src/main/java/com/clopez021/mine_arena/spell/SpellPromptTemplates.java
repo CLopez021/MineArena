@@ -27,7 +27,10 @@ minecraft:tnt, minecraft:torch, minecraft:tuff, minecraft:vine, minecraft:warped
   // ---- Status effect ID examples ----
   private static final String STATUS_EFFECT_EXAMPLES =
       """
-      minecraft:absorption, minecraft:bad_omen, minecraft:raid_omen, minecraft:trial_omen, minecraft:bad_luck, minecraft:luck, minecraft:blindness, minecraft:darkness, minecraft:conduit_power, minecraft:dolphins_grace, minecraft:fire_resistance, minecraft:glowing, minecraft:haste, minecraft:mining_fatigue, minecraft:health_boost, minecraft:hero_of_the_village, minecraft:hunger, minecraft:infested, minecraft:oozing, minecraft:weaving, minecraft:wind_charged, minecraft:instant_damage, minecraft:instant_health, minecraft:saturation, minecraft:invisibility, minecraft:jump_boost, minecraft:levitation, minecraft:nausea, minecraft:night_vision, minecraft:poison, minecraft:wither, minecraft:regeneration, minecraft:resistance, minecraft:slow_falling, minecraft:slowness, minecraft:speed, minecraft:strength, minecraft:water_breathing, minecraft:weakness.
+      minecraft:absorption, minecraft:bad_omen, minecraft:raid_omen, minecraft:trial_omen, minecraft:bad_luck, minecraft:luck, minecraft:blindness, minecraft:darkness, minecraft:conduit_power, minecraft:dolphins_grace,
+      minecraft:fire_resistance, minecraft:glowing, minecraft:haste, minecraft:mining_fatigue, minecraft:health_boost, minecraft:hero_of_the_village, minecraft:hunger, minecraft:infested, minecraft:oozing, minecraft:weaving,
+      minecraft:wind_charged, minecraft:instant_damage, minecraft:instant_health, minecraft:saturation, minecraft:invisibility, minecraft:jump_boost, minecraft:levitation, minecraft:nausea, minecraft:night_vision, minecraft:poison, minecraft:wither,
+      minecraft:regeneration, minecraft:resistance, minecraft:slow_falling, minecraft:slowness, minecraft:speed, minecraft:strength, minecraft:water_breathing, minecraft:weakness.
       Custom effects: ignite (sets target on fire), freeze (freezes target in place).""";
 
   /** STEP 1: System prompt for behavior-only configuration. */
