@@ -19,9 +19,12 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   private float damage = 0.0f;
   private boolean despawnOnTrigger = true;
 
-  // Unified id for either entity or block
-  private String spawnId = "";
-  private int spawnCount = 0;
+  // Entity spawning
+  private String spawnEntityId = "";
+  private int spawnEntityCount = 0;
+  // Block placement
+  private String placeBlockId = "";
+  private int placeBlockCount = 0;
   // Whether explosion/effect should also affect the caster/owner
   private boolean affectOwner = false;
   // Unified status effect id: either a single registry id (e.g., "minecraft:regeneration") or a
@@ -47,8 +50,10 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       float radius,
       float damage,
       boolean despawnOnTrigger,
-      String spawnId,
-      int spawnCount,
+      String spawnEntityId,
+      int spawnEntityCount,
+      String placeBlockId,
+      int placeBlockCount,
       String statusEffectId,
       int statusDurationSeconds,
       int statusAmplifier,
@@ -60,8 +65,10 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.radius = radius;
     this.damage = damage;
     this.despawnOnTrigger = despawnOnTrigger;
-    this.spawnId = spawnId == null ? "" : spawnId;
-    this.spawnCount = Math.max(0, spawnCount);
+    this.spawnEntityId = spawnEntityId == null ? "" : spawnEntityId;
+    this.spawnEntityCount = Math.max(0, spawnEntityCount);
+    this.placeBlockId = placeBlockId == null ? "" : placeBlockId;
+    this.placeBlockCount = Math.max(0, placeBlockCount);
     this.statusEffectId = statusEffectId == null ? "" : statusEffectId;
     this.statusDurationSeconds = Math.max(0, statusDurationSeconds);
     this.statusAmplifier = Math.max(1, statusAmplifier);
@@ -112,21 +119,38 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.damage = damage;
   }
 
-  // Unified accessors
-  public String getSpawnId() {
-    return spawnId;
+  // Entity spawning accessors
+  public String getSpawnEntityId() {
+    return spawnEntityId;
   }
 
-  public void setSpawnId(String spawnId) {
-    this.spawnId = spawnId == null ? "" : spawnId;
+  public void setSpawnEntityId(String spawnEntityId) {
+    this.spawnEntityId = spawnEntityId == null ? "" : spawnEntityId;
   }
 
-  public int getSpawnCount() {
-    return spawnCount;
+  public int getSpawnEntityCount() {
+    return spawnEntityCount;
   }
 
-  public void setSpawnCount(int spawnCount) {
-    this.spawnCount = Math.max(0, spawnCount);
+  public void setSpawnEntityCount(int spawnEntityCount) {
+    this.spawnEntityCount = Math.max(0, spawnEntityCount);
+  }
+
+  // Block placement accessors
+  public String getPlaceBlockId() {
+    return placeBlockId;
+  }
+
+  public void setPlaceBlockId(String placeBlockId) {
+    this.placeBlockId = placeBlockId == null ? "" : placeBlockId;
+  }
+
+  public int getPlaceBlockCount() {
+    return placeBlockCount;
+  }
+
+  public void setPlaceBlockCount(int placeBlockCount) {
+    this.placeBlockCount = Math.max(0, placeBlockCount);
   }
 
   // Status effect config
@@ -190,8 +214,10 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     tag.putBoolean("despawnOnTrigger", despawnOnTrigger);
     tag.putBoolean("affectOwner", affectOwner);
     tag.putString("trigger", trigger.name().toLowerCase(Locale.ROOT));
-    if (!spawnId.isEmpty()) tag.putString("spawnId", spawnId);
-    if (spawnCount > 0) tag.putInt("spawnCount", spawnCount);
+    if (!spawnEntityId.isEmpty()) tag.putString("spawnEntityId", spawnEntityId);
+    if (spawnEntityCount > 0) tag.putInt("spawnEntityCount", spawnEntityCount);
+    if (!placeBlockId.isEmpty()) tag.putString("placeBlockId", placeBlockId);
+    if (placeBlockCount > 0) tag.putInt("placeBlockCount", placeBlockCount);
     if (!statusEffectId.isEmpty()) tag.putString("statusEffectId", statusEffectId);
     if (statusDurationSeconds > 0) tag.putInt("statusDurationSeconds", statusDurationSeconds);
     if (statusAmplifier > 0) tag.putInt("statusAmplifier", statusAmplifier);
@@ -220,9 +246,17 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
       c.setTrigger(parseTrigger(v));
     }
 
-    if (tag.contains("spawnId", Tag.TAG_STRING)) c.setSpawnId(tag.getString("spawnId"));
+    if (tag.contains("spawnEntityId", Tag.TAG_STRING))
+      c.setSpawnEntityId(tag.getString("spawnEntityId"));
 
-    if (tag.contains("spawnCount", Tag.TAG_INT)) c.setSpawnCount(tag.getInt("spawnCount"));
+    if (tag.contains("spawnEntityCount", Tag.TAG_INT))
+      c.setSpawnEntityCount(tag.getInt("spawnEntityCount"));
+
+    if (tag.contains("placeBlockId", Tag.TAG_STRING))
+      c.setPlaceBlockId(tag.getString("placeBlockId"));
+
+    if (tag.contains("placeBlockCount", Tag.TAG_INT))
+      c.setPlaceBlockCount(tag.getInt("placeBlockCount"));
 
     if (tag.contains("statusEffectId", Tag.TAG_STRING))
       c.setStatusEffectId(tag.getString("statusEffectId"));

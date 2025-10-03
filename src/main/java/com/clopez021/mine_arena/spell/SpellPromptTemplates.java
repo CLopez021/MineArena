@@ -42,8 +42,10 @@ minecraft:tnt, minecraft:torch, minecraft:tuff, minecraft:vine, minecraft:warped
           radius: number (>0) // Effect radius in blocks. Determines area of impact for damage, knockback, and status effects.
           damage: number (>=0) // Damage in half-hearts (1 damage = 0.5 hearts, 2 damage = 1 heart). Applied directly via magic damage source.
           despawnOnTrigger: boolean // If true, spell entity disappears after triggering effects (one-time use). If false, persists (useful for structures/barriers/DoT zones).
-          spawnId: string // Minecraft entity or block ID to spawn upon the effect being triggered. Useful for spawning anything that, given the users request, would make sense to spawn along side the spell. For example, if the spell is a large dog, you may want to summon wolves as part of the effect. Or if the spell is a web, you may want to spawn cobwebs on impact of the spell. Use "" for none. Available Entity IDs: %s \n Available Block IDs: %s
-          spawnCount: number (>=0) // Number of entities to spawn at random positions within radius. Ignored if spawnId is "".
+          spawnEntityId: string // Minecraft entity ID to spawn upon the effect being triggered. Useful for spawning entities that match the spell theme. For example, if the spell is a large dog, summon wolves; if it's a bee swarm spell, spawn bees. Use "" for none. Available Entity IDs: %s
+          spawnEntityCount: number (>=0) // Number of entities to spawn at random positions within radius. Ignored if spawnEntityId is "".
+          placeBlockId: string // Minecraft block ID to place upon the effect being triggered. Useful for creating structures, barriers, or terrain effects. For example, if the spell is a web, place minecraft:cobweb blocks; if it's an ice spell, place minecraft:ice blocks. Use "" for none. Available Block IDs: %s
+          placeBlockCount: number (>=0) // Number of blocks to place at random positions within radius. Ignored if placeBlockId is "".
           statusEffectId: string // Status effect ID to apply. Use "" for none. Examples: %s
           statusDurationSeconds: number (>=0) // Duration the status effect lasts in seconds (converted to ticks internally at 20 TPS).
           statusAmplifier: number (>=0) // Effect level minus 1 (0=I, 1=II, 3=IV). For Strength IV use amplifier=3.
@@ -57,7 +59,8 @@ minecraft:tnt, minecraft:torch, minecraft:tuff, minecraft:vine, minecraft:warped
         Rules:
         - trigger=onCast means effects occur immediately at the caster (no impact needed).
         - trigger=onImpact means effects occur when the entity collides (requires travel later).
-        - Empty spawnId or statusEffectId means "none" for that effect.
+        - Empty spawnEntityId, placeBlockId, or statusEffectId means "none" for that effect.
+        - spawnEntityId and placeBlockId can both be set to spawn entities AND place blocks simultaneously.
         - All effects (damage, knockback, status) have 1-second cooldown to prevent spam triggering."""
         .formatted(SPAWN_ID_EXAMPLES, BLOCK_ID_EXAMPLES, STATUS_EFFECT_EXAMPLES);
   }

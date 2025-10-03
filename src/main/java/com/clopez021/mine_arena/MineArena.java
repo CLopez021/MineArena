@@ -122,10 +122,12 @@ public class MineArena {
         SpellEffectBehaviorConfig fireball_behavior =
             new SpellEffectBehaviorConfig(
                 5.0f, // radius
-                20.0f, // damage
+                4.0f, // damage
                 true, // despawnOnTrigger
-                "minecraft:fire", // spawnId
-                5, // spawnCount
+                "", // spawnEntityId (none)
+                0, // spawnEntityCount (none)
+                "minecraft:fire", // placeBlockId
+                5, // placeBlockCount
                 "ignite", // statusEffectId
                 2, // statusDurationSeconds
                 1, // statusAmplifier
@@ -149,14 +151,16 @@ public class MineArena {
                 4.0f, // radius
                 0f, // damage
                 true, // despawnOnTrigger
-                "", // spawnId
-                0, // spawnCount
+                "", // spawnEntityId (none)
+                0, // spawnEntityCount (none)
+                "", // placeBlockId (none)
+                0, // placeBlockCount (none)
                 "", // statusEffectId (none)
                 0, // statusDurationSeconds (none)
                 0, // statusAmplifier (none)
                 false, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_IMPACT, // trigger
-                2.0f, // knockbackAmount (shockwave effect)
+                5.0f, // knockbackAmount (shockwave effect)
                 0.0f, // blockDestructionRadius (no block breaking)
                 0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig wind_cfg =
@@ -175,8 +179,10 @@ public class MineArena {
                 4.0f, // radius
                 0f, // damage
                 true, // despawnOnTrigger
-                "minecraft:ice", // spawnId
-                12, // spawnCount
+                "", // spawnEntityId (none)
+                0, // spawnEntityCount (none)
+                "minecraft:ice", // placeBlockId
+                12, // placeBlockCount
                 "freeze", // statusEffectId (freeze keyword)
                 8, // statusDurationSeconds
                 0, // statusAmplifier (unused for freeze)
@@ -199,8 +205,10 @@ public class MineArena {
                 2.5f, // radius
                 6.0f, // damage
                 true, // despawnOnTrigger
-                "", // spawnId
-                0, // spawnCount
+                "", // spawnEntityId (none)
+                0, // spawnEntityCount (none)
+                "", // placeBlockId (none)
+                0, // placeBlockCount (none)
                 "", // statusEffectId
                 0, // statusDurationSeconds
                 1, // statusAmplifier
@@ -220,8 +228,10 @@ public class MineArena {
                 4.0f, // radius
                 0f, // damage
                 true, // despawnOnTrigger
-                "", // spawnId
-                0, // spawnCount
+                "", // spawnEntityId (none)
+                0, // spawnEntityCount (none)
+                "", // placeBlockId (none)
+                0, // placeBlockCount (none)
                 "minecraft:levitation", // statusEffectId
                 5, // statusDurationSeconds
                 10, // statusAmplifier

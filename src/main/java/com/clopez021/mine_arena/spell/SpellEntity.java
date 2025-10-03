@@ -219,40 +219,43 @@ public class SpellEntity extends Entity {
   private void spawnOrPlaceConfiguredOnImpact() {
     if (this.level().isClientSide) return;
     var behavior = this.config.getEffectBehavior();
-    String id = behavior.getSpawnId();
-    int count = Math.max(0, behavior.getSpawnCount());
     float radius = Math.max(0.0f, behavior.getRadius());
-    if (id == null || id.isEmpty() || count <= 0) return;
-
     var access = this.level().registryAccess();
-    // 1) Single id: block
-    var blockOpt = IdResolver.resolveBlockStrict(access, id);
-    if (blockOpt.isPresent()) {
-      System.out.println("blockOpt: " + blockOpt.get());
-      Block block = blockOpt.get();
-      BlockState state = block.defaultBlockState();
-      Level level = this.level();
-      for (int i = 0; i < count; i++) {
-        BlockPos target = findPlacementSpot(level, radius, 6, state);
-        if (target != null) {
-          level.setBlock(target, state, 3);
+    Level level = this.level();
+
+    // Handle block placement
+    String blockId = behavior.getPlaceBlockId();
+    int blockCount = Math.max(0, behavior.getPlaceBlockCount());
+    if (blockId != null && !blockId.isEmpty() && blockCount > 0) {
+      var blockOpt = IdResolver.resolveBlockStrict(access, blockId);
+      if (blockOpt.isPresent()) {
+        System.out.println("blockOpt: " + blockOpt.get());
+        Block block = blockOpt.get();
+        BlockState state = block.defaultBlockState();
+        for (int i = 0; i < blockCount; i++) {
+          BlockPos target = findPlacementSpot(level, radius, 6, state);
+          if (target != null) {
+            level.setBlock(target, state, 3);
+          }
         }
       }
-      return;
     }
 
-    // 2) Single id: entity type
-    var entityOpt = IdResolver.resolveEntityTypeStrict(access, id);
-    if (entityOpt.isPresent()) {
-      EntityType<?> entityType = entityOpt.get();
-      Level level = this.level();
-      for (int i = 0; i < count; i++) {
-        BlockPos target = findPlacementSpot(level, radius, 6, null);
-        if (target != null) {
-          Entity spawned = entityType.create(level);
-          if (spawned != null) {
-            spawned.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
-            level.addFreshEntity(spawned);
+    // Handle entity spawning
+    String entityId = behavior.getSpawnEntityId();
+    int entityCount = Math.max(0, behavior.getSpawnEntityCount());
+    if (entityId != null && !entityId.isEmpty() && entityCount > 0) {
+      var entityOpt = IdResolver.resolveEntityTypeStrict(access, entityId);
+      if (entityOpt.isPresent()) {
+        EntityType<?> entityType = entityOpt.get();
+        for (int i = 0; i < entityCount; i++) {
+          BlockPos target = findPlacementSpot(level, radius, 6, null);
+          if (target != null) {
+            Entity spawned = entityType.create(level);
+            if (spawned != null) {
+              spawned.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
+              level.addFreshEntity(spawned);
+            }
           }
         }
       }

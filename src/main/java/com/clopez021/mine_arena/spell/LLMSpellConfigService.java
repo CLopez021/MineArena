@@ -191,8 +191,10 @@ public final class LLMSpellConfigService {
     float radius = getFloat(behaviorJson, "radius", 2.0f);
     float damage = getFloat(behaviorJson, "damage", 0.0f);
     boolean despawnOnTrigger = getBool(behaviorJson, "despawnOnTrigger", true);
-    String spawnId = getString(behaviorJson, "spawnId", "");
-    int spawnCount = getInt(behaviorJson, "spawnCount", 0);
+    String spawnEntityId = getString(behaviorJson, "spawnEntityId", "");
+    int spawnEntityCount = getInt(behaviorJson, "spawnEntityCount", 0);
+    String placeBlockId = getString(behaviorJson, "placeBlockId", "");
+    int placeBlockCount = getInt(behaviorJson, "placeBlockCount", 0);
     boolean affectOwner = getBool(behaviorJson, "affectOwner", false);
     String statusEffectId = getString(behaviorJson, "statusEffectId", "");
     int statusDurationSeconds = getInt(behaviorJson, "statusDurationSeconds", 0);
@@ -207,8 +209,10 @@ public final class LLMSpellConfigService {
         radius,
         damage,
         despawnOnTrigger,
-        spawnId,
-        spawnCount,
+        spawnEntityId,
+        spawnEntityCount,
+        placeBlockId,
+        placeBlockCount,
         statusEffectId,
         statusDurationSeconds,
         statusAmplifier,
