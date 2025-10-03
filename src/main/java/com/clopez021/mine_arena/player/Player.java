@@ -206,11 +206,19 @@ public class Player {
           SpellEntity e = entityType.create(level);
           if (e != null) {
             Vec3 pos = serverPlayer.position();
-            e.setPos(pos.x, pos.y, pos.z);
             e.setYRot(serverPlayer.getYRot());
             e.setXRot(serverPlayer.getXRot());
             e.setOwnerPlayerId(serverPlayer.getUUID());
+
+            // Initialize first to calculate bounds
             e.initializeServer(cfg);
+
+            // Now adjust position so bottom of spell is slightly above player's feet
+            float minY = e.minCorner.y * cfg.getMicroScale();
+            float padding = 0.2f;
+            double adjustedY = pos.y - minY + padding;
+            e.setPos(pos.x, adjustedY, pos.z);
+
             level.addFreshEntity(e);
           }
 
