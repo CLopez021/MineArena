@@ -46,8 +46,8 @@ public final class VoiceSidecar {
   public void start(Map<String, String> phraseToName, String lang) throws Exception {
     if (isRunning) return;
 
-    wsPort = pickFreePort();
-    httpPort = pickFreePort();
+    wsPort = tryPort(9090);
+    httpPort = tryPort(9091);
 
     ws = new WsBridge(wsPort, this::handleWebSocketMessage);
     ws.start();
@@ -183,6 +183,16 @@ public final class VoiceSidecar {
   private static int pickFreePort() throws IOException {
     try (var s = new ServerSocket(0, 0, InetAddress.getByName("127.0.0.1"))) {
       return s.getLocalPort();
+    }
+  }
+
+  private static int tryPort(int preferredPort) throws IOException {
+    try (var s = new ServerSocket(preferredPort, 0, InetAddress.getByName("127.0.0.1"))) {
+      // Port is available
+      return preferredPort;
+    } catch (IOException e) {
+      // Port is not available, pick a free one
+      return pickFreePort();
     }
   }
 
