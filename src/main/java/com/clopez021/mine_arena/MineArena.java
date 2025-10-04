@@ -139,7 +139,7 @@ public class MineArena {
         // Fireball: explosion + ignite effect for 5s
         SpellEntityConfig fireball_cfg =
             new SpellEntityConfig(fireball_blocks, 0.05f, fireball_behavior, true, 1.0f);
-        DEFAULT_SPELLS.add(new PlayerSpellConfig("Infernal Blast", "fireball", fireball_cfg));
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("Infernal Blast", "Fireball", fireball_cfg));
 
         // Shockwave: push entities away (pure knockback), no damage
         ResourceLocation wind_dir = ResourceLocation.fromNamespaceAndPath(MOD_ID, "models/wind");
@@ -165,7 +165,7 @@ public class MineArena {
                 0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig wind_cfg =
             new SpellEntityConfig(wind_blocks, 0.05f, wind_behavior, true, 0.8f);
-        DEFAULT_SPELLS.add(new PlayerSpellConfig("Gale Force", "Gale Force", wind_cfg));
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("Gale Force", "Wind", wind_cfg));
 
         // Ice burst: place ice around and freeze nearby entities for 8s
         ResourceLocation ice_cube_dir =
@@ -193,7 +193,7 @@ public class MineArena {
                 0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig ice_cube_cfg =
             new SpellEntityConfig(ice_cube_blocks, 0.05f, ice_cube_behavior, true, 0.6f);
-        DEFAULT_SPELLS.add(new PlayerSpellConfig("Glacial Prison", "Glacial Prison", ice_cube_cfg));
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("Glacial Prison", "Ice cube", ice_cube_cfg));
 
         // Rocket: faster, smaller radius but deals damage via explosion
         ResourceLocation bomb_dir = ResourceLocation.fromNamespaceAndPath(MOD_ID, "models/bomb");
@@ -219,8 +219,7 @@ public class MineArena {
                 3); // blockDestructionDepth (deep destruction)
         SpellEntityConfig bomb_cfg =
             new SpellEntityConfig(bomb_blocks, 0.05f, bomb_behavior, true, 1.5f);
-        DEFAULT_SPELLS.add(
-            new PlayerSpellConfig("Arcane Detonation", "Arcane Detonation", bomb_cfg));
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("Arcane Detonation", "Bomb", bomb_cfg));
 
         // Levitate: on-cast effect applied to player
         SpellEffectBehaviorConfig levitate_behavior =
@@ -233,7 +232,7 @@ public class MineArena {
                 "", // placeBlockId (none)
                 0, // placeBlockCount (none)
                 "minecraft:levitation", // statusEffectId
-                5, // statusDurationSeconds
+                2, // statusDurationSeconds
                 10, // statusAmplifier
                 true, // affectOwner
                 SpellEffectBehaviorConfig.EffectTrigger.ON_CAST, // trigger
@@ -242,8 +241,7 @@ public class MineArena {
                 0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig levitate_cfg =
             new SpellEntityConfig(Map.of(), 0.05f, levitate_behavior, true, 0.8f);
-        DEFAULT_SPELLS.add(
-            new PlayerSpellConfig("Ethereal Ascension", "Ethereal Ascension", levitate_cfg));
+        DEFAULT_SPELLS.add(new PlayerSpellConfig("Ethereal Ascension", "Levitate", levitate_cfg));
       } catch (Exception ex) {
         // If model loading fails, do not add a default spell
         LOGGER.warn("Failed to load default model from resources. No default spell added.", ex);
