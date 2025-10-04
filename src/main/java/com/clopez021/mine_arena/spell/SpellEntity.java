@@ -1,7 +1,6 @@
 package com.clopez021.mine_arena.spell;
 
 import com.clopez021.mine_arena.spell.behavior.onCollision.SpellEffectBehaviorConfig;
-import com.clopez021.mine_arena.utils.IdResolver;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -10,6 +9,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityDimensions;
 import net.minecraft.world.entity.EntityType;
@@ -17,9 +17,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.MoverType;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3f;
 
@@ -35,12 +33,10 @@ public class SpellEntity extends Entity {
   private SpellEntityConfig config = SpellEntityConfig.empty();
 
   // Behavior description/handler live in config.getEffectBehavior()
-  private boolean collisionTriggered = false;
   private boolean isColliding = false;
-  private boolean entityCollisionDetected = false;
   // Cooldown management to avoid excessive triggering
-  private static final int COLLISION_COOLDOWN_TICKS = 20; // 1 second at 20 TPS
-  private int ticksSinceLastTrigger = COLLISION_COOLDOWN_TICKS;
+  private static final int EFFECT_COOLDOWN_TICKS = 20; // 1 second at 20 TPS
+  private int ticksSinceLastTrigger = EFFECT_COOLDOWN_TICKS;
 
   // Dynamic dimensions
   private float spanX = 0.5f, spanY = 0.5f, spanZ = 0.5f;
@@ -74,12 +70,6 @@ public class SpellEntity extends Entity {
     this.entityData.set(DATA_CONFIG, this.config.toNBT());
   }
 
-  // Apply derived runtime state from current config and refresh size
-  private void applyDerivedFromConfig() {
-    recalcBoundsFromBlocks();
-    refreshDimensions();
-  }
-
   // Expose config-backed runtime state without duplicating storage
   public SpellEntityConfig getConfig() {
     return this.config;
@@ -109,7 +99,7 @@ public class SpellEntity extends Entity {
     if (key == DATA_CONFIG) {
       CompoundTag cfgTag = this.entityData.get(DATA_CONFIG);
       this.config = SpellEntityConfig.fromNBT(cfgTag);
-      applyDerivedFromConfig();
+      recalcBoundsFromBlocks();
     }
   }
 
@@ -125,7 +115,7 @@ public class SpellEntity extends Entity {
     if (level().isClientSide) return; // client doesn't load saves
     this.config = SpellEntityConfig.fromNBT(tag);
     pushConfigToSyncedData();
-    applyDerivedFromConfig();
+    recalcBoundsFromBlocks();
   }
 
   // ------------ Dynamic dimensions (canonical approach) ------------
@@ -144,6 +134,7 @@ public class SpellEntity extends Entity {
     if (blocks.isEmpty()) {
       spanX = spanY = spanZ = 0.5f;
       centerLocalX = centerLocalZ = 0f;
+      refreshDimensions();
       return;
     }
 
@@ -169,6 +160,9 @@ public class SpellEntity extends Entity {
 
     // keep minCorner cache synced
     this.minCorner.set(minX, minY, minZ);
+
+    // Update entity dimensions based on new bounds
+    refreshDimensions();
   }
 
   // Public: server-only configure
@@ -176,289 +170,105 @@ public class SpellEntity extends Entity {
     if (level().isClientSide) return; // client doesn't load saves
     this.config = config != null ? config : SpellEntityConfig.empty();
     pushConfigToSyncedData();
-    applyDerivedFromConfig();
+    recalcBoundsFromBlocks();
   }
 
-  private java.util.List<LivingEntity> collectAffectedEntities(float radius, boolean affectOwner) {
-    Vec3 center = this.position();
-    AABB box =
-        new AABB(
-            center.x - radius,
-            center.y - radius,
-            center.z - radius,
-            center.x + radius,
-            center.y + radius,
-            center.z + radius);
-    List<LivingEntity> targets = this.level().getEntitiesOfClass(LivingEntity.class, box);
-    targets.removeIf(
-        entity ->
-            (!affectOwner
-                    && this.ownerPlayerId != null
-                    && entity.getUUID().equals(this.ownerPlayerId))
-                || entity.position().distanceTo(center) > radius);
-    return targets;
-  }
-
-  private void applyConfiguredEffectArea(java.util.List<LivingEntity> targets) {
-    if (this.level().isClientSide) return;
-    var behavior = this.config.getEffectBehavior();
-    String statusEffectId = behavior.getStatusEffectId();
-    int durationTicks = Math.max(0, behavior.getStatusDurationTicks());
-    if (statusEffectId == null || statusEffectId.isBlank() || durationTicks <= 0) return;
-
-    for (LivingEntity entity : targets) {
-      EffectEngine.applyUnifiedEffect(
-          (net.minecraft.server.level.ServerLevel) this.level(),
-          entity,
-          statusEffectId,
-          durationTicks,
-          behavior.getStatusAmplifier());
-    }
-  }
-
-  private void spawnOrPlaceConfiguredOnImpact() {
-    if (this.level().isClientSide) return;
-    var behavior = this.config.getEffectBehavior();
-    float radius = Math.max(0.0f, behavior.getRadius());
-    var access = this.level().registryAccess();
-    Level level = this.level();
-
-    // Handle block placement
-    String blockId = behavior.getPlaceBlockId();
-    int blockCount = Math.max(0, behavior.getPlaceBlockCount());
-    if (blockId != null && !blockId.isEmpty() && blockCount > 0) {
-      var blockOpt = IdResolver.resolveBlockStrict(access, blockId);
-      if (blockOpt.isPresent()) {
-        System.out.println("blockOpt: " + blockOpt.get());
-        Block block = blockOpt.get();
-        BlockState state = block.defaultBlockState();
-        for (int i = 0; i < blockCount; i++) {
-          BlockPos target = findPlacementSpot(level, radius, 6, state);
-          if (target != null) {
-            level.setBlock(target, state, 3);
-          }
-        }
-      }
-    }
-
-    // Handle entity spawning
-    String entityId = behavior.getSpawnEntityId();
-    int entityCount = Math.max(0, behavior.getSpawnEntityCount());
-    if (entityId != null && !entityId.isEmpty() && entityCount > 0) {
-      var entityOpt = IdResolver.resolveEntityTypeStrict(access, entityId);
-      if (entityOpt.isPresent()) {
-        EntityType<?> entityType = entityOpt.get();
-        for (int i = 0; i < entityCount; i++) {
-          BlockPos target = findPlacementSpot(level, radius, 6, null);
-          if (target != null) {
-            Entity spawned = entityType.create(level);
-            if (spawned != null) {
-              spawned.setPos(target.getX() + 0.5, target.getY(), target.getZ() + 0.5);
-              level.addFreshEntity(spawned);
-            }
-          }
-        }
-      }
-    }
+  // Expose random for collision handler
+  public RandomSource getRandomSource() {
+    return this.random;
   }
 
   /**
-   * Find a placement spot by sampling an offset within radius, then scanning upward first, then
-   * downward. If a BlockState is provided, also require that it can survive at the target.
+   * Updates and applies movement based on spell configuration. Computes desired motion from
+   * config-provided direction and speed, then moves using vanilla pipeline for proper
+   * networking/interpolation.
    */
-  private BlockPos findPlacementSpot(
-      Level level, float radius, int attempts, @javax.annotation.Nullable BlockState state) {
-    double angle = this.random.nextDouble() * Math.PI * 2.0;
-    double r = radius * Math.sqrt(this.random.nextDouble());
-    int baseX = (int) Math.floor(this.getX() + Math.cos(angle) * r);
-    int baseZ = (int) Math.floor(this.getZ() + Math.sin(angle) * r);
-    int baseY = (int) Math.floor(this.getY());
-    BlockPos base = new BlockPos(baseX, baseY, baseZ);
-    for (int dy = 0; dy < attempts; dy++) {
-      BlockPos target = base.above(dy);
-      if (level.isEmptyBlock(target) && (state == null || state.canSurvive(level, target))) {
-        return target;
-      }
-    }
-    for (int dy = 1; dy <= attempts; dy++) {
-      BlockPos target = base.below(dy);
-      if (level.isEmptyBlock(target) && (state == null || state.canSurvive(level, target))) {
-        return target;
-      }
-    }
-    return null;
+  private void updateMovement() {
+    float speed = Math.max(0f, this.config.getMovementSpeed());
+    Vec3 v = this.config.getDirection(ownerPlayerId);
+    boolean shouldMove = this.config.getShouldMove();
+    Vec3 motion =
+        (shouldMove && speed > 0f && v.lengthSqr() > 1e-6) ? v.normalize().scale(speed) : Vec3.ZERO;
+
+    this.setDeltaMovement(motion);
+    if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
+
+    // Move using vanilla pipeline for proper networking/interpolation
+    this.move(MoverType.SELF, this.getDeltaMovement());
   }
 
-  private void applyKnockbackToEntities(
-      java.util.List<LivingEntity> entities, float knockbackAmount) {
-    Vec3 center = this.position();
-    for (LivingEntity entity : entities) {
-      double dist = entity.position().distanceTo(center);
-      if (dist <= 1e-6) continue; // Avoid division by zero
-
-      float falloff = 1.0f - (float) (dist / this.config.getEffectBehavior().getRadius());
-      float kb = knockbackAmount * Math.max(0f, falloff);
-
-      double dirX = entity.getX() - center.x;
-      double dirZ = entity.getZ() - center.z;
-      entity.knockback(kb, dirX, dirZ);
-      entity.setDeltaMovement(entity.getDeltaMovement().add(0.0, 0.05 * kb, 0.0));
+  /** Handles on-cast effect triggers that activate immediately without requiring collision. */
+  private void handleOnCastTriggers() {
+    if (this.config.getEffectBehavior().getTrigger()
+        == SpellEffectBehaviorConfig.EffectTrigger.ON_CAST) {
+      SpellEffectBehaviorConfig behavior = this.config.getEffectBehavior();
+      float radius = Math.max(0.1f, behavior.getRadius());
+      boolean affectOwner = behavior.getAffectOwner();
+      java.util.List<LivingEntity> affectedEntities =
+          SpellCollisionHandler.collectAffectedEntities(this, radius, affectOwner);
+      triggerEffect(affectedEntities);
     }
   }
 
-  private void breakBlocksInRadius(float radius, int depth) {
-    if (this.level().isClientSide || radius <= 0.0f || depth <= 0) return;
+  private void handleCollisionDetection() {
+    // Enhanced collision detection: blocks OR entities
+    boolean blockCollision = this.onGround() || this.horizontalCollision || this.verticalCollision;
 
-    Vec3 center = this.position();
+    // Additional entity collision check using AABB overlap
+    boolean entityCollision = false;
+    if (!blockCollision) {
+      List<Entity> nearbyEntities =
+          this.level()
+              .getEntities(
+                  this,
+                  this.getBoundingBox(),
+                  entity ->
+                      entity != this
+                          && (this.ownerPlayerId == null
+                              || !entity.getUUID().equals(this.ownerPlayerId)));
+      entityCollision = !nearbyEntities.isEmpty();
+    }
 
-    // Break blocks in layers from surface inward
-    for (int layer = 0; layer < depth; layer++) {
-      int minX = (int) Math.floor(center.x - radius);
-      int maxX = (int) Math.ceil(center.x + radius);
-      int minY = (int) Math.floor(center.y - radius);
-      int maxY = (int) Math.ceil(center.y + radius);
-      int minZ = (int) Math.floor(center.z - radius);
-      int maxZ = (int) Math.ceil(center.z + radius);
+    boolean collidingNow = blockCollision || entityCollision;
 
-      for (int x = minX; x <= maxX; x++) {
-        for (int y = minY; y <= maxY; y++) {
-          for (int z = minZ; z <= maxZ; z++) {
-            BlockPos pos = new BlockPos(x, y, z);
-            double dist = center.distanceTo(Vec3.atCenterOf(pos));
-            if (dist <= radius) {
-              BlockState state = this.level().getBlockState(pos);
-              if (!state.isAir() && state.getDestroySpeed(this.level(), pos) >= 0) {
-                this.level().destroyBlock(pos, false);
-              }
-            }
-          }
-        }
-      }
+    if (collidingNow) {
+      // Pre-compute affected entities once for this tick
+      var behavior = this.config.getEffectBehavior();
+      float radius = Math.max(0.1f, behavior.getRadius());
+      boolean affectOwner = behavior.getAffectOwner();
+      java.util.List<LivingEntity> affectedEntities =
+          SpellCollisionHandler.collectAffectedEntities(this, radius, affectOwner);
 
-      // Reduce radius for next layer to create depth effect
-      radius = Math.max(0.0f, radius - 1.0f);
-      if (radius <= 0.0f) break;
+      triggerEffect(affectedEntities);
+      isColliding = true;
+    } else if (isColliding) {
+      // Collision ended this tick
+      isColliding = false;
     }
   }
 
   @Override
   public void tick() {
     super.tick();
+    if (level().isClientSide) return;
 
-    if (!level().isClientSide) {
-      // Increment cooldown timer
-      if (ticksSinceLastTrigger < COLLISION_COOLDOWN_TICKS) ticksSinceLastTrigger++;
+    // Increment cooldown timer
+    if (ticksSinceLastTrigger < EFFECT_COOLDOWN_TICKS) ticksSinceLastTrigger++;
 
-      // Compute desired motion each tick from config-provided direction (per-player)
-      float speed = Math.max(0f, this.config.getMovementSpeed());
-      Vec3 v = this.config.getDirection(ownerPlayerId);
-      boolean shouldMove = this.config.getShouldMove();
-      Vec3 motion =
-          (shouldMove && speed > 0f && v.lengthSqr() > 1e-6)
-              ? v.normalize().scale(speed)
-              : Vec3.ZERO;
-
-      this.setDeltaMovement(motion);
-      if (!motion.equals(Vec3.ZERO)) this.hasImpulse = true;
-
-      // Move using vanilla pipeline for proper networking/interpolation
-      this.move(MoverType.SELF, this.getDeltaMovement());
-
-      // Trigger on-cast behavior (no collision required)
-      if (this.config.getEffectBehavior().getTrigger()
-          == SpellEffectBehaviorConfig.EffectTrigger.ON_CAST) {
-        SpellEffectBehaviorConfig behavior = this.config.getEffectBehavior();
-        float radius = Math.max(0.1f, behavior.getRadius());
-        boolean affectOwner = behavior.getAffectOwner();
-        java.util.List<LivingEntity> affectedEntities =
-            collectAffectedEntities(radius, affectOwner);
-        triggerCollision(affectedEntities);
-      }
-
-      // Enhanced collision detection: blocks OR entities
-      boolean blockCollision =
-          this.onGround() || this.horizontalCollision || this.verticalCollision;
-      boolean entityCollision = this.entityCollisionDetected;
-
-      // Additional entity collision check using AABB overlap
-      if (!entityCollision && !blockCollision) {
-        List<Entity> nearbyEntities =
-            this.level()
-                .getEntities(
-                    this,
-                    this.getBoundingBox(),
-                    entity ->
-                        entity != this
-                            && (this.ownerPlayerId == null
-                                || !entity.getUUID().equals(this.ownerPlayerId)));
-        entityCollision = !nearbyEntities.isEmpty();
-      }
-
-      boolean collidingNow = blockCollision || entityCollision;
-
-      if (collidingNow) {
-        // Pre-compute affected entities once for this tick
-        var behavior = this.config.getEffectBehavior();
-        float radius = Math.max(0.1f, behavior.getRadius());
-        boolean affectOwner = behavior.getAffectOwner();
-        java.util.List<LivingEntity> affectedEntities =
-            collectAffectedEntities(radius, affectOwner);
-
-        triggerCollision(affectedEntities);
-        isColliding = true;
-      } else if (isColliding) {
-        // Collision ended this tick
-        isColliding = false;
-      }
-
-      // Reset entity collision flag for next tick
-      this.entityCollisionDetected = false;
-    }
+    updateMovement();
+    handleOnCastTriggers();
+    handleCollisionDetection();
   }
 
   /** Initialize from SpellEntityConfig (server-side only). */
   public void initializeServer(SpellEntityConfig data) {
-    if (level().isClientSide) {
-      return;
-    }
+    if (level().isClientSide) return;
     applyConfigServer(data);
   }
 
-  public void triggerCollision(java.util.List<LivingEntity> affectedEntities) {
-    if (!level().isClientSide && ticksSinceLastTrigger >= COLLISION_COOLDOWN_TICKS) {
-      var behavior = this.config.getEffectBehavior();
-
-      // Apply damage to entities
-      float damage = Math.max(0f, behavior.getDamage());
-      if (damage > 0f) {
-        for (LivingEntity entity : affectedEntities) {
-          entity.hurt(this.damageSources().magic(), damage);
-        }
-      }
-
-      // Apply knockback to entities
-      float knockback = Math.max(0f, behavior.getKnockbackAmount());
-      if (knockback > 0f) {
-        applyKnockbackToEntities(affectedEntities, knockback);
-      }
-
-      // Break blocks if configured
-      if (behavior.getBlockDestructionRadius() > 0.0f && behavior.getBlockDestructionDepth() > 0) {
-        breakBlocksInRadius(
-            behavior.getBlockDestructionRadius(), behavior.getBlockDestructionDepth());
-      }
-
-      // Apply status effects
-      applyConfiguredEffectArea(affectedEntities);
-
-      // Spawn entities/blocks
-      spawnOrPlaceConfiguredOnImpact();
-
-      // Despawn if configured
-      if (behavior.getDespawnOnTrigger()) {
-        this.discard();
-      }
-
+  public void triggerEffect(java.util.List<LivingEntity> affectedEntities) {
+    SpellCollisionHandler.triggerEffect(this, affectedEntities, ticksSinceLastTrigger);
+    if (ticksSinceLastTrigger >= EFFECT_COOLDOWN_TICKS) {
       ticksSinceLastTrigger = 0;
     }
   }
