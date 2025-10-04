@@ -79,6 +79,7 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     this.blockDestructionDepth = Math.max(0, blockDestructionDepth);
   }
 
+  // Getters only - immutable config
   public float getRadius() {
     return radius;
   }
@@ -91,75 +92,32 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     return affectOwner;
   }
 
-  public void setAffectOwner(boolean affectOwner) {
-    this.affectOwner = affectOwner;
-  }
-
   public EffectTrigger getTrigger() {
     return trigger;
-  }
-
-  public void setTrigger(EffectTrigger trigger) {
-    this.trigger = trigger == null ? EffectTrigger.ON_IMPACT : trigger;
   }
 
   public boolean getDespawnOnTrigger() {
     return despawnOnTrigger;
   }
 
-  public void setDespawnOnTrigger(boolean despawnOnTrigger) {
-    this.despawnOnTrigger = despawnOnTrigger;
-  }
-
-  public void setRadius(float radius) {
-    this.radius = radius;
-  }
-
-  public void setDamage(float damage) {
-    this.damage = damage;
-  }
-
-  // Entity spawning accessors
   public String getSpawnEntityId() {
     return spawnEntityId;
-  }
-
-  public void setSpawnEntityId(String spawnEntityId) {
-    this.spawnEntityId = spawnEntityId == null ? "" : spawnEntityId;
   }
 
   public int getSpawnEntityCount() {
     return spawnEntityCount;
   }
 
-  public void setSpawnEntityCount(int spawnEntityCount) {
-    this.spawnEntityCount = Math.max(0, spawnEntityCount);
-  }
-
-  // Block placement accessors
   public String getPlaceBlockId() {
     return placeBlockId;
-  }
-
-  public void setPlaceBlockId(String placeBlockId) {
-    this.placeBlockId = placeBlockId == null ? "" : placeBlockId;
   }
 
   public int getPlaceBlockCount() {
     return placeBlockCount;
   }
 
-  public void setPlaceBlockCount(int placeBlockCount) {
-    this.placeBlockCount = Math.max(0, placeBlockCount);
-  }
-
-  // Status effect config
   public String getStatusEffectId() {
     return statusEffectId;
-  }
-
-  public void setStatusEffectId(String statusEffectId) {
-    this.statusEffectId = statusEffectId == null ? "" : statusEffectId;
   }
 
   public int getStatusDurationSeconds() {
@@ -170,40 +128,20 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
     return Math.max(0, statusDurationSeconds) * 20;
   }
 
-  public void setStatusDurationSeconds(int statusDurationSeconds) {
-    this.statusDurationSeconds = Math.max(0, statusDurationSeconds);
-  }
-
   public int getStatusAmplifier() {
     return statusAmplifier;
-  }
-
-  public void setStatusAmplifier(int statusAmplifier) {
-    this.statusAmplifier = Math.max(0, statusAmplifier);
   }
 
   public float getKnockbackAmount() {
     return knockbackAmount;
   }
 
-  public void setKnockbackAmount(float knockbackAmount) {
-    this.knockbackAmount = Math.max(0.0f, knockbackAmount);
-  }
-
   public float getBlockDestructionRadius() {
     return blockDestructionRadius;
   }
 
-  public void setBlockDestructionRadius(float blockDestructionRadius) {
-    this.blockDestructionRadius = Math.max(0.0f, blockDestructionRadius);
-  }
-
   public int getBlockDestructionDepth() {
     return blockDestructionDepth;
-  }
-
-  public void setBlockDestructionDepth(int blockDestructionDepth) {
-    this.blockDestructionDepth = Math.max(0, blockDestructionDepth);
   }
 
   @Override
@@ -229,54 +167,62 @@ public class SpellEffectBehaviorConfig extends BaseConfig {
   }
 
   public static SpellEffectBehaviorConfig fromNBT(CompoundTag tag) {
-    SpellEffectBehaviorConfig c = new SpellEffectBehaviorConfig();
-    if (tag == null) return c;
+    if (tag == null) return new SpellEffectBehaviorConfig();
 
-    if (tag.contains("radius", Tag.TAG_FLOAT)) c.setRadius(tag.getFloat("radius"));
+    float radius = tag.contains("radius", Tag.TAG_FLOAT) ? tag.getFloat("radius") : 2.0f;
+    float damage = tag.contains("damage", Tag.TAG_FLOAT) ? tag.getFloat("damage") : 0.0f;
+    boolean despawnOnTrigger =
+        tag.contains("despawnOnTrigger", Tag.TAG_BYTE) ? tag.getBoolean("despawnOnTrigger") : true;
+    String spawnEntityId =
+        tag.contains("spawnEntityId", Tag.TAG_STRING) ? tag.getString("spawnEntityId") : "";
+    int spawnEntityCount =
+        tag.contains("spawnEntityCount", Tag.TAG_INT) ? tag.getInt("spawnEntityCount") : 0;
+    String placeBlockId =
+        tag.contains("placeBlockId", Tag.TAG_STRING) ? tag.getString("placeBlockId") : "";
+    int placeBlockCount =
+        tag.contains("placeBlockCount", Tag.TAG_INT) ? tag.getInt("placeBlockCount") : 0;
+    String statusEffectId =
+        tag.contains("statusEffectId", Tag.TAG_STRING) ? tag.getString("statusEffectId") : "";
+    int statusDurationSeconds =
+        tag.contains("statusDurationSeconds", Tag.TAG_INT)
+            ? tag.getInt("statusDurationSeconds")
+            : 0;
+    int statusAmplifier =
+        tag.contains("statusAmplifier", Tag.TAG_INT) ? tag.getInt("statusAmplifier") : 1;
+    boolean affectOwner =
+        tag.contains("affectOwner", Tag.TAG_BYTE) ? tag.getBoolean("affectOwner") : false;
+    EffectTrigger trigger =
+        tag.contains("trigger", Tag.TAG_STRING)
+            ? parseTrigger(tag.getString("trigger"))
+            : EffectTrigger.ON_IMPACT;
+    float knockbackAmount =
+        tag.contains("knockbackAmount", Tag.TAG_FLOAT) ? tag.getFloat("knockbackAmount") : 0.0f;
+    float blockDestructionRadius =
+        tag.contains("blockDestructionRadius", Tag.TAG_FLOAT)
+            ? tag.getFloat("blockDestructionRadius")
+            : 0.0f;
+    int blockDestructionDepth =
+        tag.contains("blockDestructionDepth", Tag.TAG_INT)
+            ? tag.getInt("blockDestructionDepth")
+            : 0;
 
-    if (tag.contains("damage", Tag.TAG_FLOAT)) c.setDamage(tag.getFloat("damage"));
-
-    if (tag.contains("despawnOnTrigger", Tag.TAG_BYTE))
-      c.setDespawnOnTrigger(tag.getBoolean("despawnOnTrigger"));
-
-    if (tag.contains("affectOwner", Tag.TAG_BYTE)) c.setAffectOwner(tag.getBoolean("affectOwner"));
-
-    if (tag.contains("trigger", Tag.TAG_STRING)) {
-      String v = tag.getString("trigger");
-      c.setTrigger(parseTrigger(v));
-    }
-
-    if (tag.contains("spawnEntityId", Tag.TAG_STRING))
-      c.setSpawnEntityId(tag.getString("spawnEntityId"));
-
-    if (tag.contains("spawnEntityCount", Tag.TAG_INT))
-      c.setSpawnEntityCount(tag.getInt("spawnEntityCount"));
-
-    if (tag.contains("placeBlockId", Tag.TAG_STRING))
-      c.setPlaceBlockId(tag.getString("placeBlockId"));
-
-    if (tag.contains("placeBlockCount", Tag.TAG_INT))
-      c.setPlaceBlockCount(tag.getInt("placeBlockCount"));
-
-    if (tag.contains("statusEffectId", Tag.TAG_STRING))
-      c.setStatusEffectId(tag.getString("statusEffectId"));
-
-    if (tag.contains("statusDurationSeconds", Tag.TAG_INT))
-      c.setStatusDurationSeconds(tag.getInt("statusDurationSeconds"));
-
-    if (tag.contains("statusAmplifier", Tag.TAG_INT))
-      c.setStatusAmplifier(tag.getInt("statusAmplifier"));
-
-    if (tag.contains("knockbackAmount", Tag.TAG_FLOAT))
-      c.setKnockbackAmount(tag.getFloat("knockbackAmount"));
-
-    if (tag.contains("blockDestructionRadius", Tag.TAG_FLOAT))
-      c.setBlockDestructionRadius(tag.getFloat("blockDestructionRadius"));
-
-    if (tag.contains("blockDestructionDepth", Tag.TAG_INT))
-      c.setBlockDestructionDepth(tag.getInt("blockDestructionDepth"));
-
-    return c;
+    // Create config with constructor
+    return new SpellEffectBehaviorConfig(
+        radius,
+        damage,
+        despawnOnTrigger,
+        spawnEntityId,
+        spawnEntityCount,
+        placeBlockId,
+        placeBlockCount,
+        statusEffectId,
+        statusDurationSeconds,
+        statusAmplifier,
+        affectOwner,
+        trigger,
+        knockbackAmount,
+        blockDestructionRadius,
+        blockDestructionDepth);
   }
 
   private static EffectTrigger parseTrigger(String v) {

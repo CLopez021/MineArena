@@ -16,6 +16,9 @@ public class ServerConfig {
   public static String openrouterApiKey;
   public static String openrouterModel;
 
+  // Meshy configuration
+  public static String meshyApiKey;
+
   public static final ForgeConfigSpec.ConfigValue<String> OPENROUTER_API_KEY =
       BUILDER.comment("OpenRouter API Key").define("openrouterApiKey", "YOUR_OPENROUTER_API_KEY");
 
@@ -23,6 +26,9 @@ public class ServerConfig {
       BUILDER
           .comment("OpenRouter model name for chat, e.g., openai/gpt-4o")
           .define("openrouterModel", "x-ai/grok-4-fast:free");
+
+  public static final ForgeConfigSpec.ConfigValue<String> MESHY_API_KEY =
+      BUILDER.comment("Meshy API Key").define("meshyApiKey", "YOUR_API_KEY");
 
   public static final ForgeConfigSpec SPEC = BUILDER.build();
 
@@ -32,6 +38,7 @@ public class ServerConfig {
     if (event.getConfig().getSpec() == SPEC) {
       openrouterApiKey = OPENROUTER_API_KEY.get();
       openrouterModel = OPENROUTER_MODEL.get();
+      meshyApiKey = MESHY_API_KEY.get();
     }
   }
 }

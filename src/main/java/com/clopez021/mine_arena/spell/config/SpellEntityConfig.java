@@ -107,31 +107,6 @@ public class SpellEntityConfig extends BaseConfig {
     return v;
   }
 
-  // Mutable setters (pydantic-like model)
-  public void setBlocks(Map<BlockPos, BlockState> blocks) {
-    this.blocks = (blocks != null && !blocks.isEmpty()) ? blocks : defaultUnitAirBlock();
-  }
-
-  public void setMicroScale(float microScale) {
-    this.microScale = microScale;
-  }
-
-  public void setBehavior(SpellEffectBehaviorConfig behavior) {
-    this.behavior = behavior != null ? behavior : new SpellEffectBehaviorConfig();
-  }
-
-  public void setShouldMove(boolean shouldMove) {
-    this.shouldMove = shouldMove;
-  }
-
-  public void setMovementSpeed(float movementSpeed) {
-    this.movementSpeed = movementSpeed;
-  }
-
-  // No explicit vector setters; direction derives from player look
-
-  // Note: all other constructors removed to keep a single entry point
-
   @Override
   public CompoundTag toNBT() {
     CompoundTag tag = new CompoundTag();
@@ -171,25 +146,22 @@ public class SpellEntityConfig extends BaseConfig {
     float microScale =
         tag.contains("microScale", Tag.TAG_FLOAT) ? tag.getFloat("microScale") : 1.0f;
 
-    SpellEffectBehaviorConfig behavior;
-    if (tag.contains("behavior", Tag.TAG_COMPOUND)) {
-      CompoundTag b = tag.getCompound("behavior");
-      // If it looks like new keys, parse directly; otherwise, map from old keys via new fromNBT
-      behavior = SpellEffectBehaviorConfig.fromNBT(b);
-    } else {
-      behavior = new SpellEffectBehaviorConfig();
-    }
+    SpellEffectBehaviorConfig behavior =
+        tag.contains("behavior", Tag.TAG_COMPOUND)
+            ? SpellEffectBehaviorConfig.fromNBT(tag.getCompound("behavior"))
+            : new SpellEffectBehaviorConfig();
 
-    // Movement fields (defaults if absent)
     boolean shouldMove = tag.contains("shouldMove", Tag.TAG_BYTE) && tag.getBoolean("shouldMove");
     float speed =
         tag.contains("movementSpeed", Tag.TAG_FLOAT) ? tag.getFloat("movementSpeed") : 0.0f;
 
     SpellEntityConfig cfg = new SpellEntityConfig(blocks, microScale, behavior, shouldMove, speed);
+
+    // Restore cached direction vectors if present
     if (tag.contains("dirX", Tag.TAG_FLOAT)) cfg.dirX = tag.getFloat("dirX");
     if (tag.contains("dirY", Tag.TAG_FLOAT)) cfg.dirY = tag.getFloat("dirY");
     if (tag.contains("dirZ", Tag.TAG_FLOAT)) cfg.dirZ = tag.getFloat("dirZ");
-    cfg.setBehavior(behavior);
+
     return cfg;
   }
 }

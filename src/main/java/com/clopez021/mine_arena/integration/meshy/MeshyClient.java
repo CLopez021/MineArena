@@ -1,7 +1,7 @@
 package com.clopez021.mine_arena.integration.meshy;
 
 import static com.clopez021.mine_arena.command.GenerateCommand.isCancelling;
-import static com.clopez021.mine_arena.config.ClientConfig.meshyApiKey;
+import static com.clopez021.mine_arena.config.ServerConfig.meshyApiKey;
 
 import com.clopez021.mine_arena.MineArena;
 import com.clopez021.mine_arena.command.ModelCommand;
