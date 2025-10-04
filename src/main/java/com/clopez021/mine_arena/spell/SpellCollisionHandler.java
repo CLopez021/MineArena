@@ -1,6 +1,7 @@
 package com.clopez021.mine_arena.spell;
 
-import com.clopez021.mine_arena.utils.IdResolver;
+import com.clopez021.mine_arena.core.entity.SpellEntity;
+import com.clopez021.mine_arena.util.IdResolver;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;

@@ -5,7 +5,7 @@ import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
-import com.clopez021.mine_arena.models.Model;
+import com.clopez021.mine_arena.model3d.Model;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.HashMap;

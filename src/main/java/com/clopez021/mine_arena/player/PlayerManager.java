@@ -1,9 +1,9 @@
 package com.clopez021.mine_arena.player;
 
 import com.clopez021.mine_arena.MineArena;
-import com.clopez021.mine_arena.speech_recognition.SpeechCommand;
-import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
-import com.clopez021.mine_arena.spell.PlayerSpellConfig;
+import com.clopez021.mine_arena.spell.config.PlayerSpellConfig;
+import com.clopez021.mine_arena.voice.recognition.SpeechCommand;
+import com.clopez021.mine_arena.voice.recognition.SpeechRecognitionManager;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.server.level.ServerPlayer;

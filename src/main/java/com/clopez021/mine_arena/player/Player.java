@@ -1,13 +1,13 @@
 package com.clopez021.mine_arena.player;
 
-import com.clopez021.mine_arena.entity.ModEntities;
-import com.clopez021.mine_arena.models.ObjModel;
-import com.clopez021.mine_arena.packets.PacketHandler;
-import com.clopez021.mine_arena.packets.SpellCompletePacket;
-import com.clopez021.mine_arena.speech_recognition.SpeechRecognitionManager;
-import com.clopez021.mine_arena.spell.PlayerSpellConfig;
-import com.clopez021.mine_arena.spell.SpellEntity;
-import com.clopez021.mine_arena.spell.SpellEntityConfig;
+import com.clopez021.mine_arena.core.entity.ModEntities;
+import com.clopez021.mine_arena.core.entity.SpellEntity;
+import com.clopez021.mine_arena.model3d.ObjModel;
+import com.clopez021.mine_arena.network.PacketHandler;
+import com.clopez021.mine_arena.network.SpellCompletePacket;
+import com.clopez021.mine_arena.spell.config.PlayerSpellConfig;
+import com.clopez021.mine_arena.spell.config.SpellEntityConfig;
+import com.clopez021.mine_arena.voice.recognition.SpeechRecognitionManager;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

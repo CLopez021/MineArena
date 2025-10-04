@@ -1,6 +1,6 @@
 package com.clopez021.mine_arena.command;
 
-import com.clopez021.mine_arena.voicechat.RecorderManager;
+import com.clopez021.mine_arena.voice.recording.RecorderManager;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.UUID;
 import net.minecraft.commands.CommandSourceStack;
