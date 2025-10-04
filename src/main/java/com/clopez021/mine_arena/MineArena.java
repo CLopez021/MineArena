@@ -164,7 +164,7 @@ public class MineArena {
                 0.0f, // blockDestructionRadius (no block breaking)
                 0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig wind_cfg =
-            new SpellEntityConfig(wind_blocks, 0.05f, wind_behavior, true, 0.8f);
+            new SpellEntityConfig(wind_blocks, 0.03f, wind_behavior, true, 0.8f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("Gale Force", "Wind", wind_cfg));
 
         // Ice burst: place ice around and freeze nearby entities for 8s
@@ -192,7 +192,7 @@ public class MineArena {
                 0.0f, // blockDestructionRadius (no block breaking)
                 0); // blockDestructionDepth (no block breaking)
         SpellEntityConfig ice_cube_cfg =
-            new SpellEntityConfig(ice_cube_blocks, 0.05f, ice_cube_behavior, true, 0.6f);
+            new SpellEntityConfig(ice_cube_blocks, 0.02f, ice_cube_behavior, true, 0.6f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("Glacial Prison", "Ice cube", ice_cube_cfg));
 
         // Rocket: faster, smaller radius but deals damage via explosion
@@ -218,7 +218,7 @@ public class MineArena {
                 2.5f, // blockDestructionRadius (bomb breaks blocks)
                 3); // blockDestructionDepth (deep destruction)
         SpellEntityConfig bomb_cfg =
-            new SpellEntityConfig(bomb_blocks, 0.05f, bomb_behavior, true, 1.5f);
+            new SpellEntityConfig(bomb_blocks, 0.04f, bomb_behavior, true, 1.5f);
         DEFAULT_SPELLS.add(new PlayerSpellConfig("Arcane Detonation", "Bomb", bomb_cfg));
 
         // Levitate: on-cast effect applied to player

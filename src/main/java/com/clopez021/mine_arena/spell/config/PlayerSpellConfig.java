@@ -3,10 +3,13 @@ package com.clopez021.mine_arena.spell.config;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 
-/** PlayerSpellConfig now embeds SpellEntityConfig (no file indirection). */
-public record PlayerSpellConfig(String name, String phrase, SpellEntityConfig config) {
+/** Immutable configuration for a player's spell with name, phrase, and entity config. */
+public class PlayerSpellConfig extends BaseConfig {
+  private final String name;
+  private final String phrase;
+  private final SpellEntityConfig config;
 
-  public PlayerSpellConfig {
+  public PlayerSpellConfig(String name, String phrase, SpellEntityConfig config) {
     if (name == null || name.isBlank()) {
       throw new IllegalArgumentException("name must be non-empty");
     }
@@ -16,9 +19,24 @@ public record PlayerSpellConfig(String name, String phrase, SpellEntityConfig co
     if (config == null) {
       throw new IllegalArgumentException("config must be non-null");
     }
+    this.name = name;
+    this.phrase = phrase;
+    this.config = config;
   }
 
-  /** Serialize to NBT using SpellEntityConfig helpers for the nested data. */
+  public String name() {
+    return name;
+  }
+
+  public String phrase() {
+    return phrase;
+  }
+
+  public SpellEntityConfig config() {
+    return config;
+  }
+
+  @Override
   public CompoundTag toNBT() {
     CompoundTag tag = new CompoundTag();
     tag.putString("name", name);
@@ -27,16 +45,13 @@ public record PlayerSpellConfig(String name, String phrase, SpellEntityConfig co
     return tag;
   }
 
-  /** Deserialize from NBT using SpellEntityConfig helpers for the nested data. */
   public static PlayerSpellConfig fromNBT(CompoundTag tag) {
     String name = tag.getString("name");
     String phrase = tag.getString("phrase");
-    SpellEntityConfig cfg;
-    if (tag.contains("entityData", Tag.TAG_COMPOUND)) {
-      cfg = SpellEntityConfig.fromNBT(tag.getCompound("entityData"));
-    } else {
-      cfg = SpellEntityConfig.empty();
-    }
+    SpellEntityConfig cfg =
+        tag.contains("entityData", Tag.TAG_COMPOUND)
+            ? SpellEntityConfig.fromNBT(tag.getCompound("entityData"))
+            : SpellEntityConfig.empty();
     return new PlayerSpellConfig(name, phrase, cfg);
   }
 }
