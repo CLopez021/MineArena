@@ -53,6 +53,19 @@ public class Player {
     return new java.util.ArrayList<>(spells.values());
   }
 
+  /**
+   * Updates the ServerPlayer reference. This is needed when a player respawns after death, as
+   * Minecraft creates a new ServerPlayer instance.
+   *
+   * @param newServerPlayer The new ServerPlayer instance
+   */
+  public void updateServerPlayer(ServerPlayer newServerPlayer) {
+    if (newServerPlayer.getUUID().equals(this.uuid)) {
+      this.serverPlayer = newServerPlayer;
+      updateSpeechRecognition();
+    }
+  }
+
   // Bulk-add with auto-save and speech recognition updates
   public void addSpells(Collection<PlayerSpellConfig> spells) {
     System.out.println("addSpells: " + spells);

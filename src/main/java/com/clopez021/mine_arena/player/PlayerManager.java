@@ -193,6 +193,28 @@ public class PlayerManager {
   }
 
   /**
+   * Event handler for player respawn/clone after death. Updates the ServerPlayer reference in the
+   * Player object to ensure spell casting and voice recognition work correctly after respawn.
+   */
+  @SubscribeEvent
+  public static void onPlayerClone(PlayerEvent.Clone event) {
+    // Only handle death respawns, not dimension changes
+    if (!event.isWasDeath()) {
+      return;
+    }
+
+    if (event.getEntity() instanceof ServerPlayer newServerPlayer) {
+      PlayerManager manager = getInstance();
+      Player player = manager.getPlayer(newServerPlayer);
+
+      // Update the ServerPlayer reference to the new respawned player
+      if (player != null) {
+        player.updateServerPlayer(newServerPlayer);
+      }
+    }
+  }
+
+  /**
    * Shuts down all player management and speech recognition. Should be called during server
    * shutdown.
    */
