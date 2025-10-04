@@ -3,7 +3,6 @@ package com.clopez021.mine_arena;
 import com.clopez021.mine_arena.client.renderer.SpellEntityRenderer;
 import com.clopez021.mine_arena.command.ModelCommand;
 import com.clopez021.mine_arena.command.argument.ModCommandArguments;
-import com.clopez021.mine_arena.config.ClientConfig;
 import com.clopez021.mine_arena.config.ServerConfig;
 import com.clopez021.mine_arena.core.entity.ModEntities;
 import com.clopez021.mine_arena.core.items.ModItems;
@@ -70,7 +69,6 @@ public class MineArena {
 
     // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
     context.registerConfig(ModConfig.Type.COMMON, ServerConfig.SPEC);
-    context.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
     // Defer default spell creation until server start (resources ready)
   }
 

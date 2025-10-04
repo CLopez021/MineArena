@@ -181,8 +181,19 @@ public final class LLMSpellConfigService {
     JsonObject behaviorJson = finalConfig.getAsJsonObject("behavior");
     SpellEffectBehaviorConfig behavior = parseBehaviorFromJson(behaviorJson);
 
-    // Generate blocks from prompt
-    Map<BlockPos, BlockState> blocks = MeshyClient.buildBlocksFromPrompt(prompt);
+    // Generate blocks from prompt - skip if ON_CAST + despawnOnTrigger (entity despawns
+    // immediately)
+    Map<BlockPos, BlockState> blocks;
+    boolean despawnOnTrigger = getBool(behaviorJson, "despawnOnTrigger", true);
+    if (behavior.getTrigger() == SpellEffectBehaviorConfig.EffectTrigger.ON_CAST
+        && despawnOnTrigger) {
+      // Entity despawns immediately on cast, no need for a visual model
+      blocks = Map.of();
+      System.out.println(
+          "Skipping Meshy model generation - spell triggers on cast and despawns immediately");
+    } else {
+      blocks = MeshyClient.buildBlocksFromPrompt(prompt);
+    }
 
     return new SpellEntityConfig(blocks, microScale, behavior, shouldMove, speed);
   }
