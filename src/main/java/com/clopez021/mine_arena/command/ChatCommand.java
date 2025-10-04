@@ -5,8 +5,8 @@ import static com.mojang.brigadier.arguments.StringArgumentType.string;
 import static net.minecraft.commands.Commands.argument;
 import static net.minecraft.commands.Commands.literal;
 
-import com.clopez021.mine_arena.api.Message;
-import com.clopez021.mine_arena.api.openrouter;
+import com.clopez021.mine_arena.integration.openrouter.Message;
+import com.clopez021.mine_arena.integration.openrouter.OpenRouterClient;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import java.util.List;
@@ -51,7 +51,7 @@ public class ChatCommand {
     CompletableFuture.runAsync(
         () -> {
           try {
-            String reply = openrouter.chat(List.of(new Message(finalRole, message)));
+            String reply = OpenRouterClient.chat(List.of(new Message(finalRole, message)));
             command.getSource().sendSystemMessage(Component.literal("AI: " + reply));
           } catch (Exception e) {
             command.getSource().sendFailure(Component.literal("Error: " + e.getMessage()));

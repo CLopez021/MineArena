@@ -1,9 +1,10 @@
 package com.clopez021.mine_arena.spell;
 
-import com.clopez021.mine_arena.api.Meshy;
-import com.clopez021.mine_arena.api.Message;
-import com.clopez021.mine_arena.api.openrouter;
-import com.clopez021.mine_arena.spell.behavior.onCollision.SpellEffectBehaviorConfig;
+import com.clopez021.mine_arena.integration.meshy.MeshyClient;
+import com.clopez021.mine_arena.integration.openrouter.Message;
+import com.clopez021.mine_arena.integration.openrouter.OpenRouterClient;
+import com.clopez021.mine_arena.spell.behavior.collision.SpellEffectBehaviorConfig;
+import com.clopez021.mine_arena.spell.config.SpellEntityConfig;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -73,7 +74,7 @@ public final class LLMSpellConfigService {
 
     String reasoning;
     try {
-      reasoning = openrouter.chat(conversationHistory);
+      reasoning = OpenRouterClient.chat(conversationHistory);
     } catch (Exception e) {
       throw new RuntimeException("Failed to get Step 1 behavior reasoning: " + e);
     }
@@ -84,7 +85,7 @@ public final class LLMSpellConfigService {
 
     String jsonResult;
     try {
-      jsonResult = openrouter.chat(conversationHistory);
+      jsonResult = OpenRouterClient.chat(conversationHistory);
     } catch (Exception e) {
       throw new RuntimeException("Failed to get Step 1 behavior JSON: " + e);
     }
@@ -112,7 +113,7 @@ public final class LLMSpellConfigService {
 
     String reasoning;
     try {
-      reasoning = openrouter.chat(conversationHistory);
+      reasoning = OpenRouterClient.chat(conversationHistory);
     } catch (Exception e) {
       throw new RuntimeException("Failed to get Step 2 entity reasoning: " + e);
     }
@@ -123,7 +124,7 @@ public final class LLMSpellConfigService {
 
     String jsonResult;
     try {
-      jsonResult = openrouter.chat(conversationHistory);
+      jsonResult = OpenRouterClient.chat(conversationHistory);
     } catch (Exception e) {
       throw new RuntimeException("Failed to get Step 2 entity JSON: " + e);
     }
@@ -181,7 +182,7 @@ public final class LLMSpellConfigService {
     SpellEffectBehaviorConfig behavior = parseBehaviorFromJson(behaviorJson);
 
     // Generate blocks from prompt
-    Map<BlockPos, BlockState> blocks = Meshy.buildBlocksFromPrompt(prompt);
+    Map<BlockPos, BlockState> blocks = MeshyClient.buildBlocksFromPrompt(prompt);
 
     return new SpellEntityConfig(blocks, microScale, behavior, shouldMove, speed);
   }

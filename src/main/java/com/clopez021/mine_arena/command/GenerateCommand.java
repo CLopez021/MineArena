@@ -1,6 +1,6 @@
 package com.clopez021.mine_arena.command;
 
-import static com.clopez021.mine_arena.api.Meshy.textTo3D;
+import static com.clopez021.mine_arena.integration.meshy.MeshyClient.textTo3D;
 
 import com.mojang.brigadier.context.CommandContext;
 import java.util.concurrent.CompletableFuture;

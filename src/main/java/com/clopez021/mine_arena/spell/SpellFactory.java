@@ -1,9 +1,10 @@
 package com.clopez021.mine_arena.spell;
 
-import com.clopez021.mine_arena.api.MeshyExceptions;
-import com.clopez021.mine_arena.packets.PacketHandler;
-import com.clopez021.mine_arena.packets.SpellCompletePacket;
+import com.clopez021.mine_arena.integration.meshy.MeshyExceptions;
+import com.clopez021.mine_arena.network.PacketHandler;
+import com.clopez021.mine_arena.network.SpellCompletePacket;
 import com.clopez021.mine_arena.player.PlayerManager;
+import com.clopez021.mine_arena.spell.config.PlayerSpellConfig;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.network.PacketDistributor;
