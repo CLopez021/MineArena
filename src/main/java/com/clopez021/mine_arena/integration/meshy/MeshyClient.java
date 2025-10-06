@@ -1,16 +1,12 @@
 package com.clopez021.mine_arena.integration.meshy;
 
-import static com.clopez021.mine_arena.command.GenerateCommand.isCancelling;
 import static com.clopez021.mine_arena.config.ServerConfig.meshyApiKey;
 
-import com.clopez021.mine_arena.MineArena;
-import com.clopez021.mine_arena.command.ModelCommand;
 import com.clopez021.mine_arena.model3d.Model;
 import com.clopez021.mine_arena.model3d.ObjModel;
+import com.clopez021.mine_arena.util.ModelUtils;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.context.CommandContext;
 import java.io.*;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -22,109 +18,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.IntConsumer;
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class MeshyClient {
-  private static void checkCancellation() {
-    if (isCancelling) {
-      throw new RuntimeException("Cancelled current model generation.");
-    }
-  }
-
-  public static void textTo3D(CommandContext<CommandSourceStack> command) throws Exception {
-    String prompt = StringArgumentType.getString(command, "prompt");
-    command
-        .getSource()
-        .sendSystemMessage(Component.literal("Started model generation for '" + prompt + "'."));
-
-    IntConsumer updateProgress =
-        progress -> {
-          ServerPlayer player = command.getSource().getPlayer();
-          if (player != null) {
-            String bar =
-                "§a"
-                    + new String(new char[progress / 2]).replace("\0", "|")
-                    + "§8"
-                    + new String(new char[50 - progress / 2]).replace("\0", "|")
-                    + "§f";
-            player.displayClientMessage(
-                Component.literal("Progress: [" + bar + "] " + progress + "%"), true);
-          }
-        };
-
-    String previewTaskId = createPreviewTask(prompt);
-    waitForTask(previewTaskId, 0, updateProgress);
-
-    String refineTaskId = createRefineTask(previewTaskId);
-    waitForTask(refineTaskId, 50, updateProgress);
-
-    String[] modelUrls = retrieveTextTo3dTask(refineTaskId, updateProgress);
-    checkCancellation();
-
-    String objUrl = modelUrls[0];
-    String mtlUrl = modelUrls[1];
-    String textureUrl = modelUrls[2];
-    String modelName = refineTaskId;
-    String textureName = "texture_0";
-    boolean saveFlag = false;
-    try {
-      modelName = StringArgumentType.getString(command, "model_name");
-      textureName = modelName;
-    } catch (IllegalArgumentException ignored) {
-    }
-    // Optional save flag
-    try {
-      saveFlag = com.mojang.brigadier.arguments.BoolArgumentType.getBool(command, "save");
-    } catch (IllegalArgumentException ignored) {
-    }
-
-    String objPath = "models/" + modelName + ".obj";
-    String mtlPath = "models/" + modelName + ".mtl";
-    String texturePath = "models/" + textureName + ".png";
-    try {
-      // Ensure models directory exists
-      Files.createDirectories(Paths.get("models"));
-      downloadFile(objUrl, objPath);
-      downloadFile(mtlUrl, mtlPath);
-      downloadFile(textureUrl, texturePath);
-      renameInFile(mtlPath, "texture_0", textureName);
-      checkCancellation();
-      MineArena.model = new ObjModel(new File(objPath));
-      Objects.requireNonNull(command.getSource().getPlayer())
-          .displayClientMessage(Component.literal("Generation Complete"), true);
-      Component message;
-      if (saveFlag) {
-        message =
-            Component.literal(
-                "Successfully generated and saved model '" + modelName + "' to models/.");
-      } else {
-        message = Component.literal("Successfully generated a model for '" + prompt + "'.");
-      }
-      command.getSource().sendSystemMessage(message);
-      System.out.println("files: " + objPath + ", " + mtlPath + ", " + texturePath);
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
-    } finally {
-      // Delete downloaded files unless explicitly saved
-      if (!saveFlag) {
-        System.out.println("Deleting files: " + objPath + ", " + mtlPath + ", " + texturePath);
-        new File(objPath).delete();
-        new File(mtlPath).delete();
-        new File(texturePath).delete();
-      }
-    }
-  }
 
   /**
-   * Convenience: generate a model from a prompt and return the voxelized blocks. Deletes temp
-   * files.
+   * Generate a model from a prompt and return the voxelized blocks. Temp files are automatically
+   * deleted.
+   *
+   * @param prompt The text description for model generation
+   * @return Map of BlockPos to BlockState representing the voxelized model
+   * @throws Exception if generation fails
    */
   public static Map<BlockPos, BlockState> buildBlocksFromPrompt(String prompt) throws Exception {
     if (prompt == null || prompt.isEmpty())
@@ -155,7 +61,7 @@ public class MeshyClient {
       renameInFile(mtlPath, "texture_0", textureName);
 
       Model model = new ObjModel(new File(objPath));
-      return ModelCommand.buildVoxels(model);
+      return ModelUtils.buildVoxels(model);
     } finally {
       try {
         new File(objPath).delete();
@@ -222,7 +128,6 @@ public class MeshyClient {
     HttpClient client = HttpClient.newHttpClient();
 
     while (true) {
-      checkCancellation();
       HttpRequest request =
           HttpRequest.newBuilder()
               .uri(URI.create(apiUrl))

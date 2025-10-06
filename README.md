@@ -2,83 +2,195 @@
 <h1 align="center">
 	Mine Arena
 </h1>
-<p>A Forge mod built for Minecraft Java 1.21.1 that allows you to build anything in Minecraft using the power of AI. The AI uses a text prompt to generate a 3D model of your idea, which you can then place into your Minecraft world. Alternatively, you can import your own 3D model files.</p>
-<p>Models are automatically converted into a voxelized, blocky representations complete with textures and color matching. Players can scale, rotate, and position models in-game using intuitive keyboard and mouse controls, or through commands for more fine-tuned adjustments. </p>
-<p>This mod supports .obj file format, and provides a real-time preview of the model as it is transformed and placed within the world.</p>
 
-## Demo
+<p>A Forge mod built for Minecraft Java 1.21.1 that brings voice-controlled magic to Minecraft using cutting-edge AI technology.</p>
 
-Below are screenshots demonstrating AI model generation and placement in Minecraft.
+## ✨ Core Features
 
-### Generation in Progress
-![Model Generation](./images/generation_in_progress.png)
+### 🎤 Voice-Controlled Spell Casting
+Cast spells using your voice! Simply speak the spell's cast phrase to launch fireballs, summon ice storms, create shockwaves, and more. Voice recognition automatically activates when you join a world.
 
-### Generation Result
-![Generated Model](./images/generated_result.png)
+### 🧙 AI-Powered Custom Spell Creation
+Create your own custom spells with natural language:
+1. Right-click with the **Wand** item (craftable in-game)
+2. Describe your spell idea (e.g., "A lightning bolt that stuns enemies")
+3. Set a voice command phrase to cast it (e.g., "Thunder Strike")
+4. The AI generates the spell's behavior, effects, and visual appearance
+5. Cast it by speaking your custom phrase!
 
-## The builds below were all generated using this mod:
+**Powered by:**
+- **OpenRouter LLM** - Generates spell mechanics (damage, effects, behavior)
+- **Meshy AI** - Creates unique 3D models for spell projectiles
 
-### Steampunk Airship
-![Steampunk Airship](./images/steampunk_pirate_ship.png)
+### 🔮 Default Spells
+The mod includes five ready-to-use spells:
+- **Infernal Blast** - Explosive fireball with area damage and ignite effect
+- **Gale Force** - Wind blast that knocks back enemies
+- **Glacial Prison** - Ice burst that freezes targets and places ice blocks
+- **Arcane Detonation** - High-speed explosive bomb with block destruction
+- **Ethereal Ascension** - Self-cast levitation spell
 
-### Greek Statue
-![Greek Statue](./images/greek_statue.png)
-
-### Bee
-![Bee](./images/bee.png)
-
-### Iron Man Helmet
-![Iron Man Helmet](./images/iron_man_helmet.png)
 
 <h2>How to Install/Compile</h2>
 <p>To install this mod, simply copy the <code>mine_arena-1.0.0.jar</code> file into the mods folder of your Minecraft directory.
 </p>
 <p>If you would like to compile the .jar file yourself, navigate to the root directory of the project and run <code>gradlew build</code> from the command line.</p>
 
+<h2>Setup & Configuration</h2>
+
+<h3>Required API Keys</h3>
+<p>To use the AI spell creation features, you'll need API keys from two services:</p>
+
+<h4>1. OpenRouter (Required for spell generation)</h4>
+<ul>
+    <li>Sign up at <a href="https://openrouter.ai/">OpenRouter</a></li>
+    <li>Add credits to your account (pays for LLM API calls)</li>
+    <li>Copy your API key</li>
+    <li>Open <code>config/mine_arena-common.toml</code> in your Minecraft directory</li>
+    <li>Paste your OpenRouter API key in the config file</li>
+</ul>
+
+<h4>2. Meshy AI (Required for spell visuals)</h4>
+<ul>
+    <li>Create an account at <a href="https://www.meshy.ai/settings/api">Meshy API Page</a></li>
+    <li>Purchase a subscription to get API access</li>
+    <li>Copy your API key</li>
+    <li>Paste your Meshy API key in <code>config/mine_arena-common.toml</code></li>
+</ul>
+
+<p><strong>Note:</strong> Default spells work without API keys. API keys are only needed to create custom spells.</p>
+
 <h2>How to Use</h2>
-<h3>Loading a Model</h3>
-<p>Upon launching the game, a <code>models</code> folder will be created in your Minecraft directory. Place your 3D models and textures in this folder.</p>
-<p>To load a model in-game:</p>
+
+<h3>🎮 Casting Spells with Voice</h3>
 <ol>
-    <li>Open your world.</li>
-    <li>Run the command: <code>/model load &lt;filename&gt;</code>. The mod will list all valid filenames in your <code>models</code> folder.</li>
+    <li>Join your world (voice recognition auto-starts)</li>
+    <li>Speak a spell's cast phrase clearly (e.g., "Fireball" for Infernal Blast)</li>
+    <li>The spell will be cast in the direction you're looking!</li>
 </ol>
 
-<h3>Generating a Model</h3>
+<p><strong>Tip:</strong> The mod uses your browser's speech recognition. A browser tab will open when you join - keep it open in the background.</p>
+
+<h3>🧪 Creating Custom Spells</h3>
 <ol>
-    <li>To generate models using AI, an API key from Meshy is required. This involves creating an account on their website, and purchasing a subscription to get access to their API. This can be done here: <a href="https://www.meshy.ai/settings/api">Meshy API Page</a></li>
-    <li>After acquiring an API key, go into the config folder of your Minecraft directory, and open "mine_arena-common.toml". Paste your API key here.</li>
-    <li>Once you load up your world, run the command <code>model generate &lt;prompt&gt;</code> to generate a model.
+    <li><strong>Craft a Wand</strong>: Use 1 gold ingot + 2 sticks in a vertical pattern (stick-gold-stick)</li>
+    <li>Right-click with the Wand to open the spell creation interface</li>
+    <li>Enter a description of your spell (be creative! e.g., "A poison cloud that damages enemies over time")</li>
+    <li>Enter a cast phrase (the words you'll speak to cast it)</li>
+    <li>Click Submit and wait for the AI to generate your spell (may take 1-2 minutes)</li>
+    <li>Once complete, speak your cast phrase to use it!</li>
 </ol>
 
+<p><strong>Crafting Recipe:</strong></p>
+<pre>
+    S  (Stick)
+    G  (Gold Ingot)
+    S  (Stick)
+</pre>
 
 
-<h3>Model Commands</h3>
-<p>The <code>/model</code> command offers several subcommands for loading and working with 3D models.</p>
+<h2>Spell Mechanics & Capabilities</h2>
 
-<h4><code>/model load &lt;filename&gt;</code></h4>
-<p>Loads a model from the <code>models</code> folder. Supported format: <code>.obj</code>.</p>
+<p>Custom spells support a wide range of effects and behaviors:</p>
 
-<h4><code>/model generate...</code></h4>
+<h3>Effect Triggers</h3>
 <ul>
-	<li><code>/model generate &lt;prompt&gt; [&lt;model_name&gt;]</code>: Generates a 3D model from the given text prompt. If a model name is specified, will save the 3D model and textures to files using that name.</li>
-	<li><code>/model generate cancel</code>: Cancels the current model generation if it exists. Useful for if generation is taking a long time or not responding.</li>
+    <li><strong>On Impact</strong> - Effect triggers when the spell hits a block or entity</li>
+    <li><strong>On Cast</strong> - Effect triggers immediately when cast (self-buffs, instant effects)</li>
 </ul>
 
-<h4><code>/model place</code></h4>
-<p>Places the currently loaded model as blocks in the world at the player's position.</p>
-
-<h4><code>/model entity [&lt;microScale&gt;]</code></h4>
-<p>Spawns the currently loaded model as an entity at the player's position. The optional microScale parameter (0.001-1.0) controls the size of the entity (default: 0.0625).</p>
-
-<h4><code>/model entity_one</code></h4>
-<p>Spawns a simple single-block entity for testing purposes.</p>
-
-<h3>Changing Model Appearance</h3>
-<p>There are three possible rendering previews that can be switched between by pressing <strong>V</strong>.
-</p>
+<h3>Spell Effects</h3>
 <ul>
-    <li><strong>Bounding Box</strong> (Default) [Low Performance Impact]</li>
-    <li><strong>Mesh/Wireframe</strong> [Medium Performance Impact]</li>
-    <li><strong>BLocks Preview</strong> [High Performance Impact]</li>
+    <li><strong>Direct Damage</strong> - Deal instant damage to entities in a radius</li>
+    <li><strong>Status Effects</strong> - Apply potion effects (poison, slowness, regeneration, etc.)</li>
+    <li><strong>Knockback</strong> - Push entities away from the impact point</li>
+    <li><strong>Block Placement</strong> - Place blocks (fire, ice, obsidian, etc.) around impact area</li>
+    <li><strong>Block Destruction</strong> - Destroy blocks in a configurable radius and depth</li>
+    <li><strong>Entity Spawning</strong> - Summon Minecraft entities at the spell's location</li>
+    <li><strong>Freeze Effect</strong> - Special freezing status that immobilizes targets</li>
+    <li><strong>Ignite Effect</strong> - Set entities on fire</li>
 </ul>
+
+<h3>Spell Properties</h3>
+<ul>
+    <li><strong>Movement</strong> - Spells can be projectiles or instant-cast</li>
+    <li><strong>Speed</strong> - Configurable projectile speed</li>
+    <li><strong>Visual Model</strong> - AI-generated 3D appearance</li>
+    <li><strong>Size</strong> - Adjustable spell entity scale</li>
+    <li><strong>Effect Radius</strong> - Customizable area of effect</li>
+</ul>
+
+<h2>Technical Details</h2>
+
+<h3>How It Works</h3>
+<ol>
+    <li><strong>Spell Generation</strong>: OpenRouter LLM analyzes your description and generates spell parameters (damage, effects, behavior)</li>
+    <li><strong>Visual Creation</strong>: Meshy AI creates a unique 3D model based on the spell concept</li>
+    <li><strong>Model Conversion</strong>: The 3D model is voxelized into Minecraft blocks with color matching</li>
+    <li><strong>Voice Registration</strong>: Your cast phrase is registered with the browser's Speech Recognition API</li>
+    <li><strong>Spell Casting</strong>: When you speak the phrase, the spell entity spawns and executes its programmed behavior</li>
+</ol>
+
+<h3>Browser Compatibility</h3>
+<p>Voice recognition requires a browser with Web Speech API support:</p>
+<ul>
+    <li>✅ Chrome (recommended)</li>
+    <li>✅ Edge</li>
+    <li>✅ Safari</li>
+    <li>❌ Firefox (no Web Speech API support)</li>
+</ul>
+
+<h2>Examples of Custom Spells</h2>
+
+<p>Here are some ideas for custom spells you can create:</p>
+
+<ul>
+    <li><strong>"A lightning bolt that stuns enemies"</strong> - Creates a fast-moving electric projectile that applies slowness</li>
+    <li><strong>"A healing aura around me"</strong> - Instant cast that applies regeneration to the caster</li>
+    <li><strong>"A wall of ice blocks"</strong> - Creates a barrier by placing ice blocks in a line</li>
+    <li><strong>"Summon wolves to fight for me"</strong> - Spawns tamed wolves at the impact location</li>
+    <li><strong>"A meteor that destroys terrain"</strong> - High-damage projectile with block destruction</li>
+    <li><strong>"Poison gas cloud"</strong> - Applies poison effect in an area over time</li>
+    <li><strong>"Telekinetic push"</strong> - Pure knockback effect without damage</li>
+    <li><strong>"Explosive mine"</strong> - Slow-moving or stationary projectile that explodes when enemies get close</li>
+</ul>
+
+<h2>Troubleshooting</h2>
+
+<h3>Voice Recognition Not Working</h3>
+<ul>
+    <li>Make sure the browser tab that opens stays open in the background</li>
+    <li>Check that your browser has microphone permissions</li>
+    <li>Try using Chrome or Edge (best compatibility)</li>
+    <li>Speak clearly and use simple, distinct cast phrases</li>
+</ul>
+
+<h3>Spell Generation Fails</h3>
+<ul>
+    <li>Verify both API keys are correctly set in <code>config/mine_arena-common.toml</code></li>
+    <li>Check that you have credits in your OpenRouter and Meshy accounts</li>
+    <li>Try simplifying your spell description</li>
+    <li>Wait a moment and try again (API rate limits may apply)</li>
+</ul>
+
+<h3>Spells Not Casting</h3>
+<ul>
+    <li>Make sure voice recognition is active (browser tab open)</li>
+    <li>Check that your spell has been successfully created (open the Wand interface to see your spell list)</li>
+    <li>Try speaking the cast phrase more clearly or slowly</li>
+    <li>Verify the cast phrase doesn't conflict with other spells</li>
+</ul>
+
+<h2>Credits & Attribution</h2>
+
+<p>This mod integrates several technologies:</p>
+<ul>
+    <li><strong>Minecraft Forge</strong> - Modding framework</li>
+    <li><strong>OpenRouter</strong> - LLM API for spell generation</li>
+    <li><strong>Meshy AI</strong> - 3D model generation</li>
+    <li><strong>Web Speech API</strong> - Browser-based voice recognition</li>
+</ul>
+
+<h2>License</h2>
+
+<p>This project is open source. Feel free to modify and use it for your own projects.</p>

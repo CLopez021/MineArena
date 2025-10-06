@@ -5,14 +5,30 @@ import com.clopez021.mine_arena.model3d.ObjModel;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.block.state.BlockState;
 import org.apache.commons.io.FilenameUtils;
 import org.openjdk.nashorn.internal.runtime.regexp.joni.exception.ValueException;
 
 /** Utilities for loading models from files and resources. */
 public final class ModelUtils {
   private ModelUtils() {}
+
+  /**
+   * Converts a Model into voxelized blocks.
+   *
+   * @param model The model to voxelize
+   * @return Map of BlockPos to BlockState representing the voxelized model
+   */
+  public static Map<BlockPos, BlockState> buildVoxels(Model model) {
+    if (model == null) return Map.of();
+    Map<BlockPos, BlockState> blocks = model.getTextureToBlocks();
+    return new HashMap<>(blocks);
+  }
 
   /**
    * Load a model from a file path.

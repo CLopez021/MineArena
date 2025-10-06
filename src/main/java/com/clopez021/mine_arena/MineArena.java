@@ -1,8 +1,6 @@
 package com.clopez021.mine_arena;
 
 import com.clopez021.mine_arena.client.renderer.SpellEntityRenderer;
-import com.clopez021.mine_arena.command.ModelCommand;
-import com.clopez021.mine_arena.command.argument.ModCommandArguments;
 import com.clopez021.mine_arena.config.ServerConfig;
 import com.clopez021.mine_arena.core.entity.ModEntities;
 import com.clopez021.mine_arena.core.items.ModItems;
@@ -20,7 +18,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import net.minecraft.client.renderer.entity.EntityRenderers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
@@ -45,8 +42,6 @@ public class MineArena {
   // Define mod id in a common place for everything to reference
   public static final String MOD_ID = "mine_arena";
 
-  @Nullable public static Model model;
-
   // Directly reference a slf4j logger
   private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -60,7 +55,6 @@ public class MineArena {
     MinecraftForge.EVENT_BUS.register(this);
 
     ModItems.register(modEventBus);
-    ModCommandArguments.register(modEventBus);
     ModEntities.register(modEventBus);
     PacketHandler.init();
 
@@ -118,7 +112,7 @@ public class MineArena {
             ResourceLocation.fromNamespaceAndPath(MOD_ID, "models/fireball");
         String fireball_baseName = "fireball";
         Model fireball_model = ModelUtils.loadModelFromResources(fireball_dir, fireball_baseName);
-        Map<BlockPos, BlockState> fireball_blocks = ModelCommand.buildVoxels(fireball_model);
+        Map<BlockPos, BlockState> fireball_blocks = ModelUtils.buildVoxels(fireball_model);
         SpellEffectBehaviorConfig fireball_behavior =
             new SpellEffectBehaviorConfig(
                 5.0f, // radius
@@ -145,7 +139,7 @@ public class MineArena {
         ResourceLocation wind_dir = ResourceLocation.fromNamespaceAndPath(MOD_ID, "models/wind");
         String wind_baseName = "wind";
         Model wind_model = ModelUtils.loadModelFromResources(wind_dir, wind_baseName);
-        Map<BlockPos, BlockState> wind_blocks = ModelCommand.buildVoxels(wind_model);
+        Map<BlockPos, BlockState> wind_blocks = ModelUtils.buildVoxels(wind_model);
         SpellEffectBehaviorConfig wind_behavior =
             new SpellEffectBehaviorConfig(
                 4.0f, // radius
@@ -173,7 +167,7 @@ public class MineArena {
         String ice_cube_baseName = "ice_cube";
         Model ice_cube_model = ModelUtils.loadModelFromResources(ice_cube_dir, ice_cube_baseName);
         ice_cube_model.rotation.rotateX(90);
-        Map<BlockPos, BlockState> ice_cube_blocks = ModelCommand.buildVoxels(ice_cube_model);
+        Map<BlockPos, BlockState> ice_cube_blocks = ModelUtils.buildVoxels(ice_cube_model);
         SpellEffectBehaviorConfig ice_cube_behavior =
             new SpellEffectBehaviorConfig(
                 4.0f, // radius
@@ -199,7 +193,7 @@ public class MineArena {
         ResourceLocation bomb_dir = ResourceLocation.fromNamespaceAndPath(MOD_ID, "models/bomb");
         String bomb_baseName = "bomb";
         Model bomb_model = ModelUtils.loadModelFromResources(bomb_dir, bomb_baseName);
-        Map<BlockPos, BlockState> bomb_blocks = ModelCommand.buildVoxels(bomb_model);
+        Map<BlockPos, BlockState> bomb_blocks = ModelUtils.buildVoxels(bomb_model);
         SpellEffectBehaviorConfig bomb_behavior =
             new SpellEffectBehaviorConfig(
                 2.5f, // radius
