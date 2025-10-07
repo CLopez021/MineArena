@@ -2,9 +2,13 @@
 <h1 align="center">
 	Mine Arena
 </h1>
-[![MINE ARENA DEMO](https://img.youtube.com/vi/4HqonoI8u2E/0.jpg)](https://www.youtube.com/watch?v=4HqonoI8u2E)
-
 <p>A Forge mod built for Minecraft Java 1.21.1 that makes for voice controlled spell casting (like in Mage Arena) and additionally allows for the creation for custom spells using natural language prompt.</p>
+<p align="center">
+  <h1>Demo Video</h1>
+  <a href="https://www.youtube.com/watch?v=4HqonoI8u2E">
+    <img src="https://img.youtube.com/vi/4HqonoI8u2E/maxresdefault.jpg" width="600" />
+  </a>
+</p>
 
 ## 📋 Requirements
 
