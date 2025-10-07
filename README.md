@@ -1,14 +1,30 @@
-<p align="center"><img src="./images/ai_builder_logo.png" alt="Logo" width="200"></p>
+<p align="center"><img src="./images/mine_arena_logo.png" alt="Logo" width="200"></p>
 <h1 align="center">
 	Mine Arena
 </h1>
 
-<p>A Forge mod built for Minecraft Java 1.21.1 that brings voice-controlled magic to Minecraft using cutting-edge AI technology.</p>
+<p>A Forge mod built for Minecraft Java 1.21.1 that makes for voice controlled spell casting (like in Mage Arena) and additionally allows for the creation for custom spells using natural language prompt.</p>
+
+## 📋 Requirements
+
+### Essential
+- **Minecraft Java Edition 1.21.1** with Forge installed
+- **Compatible Web Browser** with Speech Recognition API support:
+  - ✅ Google Chrome (recommended)
+  - ✅ Microsoft Edge
+  - ✅ Safari
+  - ❌ Firefox (not supported)
+
+### Optional (For Creating Custom Spells)
+- **<a href="https://openrouter.ai/">OpenRouter Account</a>** - Free to create, and free to use as long as you use the free models under this <a href="https://openrouter.ai/models?max_price=0">list</a>.
+- **<a href="https://www.meshy.ai/">Meshy AI Subscription</a>** - Paid subscription required for 3D model generation API access
+
+<p><strong>Note:</strong> The mod comes with 5 default spells that work immediately without any API keys. You only need OpenRouter and Meshy accounts if you want to create your own custom spells.</p>
 
 ## ✨ Core Features
 
 ### 🎤 Voice-Controlled Spell Casting
-Cast spells using your voice! Simply speak the spell's cast phrase to launch fireballs, summon ice storms, create shockwaves, and more. Voice recognition automatically activates when you join a world.
+Cast spells using your voice! Simply speak the spell's cast phrase to launch fireballs, summon ice storms, create shockwaves, or whatever else you'd like. Voice recognition automatically activates when you join a world by opening up a new prompt on the supported browsers and requesting permission to use your microphone.
 
 ### 🧙 AI-Powered Custom Spell Creation
 Create your own custom spells with natural language:
@@ -23,12 +39,12 @@ Create your own custom spells with natural language:
 - **Meshy AI** - Creates unique 3D models for spell projectiles
 
 ### 🔮 Default Spells
-The mod includes five ready-to-use spells:
-- **Infernal Blast** - Explosive fireball with area damage and ignite effect
-- **Gale Force** - Wind blast that knocks back enemies
-- **Glacial Prison** - Ice burst that freezes targets and places ice blocks
-- **Arcane Detonation** - High-speed explosive bomb with block destruction
-- **Ethereal Ascension** - Self-cast levitation spell
+The mod includes five ready-to-use spells (no API keys required):
+- **Infernal Blast** (say "Fireball") - Explosive fireball with area damage and ignite effect
+- **Gale Force** (say "Wind") - Wind blast that knocks back enemies
+- **Glacial Prison** (say "Ice cube") - Ice burst that freezes targets and places ice blocks
+- **Arcane Detonation** (say "Bomb") - High-speed explosive bomb with block destruction
+- **Ethereal Ascension** (say "Levitate") - Self-cast levitation spell
 
 
 <h2>How to Install/Compile</h2>
@@ -88,49 +104,6 @@ The mod includes five ready-to-use spells:
     S  (Stick)
 </pre>
 
-
-<h2>Spell Mechanics & Capabilities</h2>
-
-<p>Custom spells support a wide range of effects and behaviors:</p>
-
-<h3>Effect Triggers</h3>
-<ul>
-    <li><strong>On Impact</strong> - Effect triggers when the spell hits a block or entity</li>
-    <li><strong>On Cast</strong> - Effect triggers immediately when cast (self-buffs, instant effects)</li>
-</ul>
-
-<h3>Spell Effects</h3>
-<ul>
-    <li><strong>Direct Damage</strong> - Deal instant damage to entities in a radius</li>
-    <li><strong>Status Effects</strong> - Apply potion effects (poison, slowness, regeneration, etc.)</li>
-    <li><strong>Knockback</strong> - Push entities away from the impact point</li>
-    <li><strong>Block Placement</strong> - Place blocks (fire, ice, obsidian, etc.) around impact area</li>
-    <li><strong>Block Destruction</strong> - Destroy blocks in a configurable radius and depth</li>
-    <li><strong>Entity Spawning</strong> - Summon Minecraft entities at the spell's location</li>
-    <li><strong>Freeze Effect</strong> - Special freezing status that immobilizes targets</li>
-    <li><strong>Ignite Effect</strong> - Set entities on fire</li>
-</ul>
-
-<h3>Spell Properties</h3>
-<ul>
-    <li><strong>Movement</strong> - Spells can be projectiles or instant-cast</li>
-    <li><strong>Speed</strong> - Configurable projectile speed</li>
-    <li><strong>Visual Model</strong> - AI-generated 3D appearance</li>
-    <li><strong>Size</strong> - Adjustable spell entity scale</li>
-    <li><strong>Effect Radius</strong> - Customizable area of effect</li>
-</ul>
-
-<h2>Technical Details</h2>
-
-<h3>How It Works</h3>
-<ol>
-    <li><strong>Spell Generation</strong>: OpenRouter LLM analyzes your description and generates spell parameters (damage, effects, behavior)</li>
-    <li><strong>Visual Creation</strong>: Meshy AI creates a unique 3D model based on the spell concept</li>
-    <li><strong>Model Conversion</strong>: The 3D model is voxelized into Minecraft blocks with color matching</li>
-    <li><strong>Voice Registration</strong>: Your cast phrase is registered with the browser's Speech Recognition API</li>
-    <li><strong>Spell Casting</strong>: When you speak the phrase, the spell entity spawns and executes its programmed behavior</li>
-</ol>
-
 <h3>Browser Compatibility</h3>
 <p>Voice recognition requires a browser with Web Speech API support:</p>
 <ul>
@@ -140,19 +113,15 @@ The mod includes five ready-to-use spells:
     <li>❌ Firefox (no Web Speech API support)</li>
 </ul>
 
-<h2>Examples of Custom Spells</h2>
+<h2>Examples of Custom Spell Prompts</h2>
 
 <p>Here are some ideas for custom spells you can create:</p>
 
 <ul>
-    <li><strong>"A lightning bolt that stuns enemies"</strong> - Creates a fast-moving electric projectile that applies slowness</li>
-    <li><strong>"A healing aura around me"</strong> - Instant cast that applies regeneration to the caster</li>
-    <li><strong>"A wall of ice blocks"</strong> - Creates a barrier by placing ice blocks in a line</li>
-    <li><strong>"Summon wolves to fight for me"</strong> - Spawns tamed wolves at the impact location</li>
-    <li><strong>"A meteor that destroys terrain"</strong> - High-damage projectile with block destruction</li>
-    <li><strong>"Poison gas cloud"</strong> - Applies poison effect in an area over time</li>
-    <li><strong>"Telekinetic push"</strong> - Pure knockback effect without damage</li>
-    <li><strong>"Explosive mine"</strong> - Slow-moving or stationary projectile that explodes when enemies get close</li>
+    <li><strong>"A healing aura around me"</strong>
+    <li><strong>"Summon wolves to fight for me"</strong> 
+    <li><strong>"A meteor that destroys terrain"</strong>
+    <li><strong>"Poison gas cloud"</strong>
 </ul>
 
 <h2>Troubleshooting</h2>
@@ -179,16 +148,6 @@ The mod includes five ready-to-use spells:
     <li>Check that your spell has been successfully created (open the Wand interface to see your spell list)</li>
     <li>Try speaking the cast phrase more clearly or slowly</li>
     <li>Verify the cast phrase doesn't conflict with other spells</li>
-</ul>
-
-<h2>Credits & Attribution</h2>
-
-<p>This mod integrates several technologies:</p>
-<ul>
-    <li><strong>Minecraft Forge</strong> - Modding framework</li>
-    <li><strong>OpenRouter</strong> - LLM API for spell generation</li>
-    <li><strong>Meshy AI</strong> - 3D model generation</li>
-    <li><strong>Web Speech API</strong> - Browser-based voice recognition</li>
 </ul>
 
 <h2>License</h2>
