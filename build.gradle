@@ -31,6 +31,8 @@ base {
 // Mojang ships Java 21 to end users in 1.20.5+, so your mod should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
+jarJar.enable()
+
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
     // The mappings can be changed at any time and must be in the following format.
@@ -186,6 +188,10 @@ dependencies {
 
     // Java WebSocket library for speech recognition sidecar
     implementation 'org.java-websocket:Java-WebSocket:1.6.0'
+    
+    jarJar(implementation('org.java-websocket:Java-WebSocket')) {
+        version { strictly '[1.6.0]' }   // exact 1.6.0 (you could also do '[1.6.0,1.7.0)')
+    }
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
