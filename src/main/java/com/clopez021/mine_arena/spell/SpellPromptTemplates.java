@@ -85,7 +85,7 @@ minecraft:tnt, minecraft:torch, minecraft:tuff, minecraft:vine, minecraft:warped
         {
           name: string // Edgy, wizardy spell name (2-4 words max). Should sound mystical and powerful. Examples: "Infernal Devastation", "Glacial Doom", "Ethereal Surge", "Void Cascade", "Crimson Wrath", "Spectral Lance".
           prompt: string // Short visual description for 3D model generation. Note that you do not need to include size description here as that will have no effect, that is better left for the microScale parameter. (e.g. "glowing ice shard", "fireball with smoke trail").
-          microScale: number (0.01-0.05) // Visual size multiplier. 0.01= small, 0.03 = medium, 0.05 = large.
+          microScale: number (1.0-5) // Visual size multiplier. 1.0 = extremely tiny, 2.0= small, 3.0 = medium, 8.0 = large, 10 = massive. Feel free to use decimal values as well or any value above 10 as needed, there is no maximum.
           shouldMove: boolean // If true, spell travels forward in player's look direction. If false, spawns stationary at cast location.
           speed: number (>=0) // Travel speed in blocks/tick (multiply by 20 for blocks/second). Typical values: slow=0.25 (5 b/s), medium=0.5 (10 b/s), fast=1.0 (20 b/s), very fast=1.5+ (30+ b/s). Ignored if shouldMove=false.
           cooldownSeconds: number (1.0-30.0) // Cooldown duration in seconds before the spell can be cast again. Balance this based on the spell's power: weak/utility spells = 1-5s, moderate damage/effects = 5-10s, powerful spells = 10-20s, ultimate spells = 20-30s. Consider damage, radius, status effects, and knockback when deciding.

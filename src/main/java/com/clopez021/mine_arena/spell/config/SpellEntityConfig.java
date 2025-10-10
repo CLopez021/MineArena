@@ -61,7 +61,19 @@ public class SpellEntityConfig extends BaseConfig {
     return blocks;
   }
 
+  /**
+   * Returns the denormalized microScale value for rendering (actual scale applied to blocks). This
+   * is the value multiplied by 0.01.
+   */
   public float getMicroScale() {
+    return microScale * 0.01f;
+  }
+
+  /**
+   * Returns the raw normalized microScale value (1.0 = 0.01 scale). Use this when creating new
+   * configs to preserve the normalized value.
+   */
+  public float getMicroScaleRaw() {
     return microScale;
   }
 

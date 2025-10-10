@@ -224,7 +224,7 @@ public class Player {
     SpellEntityConfig cfg =
         new SpellEntityConfig(
             rotatedBlocks,
-            base.getMicroScale(),
+            base.getMicroScaleRaw(), // Use raw normalized value to preserve scale
             base.getEffectBehavior(),
             base.getShouldMove(),
             base.getMovementSpeed());
