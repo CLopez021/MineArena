@@ -27,6 +27,8 @@ public class Player {
   private final UUID uuid;
   // name -> PlayerSpellConfig (runtime lookup by name)
   private final Map<String, PlayerSpellConfig> spells;
+  // Cooldown tracking: spellName -> last cast time in milliseconds
+  private final Map<String, Long> lastCastTimes;
   private String language;
   private ServerPlayer serverPlayer; // Reference to update speech recognition
 
@@ -37,6 +39,7 @@ public class Player {
   public Player(ServerPlayer serverPlayer) {
     this.uuid = serverPlayer.getUUID();
     this.spells = new HashMap<>(DEFAULT_SPELLS);
+    this.lastCastTimes = new HashMap<>();
     this.language = DEFAULT_LANGUAGE;
     this.serverPlayer = serverPlayer;
 
@@ -199,6 +202,20 @@ public class Player {
     if (ps == null) {
       return;
     }
+
+    // Check cooldown
+    long currentTime = System.currentTimeMillis();
+    Long lastCastTime = lastCastTimes.get(spellName);
+    if (lastCastTime != null) {
+      long timeSinceLastCast = currentTime - lastCastTime;
+      if (timeSinceLastCast < ps.cooldownMillis()) {
+        // Spell is still on cooldown - ignore this cast
+        return;
+      }
+    }
+
+    // Record cast time
+    lastCastTimes.put(spellName, currentTime);
 
     SpellEntityConfig base = ps.config();
     // Rotate blocks to match the player's yaw/pitch at cast time.
