@@ -62,7 +62,7 @@ public class SpellEntityConfig extends BaseConfig {
   }
 
   public float getMicroScale() {
-    return microScale;
+    return microScale * 0.01f;
   }
 
   public SpellEffectBehaviorConfig getEffectBehavior() {
