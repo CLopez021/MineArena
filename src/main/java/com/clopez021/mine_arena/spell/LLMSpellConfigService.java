@@ -18,14 +18,16 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class LLMSpellConfigService {
   private LLMSpellConfigService() {}
 
-  /** Result containing both the spell name and config. */
+  /** Result containing the spell name, config, and cooldown. */
   public static class SpellResult {
     public final String name;
     public final SpellEntityConfig config;
+    public final float cooldownSeconds;
 
-    public SpellResult(String name, SpellEntityConfig config) {
+    public SpellResult(String name, SpellEntityConfig config, float cooldownSeconds) {
       this.name = name;
       this.config = config;
+      this.cooldownSeconds = cooldownSeconds;
     }
   }
 
@@ -58,8 +60,14 @@ public final class LLMSpellConfigService {
     System.out.println("Final config: " + finalConfigJson.toString());
     // Parse the final merged config and create the SpellEntityConfig
     String spellName = getString(finalConfigJson, "name", spellIntent);
+    float cooldownSeconds = getFloat(finalConfigJson, "cooldownSeconds", 1.0f);
+
+    // Clamp cooldown to valid range (1.0 - 30.0 seconds)
+    if (cooldownSeconds < 1.0f) cooldownSeconds = 1.0f;
+    if (cooldownSeconds > 30.0f) cooldownSeconds = 30.0f;
+
     SpellEntityConfig config = parseAndBuildFinalConfig(finalConfigJson);
-    return new SpellResult(spellName, config);
+    return new SpellResult(spellName, config, cooldownSeconds);
   }
 
   // ---- STEP 1: Behavior Only ----

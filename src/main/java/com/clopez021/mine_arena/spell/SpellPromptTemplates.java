@@ -88,6 +88,7 @@ minecraft:tnt, minecraft:torch, minecraft:tuff, minecraft:vine, minecraft:warped
           microScale: number (0.01-0.05) // Visual size multiplier. 0.01= small, 0.03 = medium, 0.05 = large.
           shouldMove: boolean // If true, spell travels forward in player's look direction. If false, spawns stationary at cast location.
           speed: number (>=0) // Travel speed in blocks/tick (multiply by 20 for blocks/second). Typical values: slow=0.25 (5 b/s), medium=0.5 (10 b/s), fast=1.0 (20 b/s), very fast=1.5+ (30+ b/s). Ignored if shouldMove=false.
+          cooldownSeconds: number (1.0-30.0) // Cooldown duration in seconds before the spell can be cast again. Balance this based on the spell's power: weak/utility spells = 1-5s, moderate damage/effects = 5-10s, powerful spells = 10-20s, ultimate spells = 20-30s. Consider damage, radius, status effects, and knockback when deciding.
         }
         """;
   }

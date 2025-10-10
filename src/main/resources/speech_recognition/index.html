@@ -130,6 +130,28 @@
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
   let recog = null;
+  
+  /**
+   * Deduplication strategy for interim results:
+   * 
+   * Problem: Interim results accumulate text as you speak:
+   *   Event 1: "fire"
+   *   Event 2: "fireball"           <- triggers spell
+   *   Event 3: "fireball and then"  <- would trigger again! (bad)
+   * 
+   * Solution: Track how much of each result we've already processed.
+   * For each result index, we store the character length we've processed.
+   * We only check the NEW portion (substring from last processed length).
+   * 
+   * Example:
+   *   Event 1: fullTranscript="fire", lastProcessed=0, newPortion="fire" -> no match
+   *   Event 2: fullTranscript="fireball", lastProcessed=0, newPortion="fireball" -> match! Set processed=8
+   *   Event 3: fullTranscript="fireball and then", lastProcessed=8, newPortion=" and then" -> no match
+   * 
+   * When result becomes final, we clean up tracking for that index.
+   */
+  // Map: resultIndex -> last character index we've processed
+  let processedUpTo = new Map();
 
   function setStatus(text, isError = false) { 
     statusEl.textContent = text; 
@@ -235,30 +257,30 @@
   }
 
   /**
-   * matchSpell(heard, spells, alts = [])
-   *  - heard: top transcript string from ASR
+   * matchSpell(hypotheses, spells)
+   *  - hypotheses: array of transcript strings (best first, then alternatives)
    *  - spells: array of spell strings (may be 1+ words)
-   *  - alts: optional n-best hypotheses (each with {text|transcript})
    *
    * Returns the matched spell string or null. Binary decision — match or not.
    *
-   * Rules:
-   *  - Never modify/compact the spell text.
-   *  - Only compact ONE adjacent pair in the HEARD phrase (tested exhaustively).
-   *  - For a spell with m tokens, we only consider heard spans of length m (no-merge)
-   *    and length m+1 (one merge reduces it back to m).
+   * Matching strategy:
+   *  - Checks ALL hypotheses for a match
+   *  - Returns immediately on first match found (tries best hypothesis first)
+   *  - Never modifies/compacts the spell text
+   *  - Only compacts ONE adjacent pair in the HEARD phrase (tested exhaustively)
+   *  - For a spell with m tokens, considers heard spans of length m (no-merge)
+   *    and length m+1 (one merge reduces it back to m)
    */
-  function matchSpell(heard, spells, alts = []) {
-    const hyps = [heard, ...alts.map(a => a.text || a.transcript).filter(Boolean)];
-
+  function matchSpell(hypotheses, spells) {
     // Pre-normalize spells once
     const spellInfos = spells.map(s => {
       const norm = normalize(s);
       return { orig: s, norm, tokens: norm ? norm.split(" ") : [] };
     });
 
-    for (const hyp of hyps) {
-      const heardTokens = tokenize(hyp);
+    // Try each hypothesis in order (best first)
+    for (const hypothesis of hypotheses) {
+      const heardTokens = tokenize(hypothesis);
       if (!heardTokens.length) continue;
 
       for (const sp of spellInfos) {
@@ -291,37 +313,103 @@
     if (!recog) {
       recog = new SR();
       recog.continuous = true;
-      recog.interimResults = false;  // Only final results
+      recog.interimResults = true;
       recog.lang = lang;
 
-      recog.onresult = (e) => {
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const result = e.results[i];
-          if (result.isFinal) {
-            const heard = result[0].transcript.trim();
-            const alts = [];
-            for (let k = 0; k < result.length; k++) {
-              alts.push({ text: result[k].transcript, confidence: result[k].confidence ?? null });
-            }
-            
-            console.log("heard", heard, "spells", spells, "alts", alts);
-            // Match against phrases, then map to the spell name to send back
-            const phrases = spells.map(s => s.phrase);
-            const matchedPhrase = matchSpell(heard, phrases, alts);
-            if (matchedPhrase) {
-              const entry = spells.find(s => s.phrase === matchedPhrase);
-              let spellName = "";
-              if (entry) {
-                spellName = entry.name;
-                send({ type: "spellCast", spellName });
+      /**
+       * SpeechRecognition result event structure:
+       * 
+       * event = {
+       *   resultIndex: 2,                         // Index of first NEW result in this event
+       *   results: [                              // SpeechRecognitionResultList - accumulates over time in continuous mode
+       *     SpeechRecognitionResult {...},        // Previous utterance (already processed)
+       *     SpeechRecognitionResult {...},        // Previous utterance (already processed)
+       *     SpeechRecognitionResult {             // NEW utterance (what was just said) ← start here
+       *       isFinal: true,
+       *       length: 3,                          // Number of alternative interpretations
+       *       [0]: { transcript: "fire ball", confidence: 0.95 },  // Best hypothesis
+       *       [1]: { transcript: "fireball", confidence: 0.85 },   // 2nd best
+       *       [2]: { transcript: "fire call", confidence: 0.60 }   // 3rd best
+       *     }
+       *   ]
+       * }
+       * 
+       * We extract: allHypotheses = ["fire ball", "fireball", "fire call"]
+       * 
+       * Note: continuous=true means recognition keeps going after each utterance.
+       * resultIndex tells us which results are new, so we only process those.
+       */
+      recog.onresult = (event) => {
+        // Iterate through each NEW utterance result (usually just one per event)
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const utteranceResult = event.results[i];  // One SpeechRecognitionResult
+          console.log("utteranceResult", utteranceResult);
+          
+          // Get the best hypothesis transcript
+          const fullTranscript = utteranceResult[0]?.transcript || "";
+          
+          // Check how much of this result we've already processed
+          const lastProcessedLength = processedUpTo.get(i) || 0;
+          
+          // Only process the NEW portion of the transcript
+          const newPortion = fullTranscript.substring(lastProcessedLength);
+          
+          if (!newPortion.trim()) {
+            // No new content to process
+            continue;
+          }
+          
+          console.log(`Result ${i}: full="${fullTranscript}", lastProcessed=${lastProcessedLength}, newPortion="${newPortion}"`);
+          
+          // Collect all hypotheses (n-best list) as simple strings
+          // Index 0 = best (highest confidence), then 2nd best, 3rd best, etc.
+          const allHypotheses = [];
+          // Iterate over all hypotheses
+          for (let k = 0; k < utteranceResult.length; k++) {
+            const transcript = utteranceResult[k].transcript.trim();
+            if (transcript) {
+              // Also extract just the new portion from alternatives
+              const altNewPortion = transcript.substring(lastProcessedLength);
+              if (altNewPortion.trim()) {
+                allHypotheses.push(altNewPortion);
               }
             }
+          }
+          
+          if (allHypotheses.length === 0) {
+            continue;
+          }
+          
+          console.log("allHypotheses (new portions)", allHypotheses, "spells", spells);
+          
+          // Match against phrases, then map to the spell name to send back
+          // If ANY hypothesis matches a spell (within edit distance), we cast it
+          const phrases = spells.map(s => s.phrase);
+          const matchedPhrase = matchSpell(allHypotheses, phrases);
+          if (matchedPhrase) {
+            const entry = spells.find(s => s.phrase === matchedPhrase);
+            if (entry) {
+              const spellName = entry.name;
+              send({ type: "spellCast", spellName });
+              
+              // Mark that we've processed up to the end of the current full transcript
+              // This prevents re-triggering if the user continues speaking
+              processedUpTo.set(i, fullTranscript.length);
+              console.log(`Matched "${matchedPhrase}", marked result ${i} processed up to ${fullTranscript.length}`);
+            }
+          }
+          
+          // If this is a final result, clean up the tracking for this result
+          if (utteranceResult.isFinal) {
+            processedUpTo.delete(i);
           }
         }
       };
 
       recog.onstart = () => {
         isListening = true;
+        // Clear any stale processing state from previous session
+        processedUpTo.clear();
         setStatus(`🎮 Listening for spells! Return to game - this tab will close automatically when you exit the world.`);
       };
 

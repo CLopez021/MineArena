@@ -69,7 +69,8 @@ public class SpellFactory {
                       String spellName =
                           result.name != null && !result.name.isEmpty() ? result.name : castPhrase;
                       PlayerSpellConfig reusable =
-                          new PlayerSpellConfig(spellName, castPhrase, result.config);
+                          new PlayerSpellConfig(
+                              spellName, castPhrase, result.config, result.cooldownSeconds);
                       PlayerManager.getInstance().addSpell(player, reusable);
 
                       // Notify client that spell creation finished successfully (no error)
